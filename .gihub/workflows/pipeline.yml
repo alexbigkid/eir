@@ -1,0 +1,75 @@
+name: ExifImageRenamer
+
+on:
+    push:
+        branches:
+            - main
+
+env:
+    ENV: prod
+
+jobs:
+    ruff:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - name: Run Ruff lint
+              uses: astral-sh/ruff-action@v3
+              with:
+                args: check
+
+    build:
+        name: Run on ${{ matrix.py }} - ${{ matrix.os }}
+        needs: ruff
+        runs-on: ${{ matrix.os }}-latest
+        strategy:
+            matrix:
+                # os: [ubuntu-latest]
+                os: [ ubuntu, macOS, windows ]
+                py: [ "3.12", "3.13"]
+
+        steps:
+            - name: checkout repo
+              uses: actions/checkout@v4
+            - name: setup python ${{ matrix.py }}
+              uses: actions/setup-python@v5
+              with:
+                python-version: ${{ matrix.py }}
+            - name: Check runner
+              run: |
+                .github/scripts/AgentInfo.sh
+            - name: Install uv
+              uses: astral-sh/setup-uv@v3
+            - name: Python Info
+              run: |
+                echo ""
+                echo "------------------------"
+                echo "Python version"
+                echo "------------------------"
+                python --version
+                echo ""
+                echo "------------------------"
+                echo "Python3 version"
+                echo "------------------------"
+                python3 --version
+            - name: install dependencies
+              run: uv sync
+            # - name: install tox-gh
+            #   run: python -m pip install tox-gh
+            - name: run unit tests
+              run: uv run pytest
+            # coverage has a problem with windows so not running it if windows OS
+            - name: run coverage
+              run: uv run pytest --cov --junitxml=junit.xml -o junit_family=legacy
+            - name: Upload test results to Codecov
+              if: ${{ !cancelled() }}
+              uses: codecov/test-results-action@v1
+              with:
+                token: ${{ secrets.CODECOV_TOKEN }}
+              # - name: Upload coverage to Codecov
+            #   uses: codecov/codecov-action@v5
+            #   with:
+            #     files: ./coverage.xml
+            #     flags: unittests
+            #     name: codecov-coverage
