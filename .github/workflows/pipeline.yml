@@ -37,6 +37,7 @@ jobs:
               with:
                 python-version: ${{ matrix.py }}
             - name: Check runner
+              if: ${{ !contains(matrix.os, 'windows') }}
               run: |
                 .github/scripts/AgentInfo.sh
             - name: Install uv
