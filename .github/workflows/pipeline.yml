@@ -26,8 +26,7 @@ jobs:
         strategy:
             matrix:
                 # os: [ubuntu-latest]
-                # os: [ ubuntu, macOS, windows ]
-                os: [ macOS ]
+                os: [ ubuntu, macOS, windows ]
                 py: [ "3.12", "3.13"]
 
         steps:
