@@ -370,7 +370,6 @@ class ImageProcessor:
             for obj in obj_list:
                 new_file_name = (
                     f"./{directory}/{obj[ExifTag.CREATE_DATE.value]}_"
-                    f"{obj[ExifTag.MAKE.value]}_{obj[ExifTag.MODEL.value]}_"
                     f"{self.project_name}.{file_ext}"
                 ).lower()
                 old_file_name = obj[ExifTag.SOURCE_FILE.value]
