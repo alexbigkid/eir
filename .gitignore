@@ -12,3 +12,5 @@ wheels/
 .ruff_cache/
 
 logs/
+**/.DS_Store
+test_images/
