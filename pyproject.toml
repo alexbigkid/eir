@@ -64,6 +64,9 @@ sources = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning:reactivex.*",
+]
 
 
 [tool.coverage.run]
@@ -104,6 +107,9 @@ select = [
     "F401"
 ]
 extend-ignore = ["D203", "E231", "E202", "S108"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # Allow assert statements
 
 
 [tool.ruff.lint.pydocstyle]
