@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import asyncio
+import threading
 from pathlib import Path
 from datetime import datetime
 from enum import Enum
@@ -269,7 +270,10 @@ class ImageProcessor:
                     ]
                 )
                 if not filtered_list:
-                    self._logger.info("No unprocessed files found in the current directory. Directory may already be processed.")
+                    self._logger.info(
+                        "No unprocessed files found in the current directory. "
+                        "Directory may already be processed."
+                    )
                     return
                 self._logger.debug(f"filtered_list = {filtered_list}")
 
@@ -281,6 +285,20 @@ class ImageProcessor:
 
                 # Process metadata and group by type
                 list_collection = {}
+                processed_count = 0
+                count_lock = threading.Lock()
+                total = len(metadata_list)
+
+                def log_progress(item):
+                    nonlocal processed_count
+                    with count_lock:
+                        processed_count += 1
+                        current = processed_count
+                    # item is a tuple (list_type, dir_name, metadata)
+                    _, _, meta = item
+                    self._logger.info(
+                        f"Completed file {current}/{total}: {meta.get('SourceFile', 'Unknown')}"
+                    )
 
                 def process_metadata_item(metadata):
                     result = self._process_metadata(metadata, filtered_list)
@@ -291,22 +309,35 @@ class ImageProcessor:
                         ).append(processed_metadata)
                     return result
 
+                def handle_processing_error(error, metadata):
+                    self._logger.warning(
+                        f"Failed to process {metadata.get('SourceFile', 'Unknown')}: {error}"
+                    )
+                    return rx.empty()  # Skip failed items
+
                 # Process all metadata and wait for completion
                 completion_future = asyncio.Future()
 
                 def on_completed():
+                    self._logger.info(f"Completed processing {processed_count} files")
                     completion_future.set_result(None)
 
                 def on_error(error):
+                    self._logger.error(f"Error in processing pipeline: {error}")
                     completion_future.set_exception(error)
 
                 rx.from_iterable(metadata_list).pipe(
-                    ops.map(process_metadata_item), ops.filter(lambda x: x is not None)
-                ).subscribe(
-                    on_completed=on_completed,
-                    on_error=on_error,
-                    scheduler=scheduler
-                )
+                    ops.flat_map(
+                        lambda metadata: rx.of(metadata).pipe(
+                            ops.subscribe_on(scheduler),
+                            ops.map(process_metadata_item),
+                            ops.retry(2),  # retry up to 2 times
+                            ops.catch(lambda e, _: handle_processing_error(e, metadata)),
+                            ops.filter(lambda x: x is not None),
+                            ops.do_action(log_progress),
+                        )
+                    )
+                ).subscribe(on_completed=on_completed, on_error=on_error)
 
                 # Wait for the reactive pipeline to complete
                 await completion_future
