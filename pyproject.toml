@@ -66,6 +66,7 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 filterwarnings = [
     "ignore::DeprecationWarning:reactivex.*",
+    "ignore:coroutine.*was never awaited:RuntimeWarning",
 ]
 
 
