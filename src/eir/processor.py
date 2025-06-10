@@ -319,11 +319,11 @@ class ImageProcessor:
                 completion_future = asyncio.Future()
 
                 def on_completed():
-                    self._logger.info(f"Completed processing {processed_count} files")
+                    self._logger.info(f"✅ Completed processing {processed_count} files")
                     completion_future.set_result(None)
 
                 def on_error(error):
-                    self._logger.error(f"Error in processing pipeline: {error}")
+                    self._logger.error(f"❌ Error in processing pipeline: {error}")
                     completion_future.set_exception(error)
 
                 rx.from_iterable(metadata_list).pipe(
@@ -343,7 +343,7 @@ class ImageProcessor:
                 await completion_future
 
                 if not list_collection:
-                    raise Exception("No files to process for the current directory.")
+                    raise ValueError("No files to process for the current directory.")
 
                 self._logger.debug(f"list_collection = {json.dumps(list_collection, indent=4)}")
 
