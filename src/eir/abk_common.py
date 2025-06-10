@@ -2,7 +2,6 @@
 """Common functionality."""
 
 # Standard library imports
-import logging
 import timeit
 
 
@@ -21,7 +20,9 @@ def function_trace(original_function):
     """
 
     def function_wrapper(*args, **kwargs):
-        _logger = logging.getLogger(original_function.__name__)
+        # Import here to avoid circular imports
+        from eir.logger_manager import LoggerManager
+        _logger = LoggerManager().get_logger()
         _logger.debug(f"{Fore.CYAN}-> {original_function.__name__}{Fore.RESET}")
         result = original_function(*args, **kwargs)
         _logger.debug(f"{Fore.CYAN}<- {original_function.__name__}{Fore.RESET}\n")
@@ -44,6 +45,7 @@ class PerformanceTimer:
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit for performance timer."""
+        _ = exc_type, exc_value, traceback  # Unused parameters
         time_took = (timeit.default_timer() - self.start) * 1000.0
         self._logger.info(f"Executing {self._timer_name} took {str(time_took)} ms")
 

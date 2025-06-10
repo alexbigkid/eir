@@ -19,9 +19,13 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: DEBUG
         formatter: abkFormatterLong
-        filename: eir.log
-        maxBytes: 1024
+        filename: logs/eir.log
+        maxBytes: 1048576  # 1MB
         backupCount: 10
+    queueHandler:
+        class: logging.handlers.QueueHandler
+        level: DEBUG
+        queue: ext://queue.Queue
 
 loggers:
     root:
@@ -36,6 +40,16 @@ loggers:
         level: DEBUG
         handlers: [fileHandler]
         qualname: fileLogger
+        propagate: no
+    threadedConsoleLogger:
+        level: DEBUG
+        handlers: [queueHandler]
+        qualname: threadedConsoleLogger
+        propagate: no
+    threadedFileLogger:
+        level: DEBUG
+        handlers: [queueHandler]
+        qualname: threadedFileLogger
         propagate: no
 
 root:

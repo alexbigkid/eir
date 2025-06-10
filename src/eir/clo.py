@@ -83,7 +83,7 @@ class CommandLineOptions:
         LoggerManager().configure(
             log_into_file=self.options.log_into_file, quiet=self.options.quiet
         )
-        self.logger = LoggerManager().get_logger(__name__)
+        self.logger = LoggerManager().get_logger()
         self.logger.info(f"{self.options=}")
         self.logger.info(f"{self._args=}")
         self.logger.info(f"{self.options.log_into_file=}")
