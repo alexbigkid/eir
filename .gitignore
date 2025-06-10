@@ -14,3 +14,4 @@ wheels/
 logs/
 **/.DS_Store
 test_images/
+.coverage
