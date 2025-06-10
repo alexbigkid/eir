@@ -11,8 +11,8 @@ import shutil
 import json
 from typing import Any
 
-from reactivex import from_iterable
-from reactivex.operators import map as rx_map, filter as rx_filter
+import reactivex as rx
+from reactivex import operators as ops
 from reactivex.scheduler.eventloop import AsyncIOScheduler
 from pydngconverter import DNGConverter
 import exiftool
@@ -159,6 +159,8 @@ class ImageProcessor:
     ) -> tuple[ListType, str, dict[str, Any]] | None:
         """Process individual metadata and classify file type."""
         file_name = metadata.get(ExifTag.SOURCE_FILE.value)
+        if not file_name:
+            return None
         file_base, file_extension = os.path.splitext(os.path.basename(file_name))
         file_extension = file_extension.replace(".", "").lower()
 
@@ -267,7 +269,8 @@ class ImageProcessor:
                     ]
                 )
                 if not filtered_list:
-                    raise ValueError("No files to process for the current directory.")
+                    self._logger.info("No unprocessed files found in the current directory. Directory may already be processed.")
+                    return
                 self._logger.debug(f"filtered_list = {filtered_list}")
 
                 # Extract metadata using ExifTool
@@ -288,10 +291,25 @@ class ImageProcessor:
                         ).append(processed_metadata)
                     return result
 
-                # Process all metadata
-                from_iterable(metadata_list).pipe(
-                    rx_map(process_metadata_item), rx_filter(lambda x: x is not None)
-                ).subscribe(scheduler=scheduler)
+                # Process all metadata and wait for completion
+                completion_future = asyncio.Future()
+
+                def on_completed():
+                    completion_future.set_result(None)
+
+                def on_error(error):
+                    completion_future.set_exception(error)
+
+                rx.from_iterable(metadata_list).pipe(
+                    ops.map(process_metadata_item), ops.filter(lambda x: x is not None)
+                ).subscribe(
+                    on_completed=on_completed,
+                    on_error=on_error,
+                    scheduler=scheduler
+                )
+
+                # Wait for the reactive pipeline to complete
+                await completion_future
 
                 if not list_collection:
                     raise Exception("No files to process for the current directory.")
