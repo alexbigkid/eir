@@ -1,4 +1,5 @@
 """Modern async RxPY-based EXIF Pictures Renaming processor."""
+
 import logging
 import os
 import re
@@ -21,6 +22,7 @@ from eir.abk_common import function_trace, PerformanceTimer
 
 class ListType(Enum):
     """ListType is type of image or video list."""
+
     RAW_IMAGE_DICT = "raw_image_dict"
     THUMB_IMAGE_DICT = "thumb_image_dict"
     COMPRESSED_IMAGE_DICT = "compressed_image_dict"
@@ -29,6 +31,7 @@ class ListType(Enum):
 
 class ExifTag(Enum):
     """ExifTags contains all exif meta data tags."""
+
     SOURCE_FILE = "SourceFile"
     CREATE_DATE = "EXIF:CreateDate"
     MAKE = "EXIF:Make"
@@ -54,10 +57,29 @@ class ImageProcessor:
         "Sony": ["arw", "sr2"],
     }
     SUPPORTED_COMPRESSED_IMAGE_EXT_LIST = [
-        "gif", "heic", "jpg", "jpeg", "jng", "mng", "png", "psd", "tiff", "tif"
+        "gif",
+        "heic",
+        "jpg",
+        "jpeg",
+        "jng",
+        "mng",
+        "png",
+        "psd",
+        "tiff",
+        "tif",
     ]
     SUPPORTED_COMPRESSED_VIDEO_EXT_LIST = [
-        "3g2", "3gp2", "crm", "m4a", "m4b", "m4p", "m4v", "mov", "mp4", "mqv", "qt"
+        "3g2",
+        "3gp2",
+        "crm",
+        "m4a",
+        "m4b",
+        "m4p",
+        "m4v",
+        "mov",
+        "mp4",
+        "mqv",
+        "qt",
     ]
     EXIF_UNKNOWN = "unknown"
     EXIF_TAGS = [ExifTag.CREATE_DATE.value, ExifTag.MAKE.value, ExifTag.MODEL.value]
@@ -83,11 +105,12 @@ class ImageProcessor:
             self._logger.info(f"{self._project_name = }")
         return self._project_name
 
+    @function_trace
     async def extract_exif_metadata(self, files_list: list[str]) -> list[dict[str, Any]]:
         """Extract EXIF metadata from files using ExifTool."""
         with exiftool.ExifToolHelper() as etp:
             etp.logger = self._logger
-            metadata_list = etp.get_tags(files=files_list, tags=self.EXIF_TAGS)
+            metadata_list = etp.get_tags(files_list, self.EXIF_TAGS)
             self._logger.debug(f"{metadata_list = }")
             return metadata_list
 
@@ -98,6 +121,7 @@ class ImageProcessor:
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
         await py_dng.convert()
 
+    @function_trace
     def _validate_image_dir(self) -> None:
         """Validate that directory follows YYYYMMDD_project_name format."""
         self._logger.debug(f"{self._op_dir = }")
@@ -112,10 +136,11 @@ class ImageProcessor:
             datetime.strptime(match.group(1), "%Y%m%d")
 
         except (AttributeError, ValueError) as e:
-            raise Exception(
+            raise ValueError(
                 "Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project"
             ) from e
 
+    @function_trace
     def _change_to_image_dir(self) -> None:
         """Change to image directory."""
         if self._op_dir != ".":
@@ -191,16 +216,10 @@ class ImageProcessor:
             and metadata[ExifTag.MAKE.value] != self.EXIF_UNKNOWN
         ):
             metadata[ExifTag.MODEL.value] = (
-                metadata[ExifTag.MODEL.value]
-                .replace(metadata[ExifTag.MAKE.value], "")
-                .strip()
+                metadata[ExifTag.MODEL.value].replace(metadata[ExifTag.MAKE.value], "").strip()
             )
 
-        dir_parts = [
-            metadata[ExifTag.MAKE.value],
-            metadata[ExifTag.MODEL.value],
-            file_extension,
-        ]
+        dir_parts = [metadata[ExifTag.MAKE.value], metadata[ExifTag.MODEL.value], file_extension]
         dir_name = "_".join(dir_parts).lower()
 
         return list_type, dir_name, metadata
@@ -240,14 +259,15 @@ class ImageProcessor:
             with PerformanceTimer(timer_name="ProcessingImages", logger=self._logger):
                 # Get files list
                 files_list = [f for f in os.listdir(".") if os.path.isfile(f)]
-                filtered_list = sorted([
-                    i for i in files_list
-                    if not re.match(rf"{self.FILES_TO_EXCLUDE_EXPRESSION}", i)
-                ])
-
+                filtered_list = sorted(
+                    [
+                        i
+                        for i in files_list
+                        if not re.match(rf"{self.FILES_TO_EXCLUDE_EXPRESSION}", i)
+                    ]
+                )
                 if not filtered_list:
-                    raise Exception("No files to process for the current directory.")
-
+                    raise ValueError("No files to process for the current directory.")
                 self._logger.debug(f"filtered_list = {filtered_list}")
 
                 # Extract metadata using ExifTool
@@ -269,10 +289,9 @@ class ImageProcessor:
                     return result
 
                 # Process all metadata
-                await from_iterable(metadata_list).pipe(
-                    rx_map(process_metadata_item),
-                    rx_filter(lambda x: x is not None)
-                ).run_async(scheduler=scheduler)
+                from_iterable(metadata_list).pipe(
+                    rx_map(process_metadata_item), rx_filter(lambda x: x is not None)
+                ).subscribe(scheduler=scheduler)
 
                 if not list_collection:
                     raise Exception("No files to process for the current directory.")
@@ -330,8 +349,7 @@ class ImageProcessor:
         if convert_list:
             self._logger.info(f"{convert_list = }")
             convert_tasks = [
-                self.convert_raw_to_dng(old_dir, new_dir)
-                for old_dir, new_dir in convert_list
+                self.convert_raw_to_dng(old_dir, new_dir) for old_dir, new_dir in convert_list
             ]
             await asyncio.gather(*convert_tasks)
             self._delete_original_raw_files(convert_list)

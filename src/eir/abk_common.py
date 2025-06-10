@@ -22,6 +22,7 @@ def function_trace(original_function):
     def function_wrapper(*args, **kwargs):
         # Import here to avoid circular imports
         from eir.logger_manager import LoggerManager
+
         _logger = LoggerManager().get_logger()
         _logger.debug(f"{Fore.CYAN}-> {original_function.__name__}{Fore.RESET}")
         result = original_function(*args, **kwargs)
