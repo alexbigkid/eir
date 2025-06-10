@@ -153,9 +153,15 @@ class TestCommandLineOptions:
             patch("builtins.print") as mock_print,
             patch("sys.exit") as mock_exit,
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "eir"
             mock_const.VERSION = "1.0.0"
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         mock_print.assert_called_once_with("eir version: 1.0.0")
@@ -171,9 +177,15 @@ class TestCommandLineOptions:
             patch("builtins.print") as mock_print,
             patch("sys.exit") as mock_exit,
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "eir"
             mock_const.VERSION = "2.0.0"
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         mock_print.assert_called_once_with("eir version: 2.0.0")
@@ -190,6 +202,7 @@ class TestCommandLineOptions:
             patch("builtins.print") as mock_print,
             patch("sys.exit") as mock_exit,
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "eir"
             mock_const.VERSION = "1.0.0"
@@ -200,7 +213,11 @@ class TestCommandLineOptions:
                 {"name": "Author 2", "email": "author2@test.com"},
             ]
             mock_const.MAINTAINERS = [{"name": "Maintainer 1", "email": "maint1@test.com"}]
-
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         # Check that all expected information was printed
@@ -229,6 +246,7 @@ class TestCommandLineOptions:
             patch("builtins.print"),
             patch("sys.exit") as mock_exit,
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "test_app"
             mock_const.VERSION = "0.5.0"
@@ -236,7 +254,11 @@ class TestCommandLineOptions:
             mock_const.KEYWORDS = ["test"]
             mock_const.AUTHORS = [{"name": "Test Author", "email": "test@test.com"}]
             mock_const.MAINTAINERS = [{"name": "Test Maintainer", "email": "maint@test.com"}]
-
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         mock_exit.assert_called_once_with(0)
@@ -326,6 +348,7 @@ class TestCommandLineOptions:
             patch("builtins.print") as mock_print,
             patch("sys.exit") as mock_exit,
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "test"
             mock_const.VERSION = "1.0.0"
@@ -334,7 +357,11 @@ class TestCommandLineOptions:
             # Missing name/email fields
             mock_const.AUTHORS = [{"name": "Author"}, {"email": "test@test.com"}, {}]
             mock_const.MAINTAINERS = [{"name": "Maintainer"}, {}]
-
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         print_calls = [call[0][0] for call in mock_print.call_args_list]
@@ -405,6 +432,7 @@ class TestCommandLineOptionsEdgeCases:
             patch("builtins.print") as mock_print,
             patch("sys.exit") as mock_exit,
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "test"
             mock_const.VERSION = "1.0.0"
@@ -412,7 +440,11 @@ class TestCommandLineOptionsEdgeCases:
             mock_const.KEYWORDS = []
             mock_const.AUTHORS = []
             mock_const.MAINTAINERS = []
-
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         print_calls = [call[0][0] for call in mock_print.call_args_list]
@@ -434,6 +466,7 @@ class TestCommandLineOptionsEdgeCases:
             patch("builtins.print") as mock_print,
             patch("sys.exit"),
             patch("eir.clo.CONST") as mock_const,
+            patch("eir.clo.LoggerManager") as mock_manager_class,
         ):
             mock_const.NAME = "test"
             mock_const.VERSION = "1.0.0"
@@ -441,7 +474,11 @@ class TestCommandLineOptionsEdgeCases:
             mock_const.KEYWORDS = ["keyword1", "keyword2", "keyword3"]
             mock_const.AUTHORS = []
             mock_const.MAINTAINERS = []
-
+            # Mock the LoggerManager to prevent real logger configuration
+            mock_manager = Mock()
+            mock_logger = Mock()
+            mock_manager.get_logger.return_value = mock_logger
+            mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
         print_calls = [call[0][0] for call in mock_print.call_args_list]
