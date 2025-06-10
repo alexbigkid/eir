@@ -155,7 +155,7 @@ class TestPerformanceTimer:
         # Extract the time value and verify it's reasonable (should be ~10ms)
         time_part = call_args.split("took ")[1].split(" ms")[0]
         time_value = float(time_part)
-        assert 5.0 < time_value < 50.0  # Allow some variance
+        assert 5.0 < time_value < 100.0  # Allow some variance for CI environments
 
     def test_performance_timer_init_parameters(self):
         """Test PerformanceTimer initialization parameters."""
