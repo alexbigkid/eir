@@ -38,10 +38,11 @@ Eir is a Python application for EXIF-based image renaming and RAW format convers
 - **Code quality:** Ruff with 98-char line length, Google docstrings, comprehensive rulesets
 - **Dependencies:** Modern stack with UV package management, RxPY reactive programming
 
-## Current Architecture Issues
-- **Dual implementations:** `processor.py` (modern/incomplete) vs `epr.py` (legacy/complete)
-- **Missing tests:** Test directory exists with comprehensive test data but no test implementations
-- **Entry point confusion:** Multiple main functions across different modules
+## Architecture Highlights
+- **Unified implementation:** Modern async RxPY architecture with complete EXIF functionality
+- **Reactive pipeline:** Uses RxPY observables for concurrent file processing
+- **Complete functionality:** Full EXIF extraction, file organization, and RAW to DNG conversion
+- **Performance optimized:** Async/await throughout with concurrent operations
 
 ## Development Notes
 - Uses Python >=3.13 with UV for package management and Hatchling for builds

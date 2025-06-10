@@ -11,7 +11,7 @@ def main():
     command_line_options.handle_options()
     asyncio.run(run_pipeline(
             logger=command_line_options.logger,
-            command_line_options.options.dir
+            image_dir=command_line_options.options.dir
         )
     )
     # asyncio.run(eir())
