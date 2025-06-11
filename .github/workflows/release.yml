@@ -1,58 +1,57 @@
 name: Release Pipeline
 
 on:
-  push:
-    tags:
-      - 'patch'
-      - 'minor'
-      - 'major'
+  workflow_run:
+    workflows: ["ExifImageRenamer"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
-  # First job: Run tests and checks
-  test:
+  # Check if we should proceed with release
+  check-release:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      release_type: ${{ steps.check.outputs.release_type }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Verify main branch
-        run: |
-          # Get the commit SHA that the tag points to
-          tag_commit=$(git rev-list -n 1 ${{ github.ref_name }})
-          # Get the latest commit on main branch
-          git fetch origin main
-          main_commit=$(git rev-parse origin/main)
-          
-          if [ "$tag_commit" != "$main_commit" ]; then
-            echo "❌ Error: Tag must point to the latest commit on main branch"
-            echo "Tag commit: $tag_commit"
-            echo "Main commit: $main_commit"
-            exit 1
-          fi
-          echo "✅ Confirmed: Tag points to latest main branch commit"
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
         with:
-          python-version: '3.13'
+          fetch-depth: 0
 
-      - name: Install UV
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-
-      - name: Install dependencies
-        run: uv sync --dev
-
-      - name: Run tests
-        run: uv run pytest --cov=eir --cov-report=xml
-
-      - name: Run linting
+      - name: Check for release tags
+        id: check
         run: |
-          uv run ruff check
-          uv run ruff format --check
+          # Check if there are any patch/minor/major tags
+          if git tag -l | grep -E '^(patch|minor|major)$' > /dev/null; then
+            latest_tag=$(git tag -l | grep -E '^(patch|minor|major)$' | tail -1)
+            echo "Found release tag: $latest_tag"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=$latest_tag" >> $GITHUB_OUTPUT
+            
+            # Verify tag points to the latest commit
+            tag_commit=$(git rev-list -n 1 $latest_tag)
+            main_commit=$(git rev-parse HEAD)
+            
+            if [ "$tag_commit" != "$main_commit" ]; then
+              echo "❌ Error: Tag must point to the latest commit on main branch"
+              echo "Tag commit: $tag_commit"
+              echo "Main commit: $main_commit"
+              exit 1
+            fi
+            echo "✅ Confirmed: Tag points to latest main branch commit"
+          else
+            echo "No release tags found, skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
 
-  # Second job: Version bump (depends on test success)
+  # Version bump job
   version-bump:
-    needs: test
+    needs: check-release
+    if: needs.check-release.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
@@ -69,8 +68,8 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install UV
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
       - name: Get current version and bump
         id: bump
@@ -89,7 +88,7 @@ jobs:
           IFS='.' read -r major minor patch <<< "$current_version"
           
           # Determine new version based on tag
-          tag_name="${{ github.ref_name }}"
+          tag_name="${{ needs.check-release.outputs.release_type }}"
           echo "Release type: $tag_name"
           
           case $tag_name in
@@ -146,11 +145,11 @@ jobs:
       - name: Delete trigger tag
         run: |
           # Delete the original trigger tag to keep repo clean
-          git push --delete origin ${{ github.ref_name }}
+          git push --delete origin ${{ needs.check-release.outputs.release_type }}
 
   # Third job: Build binaries (depends on version-bump success)
   build:
-    needs: [test, version-bump]
+    needs: [check-release, version-bump]
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -166,18 +165,11 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install UV (Unix)
-        if: runner.os != 'Windows'
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-
-      - name: Install UV (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          irm https://astral.sh/uv/install.ps1 | iex
-          echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync
 
       - name: Build binary
         run: uv run python build.py
@@ -192,7 +184,7 @@ jobs:
 
   # Fourth job: Create GitHub release (depends on all builds)
   release:
-    needs: [test, version-bump, build]
+    needs: [check-release, version-bump, build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
