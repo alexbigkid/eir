@@ -572,7 +572,7 @@ class TestErrorHandlingAndEdgeCases:
 
         with (
             patch("os.path.exists", return_value=True),
-            pytest.raises(Exception, match="Conversion failed")
+            pytest.raises(Exception, match="Conversion failed"),
         ):
             await processor.convert_raw_to_dng("/src", "/dst")
 
