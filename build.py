@@ -27,7 +27,7 @@ def clean_build_dirs():
     dirs_to_clean = ["build", "dist", "__pycache__"]
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
-            print(f"🧹 Cleaning {dir_name}...")
+            print(f"Cleaning {dir_name}...")
             shutil.rmtree(dir_name)
 
 
@@ -51,7 +51,7 @@ def build_executable():
     # Check if logging.yaml exists and get absolute path
     logging_yaml_path = Path("logging.yaml")
     if not logging_yaml_path.exists():
-        print("❌ Error: logging.yaml not found in project root")
+        print("Error: logging.yaml not found in project root")
         sys.exit(1)
 
     # Use absolute path for PyInstaller
@@ -106,12 +106,12 @@ def build_executable():
         "src/eir/cli.py",
     ]
 
-    print(f"🔨 Building {app_name} v{version} for {platform_name}...")
+    print(f"Building {app_name} v{version} for {platform_name}...")
     print(f"Command: {' '.join(cmd)}")
 
     result = subprocess.run(cmd, check=False)  # noqa: S603
     if result.returncode != 0:
-        print("❌ Build failed!")
+        print("Build failed!")
         sys.exit(1)
 
     # Handle Windows executable extension
@@ -122,8 +122,8 @@ def build_executable():
             old_path.rename(new_path)
             output_name += ".exe"
 
-    print("✅ Build completed successfully!")
-    print(f"📍 Executable location: dist/{output_name}")
+    print("Build completed successfully!")
+    print(f"Executable location: dist/{output_name}")
     return output_name
 
 
@@ -164,7 +164,7 @@ def create_archive(executable_name):
             check=True,
         )
 
-    print(f"📦 Archive created: dist/{archive_name}")
+    print(f"Archive created: dist/{archive_name}")
     return archive_name
 
 
@@ -173,10 +173,10 @@ def test_executable(executable_name):
     exe_path = Path(f"dist/{executable_name}")
 
     if not exe_path.exists():
-        print(f"❌ Executable not found: {exe_path}")
+        print(f"Executable not found: {exe_path}")
         return False
 
-    print(f"🧪 Testing executable: {exe_path}")
+    print(f"Testing executable: {exe_path}")
 
     # Test --version
     try:
@@ -185,15 +185,15 @@ def test_executable(executable_name):
             [str(exe_path), "--version"], capture_output=True, text=True, timeout=30, check=False
         )
         if result.returncode == 0:
-            print(f"✅ Version test passed: {result.stdout.strip()}")
+            print(f"Version test passed: {result.stdout.strip()}")
         else:
-            print(f"⚠️  Version test failed: {result.stderr}")
+            print(f"Version test failed: {result.stderr}")
             return False
     except subprocess.TimeoutExpired:
-        print("⚠️  Version test timed out")
+        print("Version test timed out")
         return False
     except Exception as e:
-        print(f"⚠️  Version test error: {e}")
+        print(f"Version test error: {e}")
         return False
 
     # Test --help
@@ -202,12 +202,12 @@ def test_executable(executable_name):
             [str(exe_path), "--help"], capture_output=True, text=True, timeout=30, check=False
         )
         if result.returncode == 0:
-            print("✅ Help test passed")
+            print("Help test passed")
         else:
-            print(f"⚠️  Help test failed: {result.stderr}")
+            print(f"Help test failed: {result.stderr}")
             return False
     except Exception as e:
-        print(f"⚠️  Help test error: {e}")
+        print(f"Help test error: {e}")
         return False
 
     return True
@@ -215,13 +215,13 @@ def test_executable(executable_name):
 
 def main():
     """Main build process."""
-    print("🚀 Starting Eir PyInstaller build process...")
-    print(f"🖥️  Platform: {get_platform_name()}")
-    print(f"🐍 Python: {sys.version}")
+    print("Starting Eir PyInstaller build process...")
+    print(f"Platform: {get_platform_name()}")
+    print(f"Python: {sys.version}")
 
     # Ensure we're in the project root
     if not Path("src/eir").exists():
-        print("❌ Error: Must run from project root directory")
+        print("Error: Must run from project root directory")
         sys.exit(1)
 
     try:
@@ -231,19 +231,19 @@ def main():
         # Test the executable
         if test_executable(executable_name):
             archive_name = create_archive(executable_name)
-            print("✅ Build process completed successfully!")
-            print("📁 Files created:")
+            print("Build process completed successfully!")
+            print("Files created:")
             print(f"   - dist/{executable_name}")
             print(f"   - dist/{archive_name}")
         else:
-            print("⚠️  Build completed but tests failed")
+            print("Build completed but tests failed")
             sys.exit(1)
 
     except subprocess.CalledProcessError as e:
-        print(f"❌ Build failed: {e}")
+        print(f"Build failed: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
         sys.exit(1)
 
 
