@@ -57,7 +57,7 @@ def build_executable():
     # Use absolute path for PyInstaller
     logging_yaml_abs = str(logging_yaml_path.absolute())
 
-    # PyInstaller command
+    # PyInstaller command with Windows-specific optimizations
     cmd = [
         "pyinstaller",
         "--onefile",
@@ -98,13 +98,25 @@ def build_executable():
         "PyYAML",
         "--hidden-import",
         "yaml",
-        # Optimize
-        "--strip",
-        "--optimize",
-        "2",
         # Entry point
         "src/eir/cli.py",
     ]
+
+    # Add Windows-specific options to avoid DLL loading issues
+    if platform.system().lower() == "windows":
+        cmd.extend([
+            "--noupx",  # Disable UPX compression which can cause DLL issues
+            "--exclude-module", "tkinter",  # Exclude unnecessary modules
+            "--exclude-module", "matplotlib",
+            "--exclude-module", "PIL",
+            "--runtime-tmpdir", ".",  # Use current directory for runtime temp
+        ])
+    else:
+        # Optimize for Unix systems
+        cmd.extend([
+            "--strip",
+            "--optimize", "2",
+        ])
 
     print(f"Building {app_name} v{version} for {platform_name}...")
     print(f"Command: {' '.join(cmd)}")
