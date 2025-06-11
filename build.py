@@ -116,10 +116,9 @@ def build_executable():
 
     # Handle Windows executable extension
     if platform.system().lower() == "windows":
-        old_path = Path(f"dist/{output_name}")
-        new_path = Path(f"dist/{output_name}.exe")
-        if old_path.exists() and not str(old_path).endswith(".exe"):
-            old_path.rename(new_path)
+        # PyInstaller automatically adds .exe on Windows
+        exe_path = Path(f"dist/{output_name}.exe")
+        if exe_path.exists():
             output_name += ".exe"
 
     print("Build completed successfully!")
