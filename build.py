@@ -48,6 +48,11 @@ def build_executable():
 
     output_name = f"{app_name}-{version}-{platform_name}"
 
+    # Check if logging.yaml exists
+    if not Path("logging.yaml").exists():
+        print("❌ Error: logging.yaml not found in project root")
+        sys.exit(1)
+
     # PyInstaller command
     cmd = [
         "pyinstaller",
