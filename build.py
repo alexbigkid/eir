@@ -48,10 +48,14 @@ def build_executable():
 
     output_name = f"{app_name}-{version}-{platform_name}"
 
-    # Check if logging.yaml exists
-    if not Path("logging.yaml").exists():
+    # Check if logging.yaml exists and get absolute path
+    logging_yaml_path = Path("logging.yaml")
+    if not logging_yaml_path.exists():
         print("❌ Error: logging.yaml not found in project root")
         sys.exit(1)
+
+    # Use absolute path for PyInstaller
+    logging_yaml_abs = str(logging_yaml_path.absolute())
 
     # PyInstaller command
     cmd = [
@@ -68,7 +72,7 @@ def build_executable():
         "build",
         # Include data files
         "--add-data",
-        "logging.yaml:.",
+        f"{logging_yaml_abs}:.",
         # Hidden imports to ensure all modules are included
         "--hidden-import",
         "eir.cli",
