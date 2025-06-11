@@ -1,0 +1,18 @@
+Package: eir
+Version: 0.1.10
+Section: graphics
+Priority: optional
+Architecture: amd64
+Maintainer: ABK <alexbigkid@users.noreply.github.com>
+Description: EXIF-based image renamer and RAW format converter
+ Eir is a Python application for EXIF-based image renaming and RAW format
+ conversion. It processes image directories, extracts EXIF metadata, organizes
+ files by camera make/model, and converts RAW images to DNG format using a
+ modern async/reactive architecture.
+ .
+ Features:
+  - Supports 15+ RAW formats (CR2, CR3, NEF, ARW, etc.)
+  - EXIF extraction using PyExifTool
+  - File organization by date and camera model
+  - RAW to DNG conversion
+Homepage: https://github.com/alexbigkid/eir

@@ -157,8 +157,28 @@ jobs:
     needs: [check-release, version-bump]
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          # Linux x86_64 (Intel/AMD 64-bit)
+          - os: ubuntu-latest
+            arch: x86_64
+            runner: ubuntu-latest
+          # Linux ARM64 (ARM 64-bit) - Public preview
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+          # Windows x86_64 (Intel/AMD 64-bit)  
+          - os: windows-latest
+            arch: amd64
+            runner: windows-latest
+          # Windows ARM64 (ARM 64-bit) - Public preview
+          - os: windows-11-arm
+            arch: arm64
+            runner: windows-11-arm
+          # macOS Universal (Intel + Apple Silicon)
+          - os: macos-latest
+            arch: universal
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -182,31 +202,63 @@ jobs:
       - name: Build binary
         run: uv run python build.py
 
-      - name: Test binary (Windows)
+      - name: Test binary (Windows x86_64)
         if: matrix.os == 'windows-latest'
         run: |
-          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --version
-          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --help
+          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe --version
+          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe --help
 
-      - name: Test binary (macOS)
+      - name: Test binary (Windows ARM64)
+        if: matrix.os == 'windows-11-arm'
+        run: |
+          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe --version
+          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe --help
+
+      - name: Test binary (macOS Universal)
         if: matrix.os == 'macos-latest'
         run: |
           ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --version
           ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --help
 
-      - name: Test binary (Linux)
+      - name: Test binary (Linux x86_64)
         if: matrix.os == 'ubuntu-latest'
         run: |
           ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --version
           ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --help
 
-      - name: Upload artifacts
+      - name: Test binary (Linux ARM64)
+        if: matrix.os == 'ubuntu-24.04-arm'
+        run: |
+          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64 --version
+          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64 --help
+
+      - name: Install APT tools
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+
+      - name: Build packages
+        if: matrix.os == 'ubuntu-latest'
+        run: uv run python package_build.py
+
+      - name: Upload binary artifacts
         uses: actions/upload-artifact@v4
         with:
           name: eir-${{ needs.version-bump.outputs.new_version }}-${{ runner.os }}
           path: |
             dist/eir-*
             !dist/*.spec
+
+      - name: Upload package artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eir-${{ needs.version-bump.outputs.new_version }}-packages
+          path: |
+            packages/*
+            homebrew/*
+            chocolatey/*
 
   # Fourth job: Create GitHub release (depends on all builds)
   release:
@@ -227,6 +279,10 @@ jobs:
         run: |
           mkdir -p release-assets
           find ./artifacts -name "eir-*" -type f -exec cp {} ./release-assets/ \;
+          # Copy package files if they exist
+          if [ -d "./artifacts/eir-${{ needs.version-bump.outputs.new_version }}-packages" ]; then
+            cp -r ./artifacts/eir-${{ needs.version-bump.outputs.new_version }}-packages/* ./release-assets/ 2>/dev/null || true
+          fi
           ls -la ./release-assets/
 
       - name: Create Release
@@ -238,28 +294,80 @@ jobs:
             ## 🚀 Eir ${{ needs.version-bump.outputs.new_version }}
             
             ### 📦 Downloads
-            - **macOS**: `eir-${{ needs.version-bump.outputs.new_version }}-macos-universal`
-            - **Linux**: `eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64`  
-            - **Windows**: `eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe`
+            
+            **macOS (Universal - Intel + Apple Silicon):**
+            - `eir-${{ needs.version-bump.outputs.new_version }}-macos-universal`
+            
+            **Linux:**
+            - **x86_64** (Intel/AMD): `eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64`
+            - **ARM64** (ARM/Graviton): `eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64`
+            
+            **Windows:**
+            - **x86_64** (Intel/AMD): `eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe`
+            - **ARM64** (Surface Pro X): `eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe`
+            
+            ### 🏗️ Architecture Support
+            - **✅ Intel/AMD x86_64**: Full support (Linux, Windows, macOS)
+            - **✅ ARM64**: Full support (Linux, Windows, macOS)
+            - **✅ Apple Silicon**: Native support via macOS Universal binary
+            - **✅ AWS Graviton**: Native ARM64 Linux support
+            - **✅ Raspberry Pi 4/5**: Native ARM64 Linux support
+            - **❌ 32-bit systems**: Not supported
             
             ### 🔧 Installation
             
-            **macOS/Linux:**
+            **macOS (Homebrew):**
+            ```bash
+            # Add our tap and install
+            brew tap alexbigkid/eir https://github.com/alexbigkid/eir
+            brew install eir
+            ```
+            
+            **Ubuntu/Debian (APT):**
+            ```bash
+            # Add Eir APT repository (supports both amd64 and arm64)
+            echo 'deb [trusted=yes] https://alexbigkid.github.io/eir/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/eir.list
+            sudo apt update
+            sudo apt install eir
+            ```
+            
+            **Manual .deb installation:**
+            ```bash
+            wget https://github.com/alexbigkid/eir/releases/download/v${{ needs.version-bump.outputs.new_version }}/eir_${{ needs.version-bump.outputs.new_version }}_amd64.deb
+            sudo dpkg -i eir_${{ needs.version-bump.outputs.new_version }}_amd64.deb
+            ```
+            
+            **Windows (Chocolatey):**
+            ```cmd
+            # Install via Chocolatey (coming soon)
+            choco install eir
+            ```
+            
+            **Manual Installation:**
+            
+            *macOS/Linux:*
             ```bash
             # Download the binary for your platform
             chmod +x eir-${{ needs.version-bump.outputs.new_version }}-<platform>
             sudo mv eir-${{ needs.version-bump.outputs.new_version }}-<platform> /usr/local/bin/eir
             ```
             
-            **Windows:**
+            *Windows:*
             ```cmd
             # Download eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe
             # Add to your PATH or run directly
             ```
             
+            **Unsupported Architectures (ARM64 Linux, 32-bit systems):**
+            ```bash
+            # Install from source using pip
+            pip install git+https://github.com/alexbigkid/eir.git@v${{ needs.version-bump.outputs.new_version }}
+            ```
+            
             ### 📝 Changes
             - Automated release build for version ${{ needs.version-bump.outputs.new_version }}
             - Multi-platform binaries (macOS, Linux, Windows)
+            - Package manager support (Homebrew, APT, Chocolatey)
             - See commit history for detailed changes
             
             ---

@@ -11,6 +11,17 @@ wheels/
 .pytest_cache/
 .ruff_cache/
 
+# Build and package artifacts
+packages/
+*.deb
+*.nupkg
+*.tar.gz
+*.zip
+
+# Temporary package files
+apt-repo/
+*.spec
+
 logs/
 **/.DS_Store
 test_images/

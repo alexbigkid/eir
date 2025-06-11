@@ -14,12 +14,29 @@ def get_platform_name():
     """Get the platform name for binary naming."""
     system = platform.system().lower()
     machine = platform.machine().lower()
-    platform_map = {
-        "darwin": "macos-universal",  # Use universal for macOS to support both Intel A& Apple SoC
-        "linux": f"linux-{machine}",
-        "windows": f"windows-{machine}",
+
+    # Normalize machine architecture names for consistency
+    machine_map = {
+        "amd64": "x86_64",
+        "x86_64": "x86_64",
+        "arm64": "aarch64",
+        "aarch64": "aarch64",
     }
-    return platform_map.get(system, f"{system}-{machine}")
+    machine = machine_map.get(machine, machine)
+
+    # Platform-specific naming
+    if system == "darwin":
+        return "macos-universal"  # macOS builds are universal
+    elif system == "linux":
+        return f"linux-{machine}"
+    elif system == "windows":
+        # Windows uses different naming for architectures
+        if machine == "aarch64":
+            return "windows-arm64"
+        else:
+            return f"windows-{machine}"
+    else:
+        return f"{system}-{machine}"
 
 
 def clean_build_dirs():
@@ -104,19 +121,22 @@ def build_executable():
 
     # Add Windows-specific options to avoid DLL loading issues
     if platform.system().lower() == "windows":
-        cmd.extend([
-            "--noupx",  # Disable UPX compression which can cause DLL issues
-            "--exclude-module", "tkinter",  # Exclude unnecessary modules
-            "--exclude-module", "matplotlib",
-            "--exclude-module", "PIL",
-            "--runtime-tmpdir", ".",  # Use current directory for runtime temp
-        ])
+        cmd.extend(
+            [
+                "--noupx",  # Disable UPX compression which can cause DLL issues
+                "--exclude-module",
+                "tkinter",  # Exclude unnecessary modules
+                "--exclude-module",
+                "matplotlib",
+                "--exclude-module",
+                "PIL",
+                "--runtime-tmpdir",
+                ".",  # Use current directory for runtime temp
+            ]
+        )
     else:
         # Optimize for Unix systems
-        cmd.extend([
-            "--strip",
-            "--optimize", "2",
-        ])
+        cmd.extend(["--strip", "--optimize", "2"])
 
     print(f"Building {app_name} v{version} for {platform_name}...")
     print(f"Command: {' '.join(cmd)}")

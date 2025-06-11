@@ -1,0 +1,8 @@
+eir (0.1.10-1) unstable; urgency=medium
+
+  * Initial release
+  * EXIF-based image renaming and RAW conversion
+  * Multi-platform support (Linux, macOS, Windows)
+  * Async/reactive processing pipeline
+
+ -- ABK <alexbigkid@users.noreply.github.com>  Wed, 11 Dec 2024 10:00:00 +0000
