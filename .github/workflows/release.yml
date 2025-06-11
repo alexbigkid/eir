@@ -182,21 +182,23 @@ jobs:
       - name: Build binary
         run: uv run python build.py
 
-      - name: Test binary
+      - name: Test binary (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            # Test Windows executable
-            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --version
-            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --help
-          elif [ "$RUNNER_OS" = "macOS" ]; then
-            # Test macOS executable
-            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --version
-            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --help
-          else
-            # Test Linux executable
-            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --version
-            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --help
-          fi
+          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --version
+          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --help
+
+      - name: Test binary (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --version
+          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --help
+
+      - name: Test binary (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --version
+          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --help
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
