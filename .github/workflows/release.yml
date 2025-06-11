@@ -182,6 +182,22 @@ jobs:
       - name: Build binary
         run: uv run python build.py
 
+      - name: Test binary
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # Test Windows executable
+            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --version
+            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe --help
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            # Test macOS executable
+            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --version
+            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --help
+          else
+            # Test Linux executable
+            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --version
+            ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --help
+          fi
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
