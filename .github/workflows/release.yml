@@ -476,10 +476,22 @@ jobs:
           fi
 
       - name: Publish to Chocolatey
-        if: ${{ secrets.CHOCOLATEY_API_KEY != '' }}
         env:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
         run: |
+          # Check if Chocolatey API key is available
+          if [ -z "$CHOCOLATEY_API_KEY" ]; then
+            echo "⚠️ CHOCOLATEY_API_KEY not set, skipping Chocolatey upload"
+            exit 0
+          fi
+          
+          # Find Chocolatey package
+          NUPKG_FILE=$(find packages/ -name "*.nupkg" | head -1)
+          if [ -z "$NUPKG_FILE" ]; then
+            echo "⚠️ No Chocolatey package found to upload"
+            exit 0
+          fi
+          
           # Install Chocolatey CLI on Ubuntu
           sudo apt-get update
           sudo apt-get install -y curl
@@ -493,14 +505,9 @@ jobs:
           tar -xzf choco.tar.gz -C ~/.local/bin
           chmod +x ~/.local/bin/choco
           
-          # Find and upload Chocolatey package
-          NUPKG_FILE=$(find packages/ -name "*.nupkg" | head -1)
-          if [ -n "$NUPKG_FILE" ]; then
-            echo "Uploading $NUPKG_FILE to Chocolatey..."
-            ~/.local/bin/choco push "$NUPKG_FILE" \
-              --source https://push.chocolatey.org/ \
-              --api-key "$CHOCOLATEY_API_KEY"
-            echo "✅ Chocolatey package uploaded"
-          else
-            echo "⚠️ No Chocolatey package found to upload"
-          fi
+          # Upload Chocolatey package
+          echo "Uploading $NUPKG_FILE to Chocolatey..."
+          ~/.local/bin/choco push "$NUPKG_FILE" \
+            --source https://push.chocolatey.org/ \
+            --api-key "$CHOCOLATEY_API_KEY"
+          echo "✅ Chocolatey package uploaded successfully"
