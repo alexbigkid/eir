@@ -1,0 +1,226 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'patch'
+      - 'minor'
+      - 'major'
+    branches:
+      - main
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      version_tag: ${{ steps.bump.outputs.version_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify main branch
+        run: |
+          current_branch=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$current_branch" != "main" ]; then
+            echo "❌ Error: Release can only be triggered from main branch"
+            echo "Current branch: $current_branch"
+            exit 1
+          fi
+          echo "✅ Confirmed: Release triggered from main branch"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Get current version and bump
+        id: bump
+        run: |
+          # Read current version from pyproject.toml
+          current_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "Current version: $current_version"
+          
+          # Parse version components
+          IFS='.' read -r major minor patch <<< "$current_version"
+          
+          # Determine new version based on tag
+          tag_name="${{ github.ref_name }}"
+          case $tag_name in
+            "major")
+              new_major=$((major + 1))
+              new_minor=0
+              new_patch=0
+              ;;
+            "minor")
+              new_major=$major
+              new_minor=$((minor + 1))
+              new_patch=0
+              ;;
+            "patch")
+              new_major=$major
+              new_minor=$minor
+              new_patch=$((patch + 1))
+              ;;
+          esac
+          
+          new_version="${new_major}.${new_minor}.${new_patch}"
+          version_tag="v${new_version}"
+          
+          echo "New version: $new_version"
+          echo "Version tag: $version_tag"
+          
+          # Update pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
+          
+          # Set outputs
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pyproject.toml
+          git commit -m "🔖 Bump version to ${{ steps.bump.outputs.new_version }}"
+          git tag ${{ steps.bump.outputs.version_tag }}
+          git push origin HEAD:main
+          git push origin ${{ steps.bump.outputs.version_tag }}
+
+  build:
+    needs: version-bump
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main  # Get the updated version
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install UV (Unix)
+        if: runner.os != 'Windows'
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install UV (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          irm https://astral.sh/uv/install.ps1 | iex
+          echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run tests
+        run: |
+          uv run pytest --cov=eir --cov-report=xml
+
+      - name: Run linting
+        run: |
+          uv run ruff check
+          uv run ruff format --check
+
+      - name: Build binary
+        run: |
+          uv run python build.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eir-${{ needs.version-bump.outputs.new_version }}-${{ runner.os }}
+          path: |
+            dist/eir-*
+            !dist/*.spec
+
+  release:
+    needs: [version-bump, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find ./artifacts -name "eir-*" -type f -exec cp {} ./release-assets/ \;
+          ls -la ./release-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version-bump.outputs.version_tag }}
+          name: "Eir ${{ needs.version-bump.outputs.new_version }}"
+          body: |
+            ## 🚀 Eir ${{ needs.version-bump.outputs.new_version }}
+            
+            ### 📦 Downloads
+            - **macOS**: `eir-${{ needs.version-bump.outputs.new_version }}-macos-universal`
+            - **Linux**: `eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64`  
+            - **Windows**: `eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe`
+            
+            ### 🔧 Installation
+            
+            **macOS/Linux:**
+            ```bash
+            # Download the binary for your platform
+            chmod +x eir-${{ needs.version-bump.outputs.new_version }}-<platform>
+            sudo mv eir-${{ needs.version-bump.outputs.new_version }}-<platform> /usr/local/bin/eir
+            ```
+            
+            **Windows:**
+            ```cmd
+            # Download eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe
+            # Add to your PATH or run directly
+            ```
+            
+            ### 📝 Changes
+            - Automated release build for version ${{ needs.version-bump.outputs.new_version }}
+            - Multi-platform binaries (macOS, Linux, Windows)
+            - See commit history for detailed changes
+            
+            ---
+            🤖 Generated with [Claude Code](https://claude.ai/code)
+          files: ./release-assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    needs: [version-bump, build, release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Delete temporary tags
+        run: |
+          # Delete the original trigger tags (patch/minor/major) to keep repo clean
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Only delete if not a version tag
+          if [[ "${{ github.ref_name }}" == "patch" || "${{ github.ref_name }}" == "minor" || "${{ github.ref_name }}" == "major" ]]; then
+            git push --delete origin ${{ github.ref_name }} || true
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
