@@ -176,6 +176,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Install PyInstaller
+        run: uv pip install pyinstaller>=6.0
+
       - name: Build binary
         run: uv run python build.py
 

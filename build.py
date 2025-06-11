@@ -31,13 +31,6 @@ def clean_build_dirs():
             shutil.rmtree(dir_name)
 
 
-def install_build_deps():
-    """Install build dependencies."""
-    deps = ["pyinstaller>=6.0"]
-    print(f"📦 Installing build dependencies: {', '.join(deps)}")
-    subprocess.run([sys.executable, "-m", "pip", "install"] + deps, check=True)  # noqa: S603
-
-
 def build_executable():
     """Build the standalone executable."""
     platform_name = get_platform_name()
@@ -224,7 +217,6 @@ def main():
 
     try:
         clean_build_dirs()
-        install_build_deps()
         executable_name = build_executable()
 
         # Test the executable
