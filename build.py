@@ -179,10 +179,19 @@ def test_executable(executable_name):
 
     # Test --version
     try:
-        # The command uses a trusted, built executable and fixed arguments
-        result = subprocess.run(  # noqa: S603
-            [str(exe_path), "--version"], capture_output=True, text=True, timeout=30, check=False
-        )
+        # Use PowerShell on Windows to avoid DLL loading issues
+        if platform.system().lower() == "windows":
+            result = subprocess.run(  # noqa: S603
+                ["powershell", "-Command", f"& '{exe_path}' --version"],
+                capture_output=True, text=True, timeout=30, check=False
+            )
+        else:
+            # Direct execution on Unix systems
+            result = subprocess.run(  # noqa: S603
+                [str(exe_path), "--version"],
+                capture_output=True, text=True, timeout=30, check=False
+            )
+
         if result.returncode == 0:
             print(f"Version test passed: {result.stdout.strip()}")
         else:
@@ -197,9 +206,19 @@ def test_executable(executable_name):
 
     # Test --help
     try:
-        result = subprocess.run(  # noqa: S603
-            [str(exe_path), "--help"], capture_output=True, text=True, timeout=30, check=False
-        )
+        # Use PowerShell on Windows to avoid DLL loading issues
+        if platform.system().lower() == "windows":
+            result = subprocess.run(  # noqa: S603
+                ["powershell", "-Command", f"& '{exe_path}' --help"],
+                capture_output=True, text=True, timeout=30, check=False
+            )
+        else:
+            # Direct execution on Unix systems
+            result = subprocess.run(  # noqa: S603
+                [str(exe_path), "--help"],
+                capture_output=True, text=True, timeout=30, check=False
+            )
+
         if result.returncode == 0:
             print("Help test passed")
         else:
