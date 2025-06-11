@@ -158,26 +158,27 @@ jobs:
     strategy:
       matrix:
         include:
-          # Linux x86_64 (Intel/AMD 64-bit)
-          - os: ubuntu-latest
+          - name: "Linux x64"
+            os: ubuntu-latest
             arch: x86_64
             runner: ubuntu-latest
-          # Linux ARM64 (ARM 64-bit) - Public preview
-          - os: ubuntu-24.04-arm
+          - name: "Linux ARM64"
+            os: ubuntu-24.04-arm
             arch: aarch64
             runner: ubuntu-24.04-arm
-          # Windows x86_64 (Intel/AMD 64-bit)  
-          - os: windows-latest
+          - name: "Windows x64"
+            os: windows-latest
             arch: amd64
             runner: windows-latest
-          # Windows ARM64 (ARM 64-bit) - Public preview
-          - os: windows-11-arm
+          - name: "Windows ARM64"
+            os: windows-11-arm
             arch: arm64
             runner: windows-11-arm
-          # macOS Universal (Intel + Apple Silicon)
-          - os: macos-latest
+          - name: "macOS Universal"
+            os: macos-latest
             arch: universal
             runner: macos-latest
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
