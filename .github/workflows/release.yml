@@ -240,8 +240,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dpkg-dev
 
-      - name: Build packages
+      - name: Build packages (Linux)
         if: matrix.os == 'ubuntu-latest'
+        run: uv run python package_build.py
+
+      - name: Build packages (Windows)
+        if: matrix.os == 'windows-latest'
         run: uv run python package_build.py
 
       - name: Upload binary artifacts
@@ -252,11 +256,21 @@ jobs:
             dist/eir-*
             !dist/*.spec
 
-      - name: Upload package artifacts
+      - name: Upload package artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: eir-${{ needs.version-bump.outputs.new_version }}-packages
+          name: eir-${{ needs.version-bump.outputs.new_version }}-packages-linux
+          path: |
+            packages/*
+            homebrew/*
+            chocolatey/*
+
+      - name: Upload package artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eir-${{ needs.version-bump.outputs.new_version }}-packages-windows
           path: |
             packages/*
             homebrew/*
