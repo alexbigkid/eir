@@ -6,11 +6,53 @@ on:
       - 'patch'
       - 'minor'
       - 'major'
-    branches:
-      - main
 
 jobs:
+  # First job: Run tests and checks
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify main branch
+        run: |
+          # Get the commit SHA that the tag points to
+          tag_commit=$(git rev-list -n 1 ${{ github.ref_name }})
+          # Get the latest commit on main branch
+          git fetch origin main
+          main_commit=$(git rev-parse origin/main)
+          
+          if [ "$tag_commit" != "$main_commit" ]; then
+            echo "❌ Error: Tag must point to the latest commit on main branch"
+            echo "Tag commit: $tag_commit"
+            echo "Main commit: $main_commit"
+            exit 1
+          fi
+          echo "✅ Confirmed: Tag points to latest main branch commit"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run tests
+        run: uv run pytest --cov=eir --cov-report=xml
+
+      - name: Run linting
+        run: |
+          uv run ruff check
+          uv run ruff format --check
+
+  # Second job: Version bump (depends on test success)
   version-bump:
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
@@ -21,16 +63,6 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify main branch
-        run: |
-          current_branch=$(git rev-parse --abbrev-ref HEAD)
-          if [ "$current_branch" != "main" ]; then
-            echo "❌ Error: Release can only be triggered from main branch"
-            echo "Current branch: $current_branch"
-            exit 1
-          fi
-          echo "✅ Confirmed: Release triggered from main branch"
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -47,11 +79,19 @@ jobs:
           current_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
           echo "Current version: $current_version"
           
+          # Validate current version format
+          if [[ ! "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Error: Invalid version format: $current_version"
+            exit 1
+          fi
+          
           # Parse version components
           IFS='.' read -r major minor patch <<< "$current_version"
           
           # Determine new version based on tag
           tag_name="${{ github.ref_name }}"
+          echo "Release type: $tag_name"
+          
           case $tag_name in
             "major")
               new_major=$((major + 1))
@@ -68,6 +108,10 @@ jobs:
               new_minor=$minor
               new_patch=$((patch + 1))
               ;;
+            *)
+              echo "❌ Error: Invalid release tag: $tag_name"
+              exit 1
+              ;;
           esac
           
           new_version="${new_major}.${new_minor}.${new_patch}"
@@ -76,6 +120,12 @@ jobs:
           echo "New version: $new_version"
           echo "Version tag: $version_tag"
           
+          # Validate new version format
+          if [[ ! "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Error: Generated invalid version: $new_version"
+            exit 1
+          fi
+          
           # Update pyproject.toml
           sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
           
@@ -83,7 +133,7 @@ jobs:
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
           echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
 
-      - name: Commit version bump
+      - name: Commit version bump and create release tag
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -93,8 +143,14 @@ jobs:
           git push origin HEAD:main
           git push origin ${{ steps.bump.outputs.version_tag }}
 
+      - name: Delete trigger tag
+        run: |
+          # Delete the original trigger tag to keep repo clean
+          git push --delete origin ${{ github.ref_name }}
+
+  # Third job: Build binaries (depends on version-bump success)
   build:
-    needs: version-bump
+    needs: [test, version-bump]
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -121,21 +177,10 @@ jobs:
           echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
 
       - name: Install dependencies
-        run: |
-          uv sync --dev
-
-      - name: Run tests
-        run: |
-          uv run pytest --cov=eir --cov-report=xml
-
-      - name: Run linting
-        run: |
-          uv run ruff check
-          uv run ruff format --check
+        run: uv sync --dev
 
       - name: Build binary
-        run: |
-          uv run python build.py
+        run: uv run python build.py
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -145,8 +190,9 @@ jobs:
             dist/eir-*
             !dist/*.spec
 
+  # Fourth job: Create GitHub release (depends on all builds)
   release:
-    needs: [version-bump, build]
+    needs: [test, version-bump, build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -204,23 +250,5 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  cleanup:
-    needs: [version-bump, build, release]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Delete temporary tags
-        run: |
-          # Delete the original trigger tags (patch/minor/major) to keep repo clean
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Only delete if not a version tag
-          if [[ "${{ github.ref_name }}" == "patch" || "${{ github.ref_name }}" == "minor" || "${{ github.ref_name }}" == "major" ]]; then
-            git push --delete origin ${{ github.ref_name }} || true
-          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
