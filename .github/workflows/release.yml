@@ -391,11 +391,25 @@ jobs:
         with:
           ref: main
 
-      - name: Download package artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: eir-${{ needs.version-bump.outputs.new_version }}-packages
-          path: ./packages
+          path: ./artifacts
+          
+      - name: Organize packages
+        run: |
+          # Create packages directory and collect all package files
+          mkdir -p packages
+          
+          # Find and copy package files from all artifacts
+          find ./artifacts -name "*.deb" -exec cp {} ./packages/ \;
+          find ./artifacts -name "*.nupkg" -exec cp {} ./packages/ \;
+          find ./artifacts -name "*.rb" -exec cp {} ./homebrew/ \;
+          
+          # List what we found
+          echo "📦 Found packages:"
+          ls -la ./packages/ || echo "No packages directory"
+          ls -la ./homebrew/ || echo "No homebrew directory"
 
       - name: Set up Git for Homebrew
         run: |
