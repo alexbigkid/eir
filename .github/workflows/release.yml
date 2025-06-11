@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   # Check if we should proceed with release
   check-release:
@@ -62,6 +66,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v4
