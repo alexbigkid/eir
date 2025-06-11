@@ -35,11 +35,11 @@ jobs:
             echo "Found release tag: $latest_tag"
             echo "should_release=true" >> $GITHUB_OUTPUT
             echo "release_type=$latest_tag" >> $GITHUB_OUTPUT
-            
+
             # Verify tag points to the latest commit
             tag_commit=$(git rev-list -n 1 $latest_tag)
             main_commit=$(git rev-parse HEAD)
-            
+
             if [ "$tag_commit" != "$main_commit" ]; then
               echo "❌ Error: Tag must point to the latest commit on main branch"
               echo "Tag commit: $tag_commit"
@@ -82,20 +82,20 @@ jobs:
           # Read current version from pyproject.toml
           current_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
           echo "Current version: $current_version"
-          
+
           # Validate current version format
           if [[ ! "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "❌ Error: Invalid version format: $current_version"
             exit 1
           fi
-          
+
           # Parse version components
           IFS='.' read -r major minor patch <<< "$current_version"
-          
+
           # Determine new version based on tag
           tag_name="${{ needs.check-release.outputs.release_type }}"
           echo "Release type: $tag_name"
-          
+
           case $tag_name in
             "major")
               new_major=$((major + 1))
@@ -117,22 +117,22 @@ jobs:
               exit 1
               ;;
           esac
-          
+
           new_version="${new_major}.${new_minor}.${new_patch}"
           version_tag="v${new_version}"
-          
+
           echo "New version: $new_version"
           echo "Version tag: $version_tag"
-          
+
           # Validate new version format
           if [[ ! "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "❌ Error: Generated invalid version: $new_version"
             exit 1
           fi
-          
+
           # Update pyproject.toml
           sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
-          
+
           # Set outputs
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
           echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
@@ -158,20 +158,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: "Linux x64"
+          - name: "Linux amd64"
             os: ubuntu-latest
             arch: x86_64
             runner: ubuntu-latest
-          - name: "Linux ARM64"
+          - name: "Linux arm64"
             os: ubuntu-24.04-arm
             arch: aarch64
             runner: ubuntu-24.04-arm
-          - name: "Windows x64"
+          - name: "Windows amd64"
             os: windows-latest
             arch: amd64
             runner: windows-latest
           # Windows ARM64 temporarily disabled due to psutil build issues
-          # - name: "Windows ARM64"
+          # - name: "Windows arm64"
           #   os: windows-11-arm
           #   arch: arm64
           #   runner: windows-11-arm
@@ -294,20 +294,20 @@ jobs:
           name: "Eir ${{ needs.version-bump.outputs.new_version }}"
           body: |
             ## 🚀 Eir ${{ needs.version-bump.outputs.new_version }}
-            
+
             ### 📦 Downloads
-            
+
             **macOS (Universal - Intel + Apple Silicon):**
             - `eir-${{ needs.version-bump.outputs.new_version }}-macos-universal`
-            
+
             **Linux:**
             - **x86_64** (Intel/AMD): `eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64`
             - **ARM64** (ARM/Graviton): `eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64`
-            
+
             **Windows:**
             - **x86_64** (Intel/AMD): `eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe`
             - **ARM64** (Surface Pro X): `eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe`
-            
+
             ### 🏗️ Architecture Support
             - **✅ Intel/AMD x86_64**: Full support (Linux, Windows, macOS)
             - **✅ ARM64**: Full support (Linux, Windows, macOS)
@@ -315,16 +315,16 @@ jobs:
             - **✅ AWS Graviton**: Native ARM64 Linux support
             - **✅ Raspberry Pi 4/5**: Native ARM64 Linux support
             - **❌ 32-bit systems**: Not supported
-            
+
             ### 🔧 Installation
-            
+
             **macOS (Homebrew):**
             ```bash
             # Add our tap and install
             brew tap alexbigkid/eir https://github.com/alexbigkid/eir
             brew install eir
             ```
-            
+
             **Ubuntu/Debian (APT):**
             ```bash
             # Add Eir APT repository (supports both amd64 and arm64)
@@ -332,46 +332,46 @@ jobs:
             sudo apt update
             sudo apt install eir
             ```
-            
+
             **Manual .deb installation:**
             ```bash
             wget https://github.com/alexbigkid/eir/releases/download/v${{ needs.version-bump.outputs.new_version }}/eir_${{ needs.version-bump.outputs.new_version }}_amd64.deb
             sudo dpkg -i eir_${{ needs.version-bump.outputs.new_version }}_amd64.deb
             ```
-            
+
             **Windows (Chocolatey):**
             ```cmd
             # Install via Chocolatey (coming soon)
             choco install eir
             ```
-            
+
             **Manual Installation:**
-            
+
             *macOS/Linux:*
             ```bash
             # Download the binary for your platform
             chmod +x eir-${{ needs.version-bump.outputs.new_version }}-<platform>
             sudo mv eir-${{ needs.version-bump.outputs.new_version }}-<platform> /usr/local/bin/eir
             ```
-            
+
             *Windows:*
             ```cmd
             # Download eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe
             # Add to your PATH or run directly
             ```
-            
+
             **Unsupported Architectures (ARM64 Linux, 32-bit systems):**
             ```bash
             # Install from source using pip
             pip install git+https://github.com/alexbigkid/eir.git@v${{ needs.version-bump.outputs.new_version }}
             ```
-            
+
             ### 📝 Changes
             - Automated release build for version ${{ needs.version-bump.outputs.new_version }}
             - Multi-platform binaries (macOS, Linux, Windows)
             - Package manager support (Homebrew, APT, Chocolatey)
             - See commit history for detailed changes
-            
+
             ---
             🤖 Generated with [Claude Code](https://claude.ai/code)
           files: ./release-assets/*
@@ -380,3 +380,127 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Fifth job: Automated package publishing (depends on release)
+  publish-packages:
+    needs: [check-release, version-bump, build, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: eir-${{ needs.version-bump.outputs.new_version }}-packages
+          path: ./packages
+
+      - name: Set up Git for Homebrew
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - name: Update Homebrew tap
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # Clone the homebrew-eir repository with authentication
+          git clone https://x-access-token:$GITHUB_TOKEN@github.com/alexbigkid/homebrew-eir.git ../homebrew-eir
+          
+          # Copy the updated formula
+          mkdir -p ../homebrew-eir/Formula
+          cp homebrew/eir.rb ../homebrew-eir/Formula/eir.rb
+          
+          # Commit and push changes
+          cd ../homebrew-eir
+          git add Formula/eir.rb
+          if git diff --staged --quiet; then
+            echo "No changes to Homebrew formula"
+          else
+            git commit -m "Update eir formula to v${{ needs.version-bump.outputs.new_version }}"
+            git push origin main
+            echo "✅ Homebrew formula updated"
+          fi
+
+      - name: Setup GitHub Pages for APT
+        run: |
+          # Create docs directory for GitHub Pages
+          mkdir -p docs/apt-repo
+          if [ -d "packages/apt-repo" ]; then
+            cp -r packages/apt-repo/* docs/apt-repo/
+          fi
+          
+          # Create index page for APT repository
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Eir APT Repository</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; }
+                  .code { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+              </style>
+          </head>
+          <body>
+              <h1>Eir APT Repository</h1>
+              <p>EXIF-based image renamer and RAW format converter</p>
+              
+              <h2>Installation</h2>
+              <div class="code">
+                  <pre>echo 'deb [trusted=yes] https://alexbigkid.github.io/eir/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/eir.list
+          sudo apt update
+          sudo apt install eir</pre>
+              </div>
+              
+              <h2>Supported Architectures</h2>
+              <ul>
+                  <li>amd64 (Intel/AMD 64-bit)</li>
+                  <li>arm64 (ARM 64-bit)</li>
+              </ul>
+              
+              <p><a href="https://github.com/alexbigkid/eir">View source on GitHub</a></p>
+          </body>
+          </html>
+          EOF
+          
+          # Commit APT repository changes
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No changes to APT repository"
+          else
+            git commit -m "Update APT repository for v${{ needs.version-bump.outputs.new_version }}"
+            git push origin main
+            echo "✅ APT repository updated"
+          fi
+
+      - name: Publish to Chocolatey
+        if: ${{ secrets.CHOCOLATEY_API_KEY != '' }}
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          # Install Chocolatey CLI on Ubuntu
+          sudo apt-get update
+          sudo apt-get install -y curl
+          
+          # Download and install choco for Linux
+          mkdir -p ~/.local/bin
+          curl -s https://api.github.com/repos/chocolatey/choco/releases/latest | \
+            grep "browser_download_url.*linux-x64.tar.gz" | \
+            cut -d '"' -f 4 | \
+            xargs curl -L -o choco.tar.gz
+          tar -xzf choco.tar.gz -C ~/.local/bin
+          chmod +x ~/.local/bin/choco
+          
+          # Find and upload Chocolatey package
+          NUPKG_FILE=$(find packages/ -name "*.nupkg" | head -1)
+          if [ -n "$NUPKG_FILE" ]; then
+            echo "Uploading $NUPKG_FILE to Chocolatey..."
+            ~/.local/bin/choco push "$NUPKG_FILE" \
+              --source https://push.chocolatey.org/ \
+              --api-key "$CHOCOLATEY_API_KEY"
+            echo "✅ Chocolatey package uploaded"
+          else
+            echo "⚠️ No Chocolatey package found to upload"
+          fi
