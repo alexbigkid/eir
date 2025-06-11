@@ -245,7 +245,7 @@ jobs:
       - name: Upload binary artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eir-${{ needs.version-bump.outputs.new_version }}-${{ runner.os }}
+          name: eir-${{ needs.version-bump.outputs.new_version }}-${{ matrix.arch }}
           path: |
             dist/eir-*
             !dist/*.spec
