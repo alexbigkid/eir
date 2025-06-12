@@ -21,7 +21,7 @@ jobs:
               with:
                 args: check
 
-    build:
+    unit-tests:
         name: Run on ${{ matrix.py }} - ${{ matrix.os }}
         needs: ruff
         runs-on: ${{ matrix.os }}-latest
@@ -76,7 +76,7 @@ jobs:
 
     handle-release-tags:
         name: Handle Release Tags
-        needs: [ruff, build]
+        needs: [ruff, unit-tests]
         runs-on: ubuntu-latest
         if: always()  # Run whether tests pass or fail
         steps:
@@ -88,4 +88,4 @@ jobs:
                 persist-credentials: true
 
             - name: Handle release tags
-              run: ./.github/scripts/handle_release_tags.sh "${{ needs.ruff.result }}" "${{ needs.build.result }}" "${{ github.ref_name }}"
+              run: ./.github/scripts/handle_release_tags.sh "${{ needs.ruff.result }}" "${{ needs.unit-tests.result }}" "${{ github.ref_name }}"
