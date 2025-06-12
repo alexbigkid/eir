@@ -332,7 +332,7 @@ def main():
     if os_name == "macos":
         # Check for macOS binary and update Homebrew formula
         macos_binary = None
-        search_pattern = f"eir-{version}-{arch}"
+        search_pattern = f"eir-{version}-macos-{arch}"
         print(f"Searching for macOS binary with pattern: {search_pattern}")
 
         # Look for binary with the actual architecture name (universal)
