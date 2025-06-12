@@ -520,22 +520,19 @@ jobs:
             exit 0
           fi
           
-          # Install Chocolatey CLI on Ubuntu
-          sudo apt-get update
-          sudo apt-get install -y curl
-          
-          # Download and install choco for Linux
-          mkdir -p ~/.local/bin
-          curl -s https://api.github.com/repos/chocolatey/choco/releases/latest | \
-            grep "browser_download_url.*linux-x64.tar.gz" | \
-            cut -d '"' -f 4 | \
-            xargs curl -L -o choco.tar.gz
-          tar -xzf choco.tar.gz -C ~/.local/bin
-          chmod +x ~/.local/bin/choco
-          
-          # Upload Chocolatey package
+          # Upload package directly via Chocolatey API
           echo "Uploading $NUPKG_FILE to Chocolatey..."
-          ~/.local/bin/choco push "$NUPKG_FILE" \
-            --source https://push.chocolatey.org/ \
-            --api-key "$CHOCOLATEY_API_KEY"
-          echo "✅ Chocolatey package uploaded successfully"
+          
+          # Use curl to upload the package via REST API
+          curl -X PUT \
+            -H "X-NuGet-ApiKey: $CHOCOLATEY_API_KEY" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$NUPKG_FILE" \
+            "https://push.chocolatey.org/api/v2/package"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Chocolatey package uploaded successfully"
+          else
+            echo "❌ Failed to upload Chocolatey package"
+            exit 1
+          fi
