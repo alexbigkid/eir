@@ -33,11 +33,11 @@ class _Const:
 
     def _find_project_root(self, start: Path | None = None) -> Path:
         # First, check if we're in a PyInstaller bundle
-        if hasattr(sys, '_MEIPASS'):
+        if hasattr(sys, "_MEIPASS"):
             bundle_dir = Path(sys._MEIPASS)
             if (bundle_dir / "pyproject.toml").exists():
                 return bundle_dir
-        
+
         # Fall back to normal project root search
         if start is None:
             start = Path.cwd()
