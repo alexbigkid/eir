@@ -13,6 +13,11 @@ on:
 permissions:
     contents: write  # Needed for handle-release-tags job to push tags
 
+# Prevent duplicate runs - prioritize by commit SHA
+concurrency:
+    group: ${{ github.workflow }}-${{ github.sha }}
+    cancel-in-progress: true
+
 env:
     ENV: prod
 
@@ -84,7 +89,7 @@ jobs:
         name: Handle Release Tags
         needs: [ruff, unit-tests]
         runs-on: ubuntu-latest
-        if: always() && (github.ref_type == 'tag' || github.event_name == 'push')  # Run for tag pushes or when rel-* tags exist
+        if: always()  # Run whether tests pass or fail
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
