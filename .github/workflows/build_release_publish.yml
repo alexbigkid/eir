@@ -108,7 +108,7 @@ jobs:
         run: uv pip install pyinstaller>=6.0
 
       - name: Build binary
-        run: uv run python build.py
+        run: uv run python .github/scripts/build.py
 
       - name: Test binary
         run: ./.github/scripts/test_binary.sh ${{ needs.prepare-release.outputs.new_version }} ${{ matrix.arch_bin_ext }}
@@ -119,13 +119,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dpkg-dev
 
-      - name: Build packages (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: uv run python package_build.py
-
-      - name: Build packages (Windows)
-        if: matrix.os == 'windows-latest'
-        run: uv run python package_build.py
+      - name: Build packages
+        run: uv run python .github/scripts/package_build.py
 
       - name: Upload binary artifacts
         uses: actions/upload-artifact@v4
@@ -141,9 +136,7 @@ jobs:
         with:
           name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-linux
           path: |
-            packages/*
-            homebrew/*
-            chocolatey/*
+            packages-linux/*
 
       - name: Upload package artifacts (Windows)
         if: matrix.os == 'windows-latest'
@@ -151,9 +144,15 @@ jobs:
         with:
           name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-windows
           path: |
-            packages/*
-            homebrew/*
-            chocolatey/*
+            packages-windows/*
+
+      - name: Upload package artifacts (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-macos
+          path: |
+            packages-macos/*
 
   # Third job: Create GitHub release and publish to package managers
   release-and-publish:
