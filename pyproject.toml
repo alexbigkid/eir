@@ -1,6 +1,6 @@
 [project]
 name = "eir"
-version = "0.1.36"
+version = "0.1.37"
 description = "EXIF-based image renamer and converter"
 readme = "README.md"
 requires-python = ">=3.13"
