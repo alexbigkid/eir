@@ -4,6 +4,7 @@ set -e
 
 RUFF_SUCCESS="$1"
 BUILD_SUCCESS="$2"
+BRANCH_NAME="$3"
 
 echo "🏷️ Handling release tags..."
 
@@ -41,17 +42,22 @@ echo "  - Ruff: $RUFF_SUCCESS"
 echo "  - Build: $BUILD_SUCCESS"
 
 if [ "$RUFF_SUCCESS" = "success" ] && [ "$BUILD_SUCCESS" = "success" ]; then
-    # Extract the release type from the rel-* tag
-    RELEASE_TAG=$(echo "$REL_TAGS" | head -1 | sed 's/^rel-//')
-    echo "✅ All tests passed! Creating release tag: $RELEASE_TAG"
-    
-    # Delete local tag if it exists, then create new one
-    git tag -d "$RELEASE_TAG" 2>/dev/null || true
-    git tag "$RELEASE_TAG"
-    git push origin "$RELEASE_TAG" --force
-    echo "🚀 Release pipeline will be triggered with tag: $RELEASE_TAG"
+    if [ "$BRANCH_NAME" = "main" ]; then
+        # Extract the release type from the rel-* tag
+        RELEASE_TAG=$(echo "$REL_TAGS" | head -1 | sed 's/^rel-//')
+        echo "✅ All tests passed on main branch! Creating release tag: $RELEASE_TAG"
+        
+        # Delete local tag if it exists, then create new one
+        git tag -d "$RELEASE_TAG" 2>/dev/null || true
+        git tag "$RELEASE_TAG"
+        git push origin "$RELEASE_TAG" --force
+        echo "🚀 Release pipeline will be triggered with tag: $RELEASE_TAG"
+    else
+        echo "✅ All tests passed on branch '$BRANCH_NAME', but release tags are only created on main branch"
+    fi
 else
     echo "❌ Tests failed, no release tag created"
     echo "   Ruff result: $RUFF_SUCCESS"
     echo "   Build result: $BUILD_SUCCESS"
+    echo "   Branch: $BRANCH_NAME"
 fi

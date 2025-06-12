@@ -2,8 +2,7 @@ name: ExifImageRenamer
 
 on:
     push:
-        branches:
-            - main
+    pull_request:
 
 permissions:
     contents: write  # Needed for handle-release-tags job to push tags
@@ -89,4 +88,4 @@ jobs:
                 persist-credentials: true
 
             - name: Handle release tags
-              run: ./.github/scripts/handle_release_tags.sh "${{ needs.ruff.result }}" "${{ needs.build.result }}"
+              run: ./.github/scripts/handle_release_tags.sh "${{ needs.ruff.result }}" "${{ needs.build.result }}" "${{ github.ref_name }}"
