@@ -4,6 +4,9 @@ set -e
 
 echo "📦 Organizing packages from artifacts..."
 
+# Debug: Show artifact structure
+echo "Available artifacts and their contents:"
+find ./artifacts -type f -name "*.rb" | head -5
 
 # Create packages directory and collect all package files
 mkdir -p packages
@@ -21,9 +24,14 @@ find ./artifacts -name "*-windows-*" -type d -exec find {} -name "*.nupkg" -exec
 
 # Look for .rb files in macOS package artifacts
 mkdir -p ./homebrew
+echo "Looking for homebrew formula files..."
 find ./artifacts -path "*/packages-macos-*/*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
 # Fallback: look for .rb files directly in macOS artifacts
-find ./artifacts -name "*-macos-*" -type d -exec find {} -name "*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
+find ./artifacts -name "*-macos-*" -type d | while IFS= read -r dir; do
+    if find "$dir" -name "*.rb" -print -exec cp {} ./homebrew/ \; | grep -q ".rb"; then
+        echo "Found and copied .rb file from $dir"
+    fi
+done
 
 # List what we found
 echo "📋 Package inventory:"
