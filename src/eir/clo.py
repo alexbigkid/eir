@@ -64,21 +64,20 @@ class CommandLineOptions:
         self.options = parser.parse_args()
 
         if self.options.version:
-            print(f"Debug: NAME='{CONST.NAME}', VERSION='{CONST.VERSION}'")
-            print(f"{CONST.NAME} version: {CONST.VERSION}")
+            print(f"{CONST.NAME} version: {CONST.VERSION}", flush=True)
             sys.exit(0)
 
         if self.options.about:
-            print(f"Name       : {CONST.NAME}")
-            print(f"Version    : {CONST.VERSION}")
-            print(f"License    : {CONST.LICENSE}")
-            print(f"Keywords   : {', '.join(CONST.KEYWORDS)}")
-            print("Authors:")
+            print(f"Name       : {CONST.NAME}", flush=True)
+            print(f"Version    : {CONST.VERSION}", flush=True)
+            print(f"License    : {CONST.LICENSE}", flush=True)
+            print(f"Keywords   : {', '.join(CONST.KEYWORDS)}", flush=True)
+            print("Authors:", flush=True)
             for a in CONST.AUTHORS:
-                print(f"  - {a.get('name', '?')} <{a.get('email', '?')}>")
-            print("Maintainers:")
+                print(f"  - {a.get('name', '?')} <{a.get('email', '?')}>", flush=True)
+            print("Maintainers:", flush=True)
             for m in CONST.MAINTAINERS:
-                print(f"  - {m.get('name', '?')} <{m.get('email', '?')}>")
+                print(f"  - {m.get('name', '?')} <{m.get('email', '?')}>", flush=True)
             sys.exit(0)
 
         LoggerManager().configure(
