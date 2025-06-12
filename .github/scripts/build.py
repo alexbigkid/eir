@@ -129,6 +129,8 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "--hidden-import",
         "eir.constants",
         "--hidden-import",
+        "eir.build_constants",
+        "--hidden-import",
         "eir.clo",
         "--hidden-import",
         "colorama",
