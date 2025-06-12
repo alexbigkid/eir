@@ -50,11 +50,15 @@ class _Const:
         try:
             root = self._find_project_root()
             pyproject_path = root / "pyproject.toml"
+            print(f"Debug: Loading pyproject.toml from {pyproject_path}")
 
             with pyproject_path.open("rb") as f:
                 project = tomllib.load(f).get("project", {})
-                object.__setattr__(self, "_version", project.get("version", self._version))
-                object.__setattr__(self, "_name", project.get("name", self._name))
+                version = project.get("version", self._version)
+                name = project.get("name", self._name)
+                print(f"Debug: Loaded version='{version}', name='{name}'")
+                object.__setattr__(self, "_version", version)
+                object.__setattr__(self, "_name", name)
                 object.__setattr__(self, "_license", project.get("license", self._license))
                 object.__setattr__(self, "_keywords", project.get("keywords", self._keywords))
                 object.__setattr__(self, "_authors", project.get("authors", self._authors))

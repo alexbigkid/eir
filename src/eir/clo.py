@@ -64,6 +64,7 @@ class CommandLineOptions:
         self.options = parser.parse_args()
 
         if self.options.version:
+            print(f"Debug: NAME='{CONST.NAME}', VERSION='{CONST.VERSION}'")
             print(f"{CONST.NAME} version: {CONST.VERSION}")
             sys.exit(0)
 
