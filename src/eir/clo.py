@@ -65,7 +65,7 @@ class CommandLineOptions:
 
         if self.options.version:
             # Force output to ensure it's visible
-            print(f"eir version: 0.1.43", flush=True)
+            print("eir version: 0.1.43", flush=True)
             print(f"CONST.NAME='{CONST.NAME}', CONST.VERSION='{CONST.VERSION}'", flush=True)
             sys.exit(0)
 
