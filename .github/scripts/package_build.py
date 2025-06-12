@@ -324,7 +324,8 @@ def main():
     if os_name == "macos":
         # Check for macOS binary and update Homebrew formula
         macos_binary = None
-        for file in Path("dist").glob(f"eir-{version}-macos-*"):
+        # Look for binary with the actual architecture name (universal)
+        for file in Path("dist").glob(f"eir-{version}-{arch}"):
             if file.is_file():
                 macos_binary = file
                 break
