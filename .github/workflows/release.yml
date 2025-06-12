@@ -78,64 +78,7 @@ jobs:
 
       - name: Get current version and bump
         id: bump
-        run: |
-          # Read current version from pyproject.toml
-          current_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          echo "Current version: $current_version"
-
-          # Validate current version format
-          if [[ ! "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "❌ Error: Invalid version format: $current_version"
-            exit 1
-          fi
-
-          # Parse version components
-          IFS='.' read -r major minor patch <<< "$current_version"
-
-          # Determine new version based on tag
-          tag_name="${{ needs.check-release.outputs.release_type }}"
-          echo "Release type: $tag_name"
-
-          case $tag_name in
-            "major")
-              new_major=$((major + 1))
-              new_minor=0
-              new_patch=0
-              ;;
-            "minor")
-              new_major=$major
-              new_minor=$((minor + 1))
-              new_patch=0
-              ;;
-            "patch")
-              new_major=$major
-              new_minor=$minor
-              new_patch=$((patch + 1))
-              ;;
-            *)
-              echo "❌ Error: Invalid release tag: $tag_name"
-              exit 1
-              ;;
-          esac
-
-          new_version="${new_major}.${new_minor}.${new_patch}"
-          version_tag="v${new_version}"
-
-          echo "New version: $new_version"
-          echo "Version tag: $version_tag"
-
-          # Validate new version format
-          if [[ ! "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "❌ Error: Generated invalid version: $new_version"
-            exit 1
-          fi
-
-          # Update pyproject.toml
-          sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
-
-          # Set outputs
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
+        run: ./.github/scripts/version_bump.sh ${{ needs.check-release.outputs.release_type }}
 
       - name: Commit version bump and create release tag
         run: |
@@ -411,128 +354,17 @@ jobs:
           path: ./artifacts
           
       - name: Organize packages
-        run: |
-          # Create packages directory and collect all package files
-          mkdir -p packages
-          
-          # Find and copy package files from all artifacts
-          find ./artifacts -name "*.deb" -exec cp {} ./packages/ \;
-          find ./artifacts -name "*.nupkg" -exec cp {} ./packages/ \;
-          find ./artifacts -name "*.rb" -exec cp {} ./homebrew/ \;
-          
-          # List what we found
-          echo "📦 Found packages:"
-          ls -la ./packages/ || echo "No packages directory"
-          ls -la ./homebrew/ || echo "No homebrew directory"
+        run: ./.github/scripts/organize_packages.sh
 
-      - name: Set up Git for Homebrew
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-
-      - name: Update Homebrew tap
+      - name: Publish to Homebrew
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          # Clone the homebrew-eir repository with authentication
-          git clone https://x-access-token:$GITHUB_TOKEN@github.com/alexbigkid/homebrew-eir.git ../homebrew-eir
-          
-          # Copy the updated formula
-          mkdir -p ../homebrew-eir/Formula
-          cp homebrew/eir.rb ../homebrew-eir/Formula/eir.rb
-          
-          # Commit and push changes
-          cd ../homebrew-eir
-          git add Formula/eir.rb
-          if git diff --staged --quiet; then
-            echo "No changes to Homebrew formula"
-          else
-            git commit -m "Update eir formula to v${{ needs.version-bump.outputs.new_version }}"
-            git push origin main
-            echo "✅ Homebrew formula updated"
-          fi
+        run: ./.github/scripts/publish_homebrew.sh ${{ needs.version-bump.outputs.new_version }}
 
-      - name: Setup GitHub Pages for APT
-        run: |
-          # Create docs directory for GitHub Pages
-          mkdir -p docs/apt-repo
-          if [ -d "packages/apt-repo" ]; then
-            cp -r packages/apt-repo/* docs/apt-repo/
-          fi
-          
-          # Create index page for APT repository
-          cat > docs/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>Eir APT Repository</title>
-              <style>
-                  body { font-family: Arial, sans-serif; margin: 40px; }
-                  .code { background: #f5f5f5; padding: 10px; border-radius: 5px; }
-              </style>
-          </head>
-          <body>
-              <h1>Eir APT Repository</h1>
-              <p>EXIF-based image renamer and RAW format converter</p>
-              
-              <h2>Installation</h2>
-              <div class="code">
-                  <pre>echo 'deb [trusted=yes] https://alexbigkid.github.io/eir/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/eir.list
-          sudo apt update
-          sudo apt install eir</pre>
-              </div>
-              
-              <h2>Supported Architectures</h2>
-              <ul>
-                  <li>amd64 (Intel/AMD 64-bit)</li>
-                  <li>arm64 (ARM 64-bit)</li>
-              </ul>
-              
-              <p><a href="https://github.com/alexbigkid/eir">View source on GitHub</a></p>
-          </body>
-          </html>
-          EOF
-          
-          # Commit APT repository changes
-          git add docs/
-          if git diff --staged --quiet; then
-            echo "No changes to APT repository"
-          else
-            git commit -m "Update APT repository for v${{ needs.version-bump.outputs.new_version }}"
-            git push origin main
-            echo "✅ APT repository updated"
-          fi
+      - name: Publish to APT
+        run: ./.github/scripts/publish_apt.sh ${{ needs.version-bump.outputs.new_version }}
 
       - name: Publish to Chocolatey
         env:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
-        run: |
-          # Check if Chocolatey API key is available
-          if [ -z "$CHOCOLATEY_API_KEY" ]; then
-            echo "⚠️ CHOCOLATEY_API_KEY not set, skipping Chocolatey upload"
-            exit 0
-          fi
-          
-          # Find Chocolatey package
-          NUPKG_FILE=$(find packages/ -name "*.nupkg" | head -1)
-          if [ -z "$NUPKG_FILE" ]; then
-            echo "⚠️ No Chocolatey package found to upload"
-            exit 0
-          fi
-          
-          # Upload package directly via Chocolatey API
-          echo "Uploading $NUPKG_FILE to Chocolatey..."
-          
-          # Use curl to upload the package via REST API
-          curl -X PUT \
-            -H "X-NuGet-ApiKey: $CHOCOLATEY_API_KEY" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary "@$NUPKG_FILE" \
-            "https://push.chocolatey.org/api/v2/package"
-          
-          if [ $? -eq 0 ]; then
-            echo "✅ Chocolatey package uploaded successfully"
-          else
-            echo "❌ Failed to upload Chocolatey package"
-            exit 1
-          fi
+        run: ./.github/scripts/publish_chocolatey.sh ${{ needs.version-bump.outputs.new_version }}
