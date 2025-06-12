@@ -84,7 +84,7 @@ jobs:
         name: Handle Release Tags
         needs: [ruff, unit-tests]
         runs-on: ubuntu-latest
-        if: always()  # Run whether tests pass or fail
+        if: always() && (github.ref_type == 'tag' || github.event_name == 'push')  # Run for tag pushes or when rel-* tags exist
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
