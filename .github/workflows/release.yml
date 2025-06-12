@@ -190,8 +190,8 @@ jobs:
             homebrew/*
             chocolatey/*
 
-  # Third job: Create GitHub release (depends on all builds)
-  release:
+  # Third job: Create GitHub release and publish to package managers
+  release-and-publish:
     needs: [prepare-release, build]
     runs-on: ubuntu-latest
     steps:
@@ -208,7 +208,7 @@ jobs:
       - name: Prepare release assets and body
         run: ./.github/scripts/create_github_release.sh ${{ needs.prepare-release.outputs.new_version }}
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.prepare-release.outputs.new_version }}
@@ -221,21 +221,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Fourth job: Automated package publishing (depends on release)
-  publish-packages:
-    needs: [prepare-release, build, release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts
-          
       - name: Organize packages
         run: ./.github/scripts/organize_packages.sh
 
