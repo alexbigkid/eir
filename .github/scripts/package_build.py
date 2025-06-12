@@ -319,13 +319,25 @@ def main():
     # Get OS name and architecture from environment
     os_name = os.environ.get('OS_NAME', platform.system().lower())
     arch = os.environ.get('ARCH', 'unknown')
+    
+    print(f"Environment: OS_NAME={os_name}, ARCH={arch}")
+    print(f"Available files in dist/:")
+    if Path("dist").exists():
+        for file in Path("dist").iterdir():
+            print(f"  - {file.name}")
+    else:
+        print("  (dist directory not found)")
 
     # Run platform-specific package creation based on OS
     if os_name == "macos":
         # Check for macOS binary and update Homebrew formula
         macos_binary = None
+        search_pattern = f"eir-{version}-{arch}"
+        print(f"Searching for macOS binary with pattern: {search_pattern}")
+        
         # Look for binary with the actual architecture name (universal)
-        for file in Path("dist").glob(f"eir-{version}-{arch}"):
+        for file in Path("dist").glob(search_pattern):
+            print(f"Found candidate file: {file}")
             if file.is_file():
                 macos_binary = file
                 break
@@ -336,6 +348,11 @@ def main():
             print(f"Homebrew formula updated for {macos_binary}")
         else:
             print(f"Warning: No macOS binary found for version {version}")
+            print(f"Searched for pattern: {search_pattern}")
+            print("Available files in dist/:")
+            if Path("dist").exists():
+                for file in Path("dist").iterdir():
+                    print(f"  - {file.name}")
 
     elif os_name == "linux":
         # Create Debian package
