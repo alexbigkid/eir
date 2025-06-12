@@ -2,6 +2,12 @@ name: ExifImageRenamer
 
 on:
     push:
+        branches:
+            - '**'  # Run on all branch pushes
+        tags:
+            - 'rel-patch'
+            - 'rel-minor' 
+            - 'rel-major'
     pull_request:
 
 permissions:
