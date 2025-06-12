@@ -17,6 +17,7 @@ class _Const:
     _maintainers: list[dict]
 
     def __init__(self):
+        # Try to get version from importlib.metadata first
         try:
             self._version = get_version("eir")
             self._name = "eir"
@@ -24,12 +25,17 @@ class _Const:
             self._version = "0.0.0-dev"
             self._name = "unknown"
 
+        # Set defaults
         self._license = {"text": "unknown"}
         self._keywords = ["unknown"]
         self._authors = [{"name": "ABK", "email": "unknown"}]
         self._maintainers = [{"name": "ABK", "email": "unknown"}]
 
+        # Try to load from pyproject.toml (development)
         self._load_from_pyproject()
+
+        # Try to load from build constants (bundled executable)
+        self._load_from_build_constants()
 
     def _find_project_root(self, start: Path | None = None) -> Path:
         # First, check if we're in a PyInstaller bundle
@@ -63,6 +69,23 @@ class _Const:
                 )
         except Exception as e:
             print(f"Warning: failed to load pyproject.toml metadata: {e}")
+
+    def _load_from_build_constants(self):
+        """Load constants from build-time generated file."""
+        try:
+            from eir import build_constants  # type: ignore
+
+            object.__setattr__(self, "_version", build_constants.VERSION)
+            object.__setattr__(self, "_name", build_constants.NAME)
+            object.__setattr__(self, "_license", {"text": build_constants.LICENSE})
+            object.__setattr__(self, "_keywords", build_constants.KEYWORDS)
+            object.__setattr__(self, "_authors", build_constants.AUTHORS)
+            object.__setattr__(self, "_maintainers", build_constants.MAINTAINERS)
+        except ImportError:
+            # build_constants.py not found - this is expected in development
+            pass
+        except Exception as e:
+            print(f"Warning: failed to load build constants: {e}")
 
     @property
     def VERSION(self) -> str:
