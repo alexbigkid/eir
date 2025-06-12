@@ -1,4 +1,4 @@
-"""Cli - entry point to the eir package"""
+"""Cli - entry point to the eir package."""
 
 import asyncio
 from eir import clo
