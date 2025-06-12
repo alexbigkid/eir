@@ -3,6 +3,7 @@
 from pathlib import Path
 from importlib.metadata import version as get_version, PackageNotFoundError
 import tomllib
+import sys
 
 
 class _Const:
@@ -31,6 +32,13 @@ class _Const:
         self._load_from_pyproject()
 
     def _find_project_root(self, start: Path | None = None) -> Path:
+        # First, check if we're in a PyInstaller bundle
+        if hasattr(sys, '_MEIPASS'):
+            bundle_dir = Path(sys._MEIPASS)
+            if (bundle_dir / "pyproject.toml").exists():
+                return bundle_dir
+        
+        # Fall back to normal project root search
         if start is None:
             start = Path.cwd()
         for parent in [start, *start.parents]:
