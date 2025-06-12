@@ -68,11 +68,11 @@ def build_executable():
     # Check if required files exist and get absolute paths
     logging_yaml_path = Path("logging.yaml")
     pyproject_path = Path("pyproject.toml")
-    
+
     if not logging_yaml_path.exists():
         print("Error: logging.yaml not found in project root")
         sys.exit(1)
-    
+
     if not pyproject_path.exists():
         print("Error: pyproject.toml not found in project root")
         sys.exit(1)
@@ -97,7 +97,7 @@ def build_executable():
         # Include data files
         "--add-data",
         f"{logging_yaml_abs}:.",
-        "--add-data", 
+        "--add-data",
         f"{pyproject_abs}:.",
         # Hidden imports to ensure all modules are included
         "--hidden-import",
