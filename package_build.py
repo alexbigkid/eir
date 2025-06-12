@@ -38,8 +38,7 @@ def update_homebrew_formula(version, sha256_hash):
 
     # Update version and SHA256
     content = content.replace("REPLACE_WITH_ACTUAL_SHA256", sha256_hash)
-    # Replace any existing version with the new one
-    content = re.sub(r'version\s+"[^"]+"', f'version "{version}"', content)
+    content = content.replace("REPLACE_WITH_VERSION", version)
 
     formula_path.write_text(content)
     print(f"Updated Homebrew formula: {formula_path}")
