@@ -53,4 +53,12 @@ uv run eir
 - [x] MacOS latest / Python 3.12.x, 3.131.x
 - [x] Windows latest / Python 3.12.x, 3.13.x
 
+## Documentation
+
+- [📦 Packaging Guide](docs/PACKAGING.md) - How packages are built for different platforms
+- [🏗️ Architecture Support](docs/ARCHITECTURE.md) - Supported CPU architectures and platforms  
+- [🚀 Distribution Guide](docs/DISTRIBUTION.md) - How to distribute packages to package managers
+- [🔑 GitHub Secrets Setup](docs/GITHUB_SECRETS_SETUP.md) - CI/CD automation configuration
+- [🤖 Claude Instructions](docs/CLAUDE.md) - AI assistant development guidance
+
 :checkered_flag:

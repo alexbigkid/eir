@@ -1,3 +1,5 @@
+← [Back to Main Documentation](../README.md)
+
 # Package Distribution Guide
 
 This document explains how to distribute Eir through various package managers.

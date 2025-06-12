@@ -1,3 +1,5 @@
+← [Back to Main Documentation](../README.md)
+
 # Architecture Support
 
 This document explains the CPU architecture support for Eir binaries and packages.
