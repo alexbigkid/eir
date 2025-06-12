@@ -33,10 +33,13 @@ def calculate_sha256(file_path):
 
 def update_homebrew_formula(version, sha256_hash):
     """Update Homebrew formula with actual version and SHA256."""
-    # Create packages-macos directory and copy formula
-    packages_dir = Path("packages-macos")
+    # Get OS name and architecture from environment
+    os_name = os.environ.get('OS_NAME', 'macos')
+    arch = os.environ.get('ARCH', 'universal')
+    # Create packages directory based on OS and architecture
+    packages_dir = Path(f"packages-{os_name}-{arch}")
     packages_dir.mkdir(exist_ok=True)
-    
+
     formula_path = Path("homebrew/eir.rb")
     content = formula_path.read_text()
 
@@ -44,7 +47,7 @@ def update_homebrew_formula(version, sha256_hash):
     content = content.replace("REPLACE_WITH_ACTUAL_SHA256", sha256_hash)
     content = content.replace("REPLACE_WITH_VERSION", version)
 
-    # Write to packages-macos directory
+    # Write to packages directory
     updated_formula_path = packages_dir / "eir.rb"
     updated_formula_path.write_text(content)
     print(f"Updated Homebrew formula: {updated_formula_path}")
@@ -79,8 +82,12 @@ def create_debian_package(version):
 
         print(f"Creating {deb_arch} package from {linux_binary}")
 
+        # Get OS name and architecture from environment
+        os_name = os.environ.get('OS_NAME', 'linux')
+        arch = os.environ.get('ARCH', 'x86_64')
+
         # Create package directory structure
-        pkg_dir = Path(f"packages-linux/eir_{version}_{deb_arch}")
+        pkg_dir = Path(f"packages-{os_name}-{arch}/eir_{version}_{deb_arch}")
         pkg_dir.mkdir(parents=True, exist_ok=True)
 
         # Copy binary to package
@@ -243,13 +250,17 @@ Date: {now}
 
 def update_chocolatey_package(version, checksum):
     """Update Chocolatey package with actual version and checksum."""
-    # Create packages-windows directory
-    packages_dir = Path("packages-windows")
+    # Get OS name and architecture from environment
+    os_name = os.environ.get('OS_NAME', 'windows')
+    arch = os.environ.get('ARCH', 'amd64')
+
+    # Create packages directory based on OS and architecture
+    packages_dir = Path(f"packages-{os_name}-{arch}")
     packages_dir.mkdir(exist_ok=True)
-    
-    # Copy chocolatey directory structure directly to packages-windows
+
+    # Copy chocolatey directory structure directly to packages directory
     shutil.copytree("chocolatey", packages_dir, dirs_exist_ok=True)
-    
+
     # Update nuspec file
     nuspec_path = packages_dir / "eir.nuspec"
     content = nuspec_path.read_text(encoding="utf-8")

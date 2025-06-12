@@ -8,9 +8,13 @@ echo "📦 Organizing packages from artifacts..."
 mkdir -p packages
 
 # Find and copy package files from all artifacts
-find ./artifacts -name "*.deb" -exec cp {} ./packages/ \; 2>/dev/null || true
-find ./artifacts -name "*.nupkg" -exec cp {} ./packages/ \; 2>/dev/null || true
-find ./artifacts -name "*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
+# Look for .deb files in Linux package artifacts
+find ./artifacts -path "*/packages-linux-*/*.deb" -exec cp {} ./packages/ \; 2>/dev/null || true
+# Look for .nupkg files in Windows package artifacts  
+find ./artifacts -path "*/packages-windows-*/*.nupkg" -exec cp {} ./packages/ \; 2>/dev/null || true
+# Look for .rb files in macOS package artifacts
+mkdir -p ./homebrew
+find ./artifacts -path "*/packages-macos-*/*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
 
 # List what we found
 echo "📋 Package inventory:"

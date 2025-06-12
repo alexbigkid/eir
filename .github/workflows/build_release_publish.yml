@@ -64,27 +64,32 @@ jobs:
             arch: x86_64
             arch_bin_ext: linux-x86_64
             runner: ubuntu-latest
+            os_name: linux
           - name: "Linux arm64"
             os: ubuntu-24.04-arm
             arch: aarch64
             arch_bin_ext: linux-aarch64
             runner: ubuntu-24.04-arm
+            os_name: linux
           - name: "Windows amd64"
             os: windows-latest
             arch: amd64
             arch_bin_ext: windows-x86_64.exe
             runner: windows-latest
+            os_name: windows
           # Windows ARM64 temporarily disabled due to psutil build issues
           # - name: "Windows arm64"
           #   os: windows-11-arm
           #   arch: arm64
           #   arch_bin_ext: windows-arm64.exe
           #   runner: windows-11-arm
+          #   os_name: windows
           - name: "macOS Universal"
             os: macos-latest
             arch: universal
             arch_bin_ext: macos-universal
             runner: macos-latest
+            os_name: macos
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
@@ -120,6 +125,9 @@ jobs:
           sudo apt-get install -y dpkg-dev
 
       - name: Build packages
+        env:
+          OS_NAME: ${{ matrix.os_name }}
+          ARCH: ${{ matrix.arch }}
         run: uv run python .github/scripts/package_build.py
 
       - name: Upload binary artifacts
@@ -130,29 +138,12 @@ jobs:
             dist/eir-*
             !dist/*.spec
 
-      - name: Upload package artifacts (Linux)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Upload package artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-linux
+          name: eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.os_name }}-${{ matrix.arch }}
           path: |
-            packages-linux/*
-
-      - name: Upload package artifacts (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-windows
-          path: |
-            packages-windows/*
-
-      - name: Upload package artifacts (macOS)
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-macos
-          path: |
-            packages-macos/*
+            packages-${{ matrix.os_name }}-${{ matrix.arch }}/*
 
   # Third job: Create GitHub release and publish to package managers
   release-and-publish:
