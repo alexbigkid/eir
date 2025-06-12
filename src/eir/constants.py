@@ -82,8 +82,35 @@ class _Const:
             object.__setattr__(self, "_authors", build_constants.AUTHORS)
             object.__setattr__(self, "_maintainers", build_constants.MAINTAINERS)
         except ImportError:
-            # build_constants.py not found - this is expected in development
-            pass
+            # build_constants.py not found - use hardcoded fallback for bundled executable
+            if hasattr(sys, "_MEIPASS"):
+                object.__setattr__(self, "_version", "0.1.46")
+                object.__setattr__(self, "_name", "eir")
+                object.__setattr__(self, "_license", {"text": "MIT"})
+                object.__setattr__(
+                    self,
+                    "_keywords",
+                    [
+                        "exif",
+                        "images",
+                        "photos",
+                        "rename",
+                        "convert",
+                        "raw",
+                        "dng",
+                        "photography",
+                    ],
+                )
+                object.__setattr__(
+                    self,
+                    "_authors",
+                    [{"name": "ABK", "email": "alexbigkid@users.noreply.github.com"}],
+                )
+                object.__setattr__(
+                    self,
+                    "_maintainers",
+                    [{"name": "ABK", "email": "alexbigkid@users.noreply.github.com"}],
+                )
         except Exception as e:
             print(f"Warning: failed to load build constants: {e}")
 
