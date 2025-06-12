@@ -4,8 +4,10 @@
 import hashlib
 import os
 import platform
+import re
 import shutil
 import subprocess  # noqa: S404
+import tomllib
 from datetime import datetime
 from pathlib import Path
 
@@ -13,8 +15,6 @@ from pathlib import Path
 def get_version():
     """Get version from pyproject.toml."""
     try:
-        import tomllib
-
         with open("pyproject.toml", "rb") as f:
             config = tomllib.load(f)
         return config["project"]["version"]
@@ -38,7 +38,8 @@ def update_homebrew_formula(version, sha256_hash):
 
     # Update version and SHA256
     content = content.replace("REPLACE_WITH_ACTUAL_SHA256", sha256_hash)
-    content = content.replace('version "0.1.10"', f'version "{version}"')
+    # Replace any existing version with the new one
+    content = re.sub(r'version\s+"[^"]+"', f'version "{version}"', content)
 
     formula_path.write_text(content)
     print(f"Updated Homebrew formula: {formula_path}")
@@ -89,7 +90,8 @@ def create_debian_package(version):
 
         # Update control file with current version and architecture
         control_content = Path("debian/control").read_text(encoding="utf-8")
-        control_content = control_content.replace("Version: 0.1.10", f"Version: {version}")
+        # Replace any existing version with the new one
+        control_content = re.sub(r'Version:\s+[^\s]+', f'Version: {version}', control_content)
         control_content = control_content.replace(
             "Architecture: amd64", f"Architecture: {deb_arch}"
         )
@@ -239,13 +241,14 @@ def update_chocolatey_package(version, checksum):
     # Update nuspec file
     nuspec_path = Path("chocolatey/eir.nuspec")
     content = nuspec_path.read_text(encoding="utf-8")
-    content = content.replace("<version>0.1.10</version>", f"<version>{version}</version>")
+    # Replace any existing version with the new one
+    content = re.sub(r'<version>[^<]+</version>', f'<version>{version}</version>', content)
     nuspec_path.write_text(content, encoding="utf-8")
 
     # Update install script
     install_path = Path("chocolatey/tools/chocolateyinstall.ps1")
     content = install_path.read_text(encoding="utf-8")
-    content = content.replace("$version = '0.1.10'", f"$version = '{version}'")
+    content = re.sub(r"\$version\s*=\s*'[^']*'", f"$version = '{version}'", content)
     content = content.replace("REPLACE_WITH_ACTUAL_CHECKSUM", checksum)
     install_path.write_text(content, encoding="utf-8")
 
