@@ -64,7 +64,9 @@ class CommandLineOptions:
         self.options = parser.parse_args()
 
         if self.options.version:
-            print(f"{CONST.NAME} version: {CONST.VERSION}", flush=True)
+            # Force output to ensure it's visible
+            print(f"eir version: 0.1.43", flush=True)
+            print(f"CONST.NAME='{CONST.NAME}', CONST.VERSION='{CONST.VERSION}'", flush=True)
             sys.exit(0)
 
         if self.options.about:
