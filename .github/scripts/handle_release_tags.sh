@@ -42,7 +42,11 @@ echo "  - Ruff: $RUFF_SUCCESS"
 echo "  - Build: $BUILD_SUCCESS"
 
 if [ "$RUFF_SUCCESS" = "success" ] && [ "$BUILD_SUCCESS" = "success" ]; then
-    if [ "$BRANCH_NAME" = "main" ]; then
+    # Check if current commit is on main branch (handles both branch pushes and tag pushes)
+    CURRENT_COMMIT=$(git rev-parse HEAD)
+    MAIN_COMMIT=$(git rev-parse origin/main 2>/dev/null || git rev-parse main 2>/dev/null || echo "")
+    
+    if [ "$CURRENT_COMMIT" = "$MAIN_COMMIT" ] || [ "$BRANCH_NAME" = "main" ]; then
         # Extract the release type from the rel-* tag
         RELEASE_TAG=$(echo "$REL_TAGS" | head -1 | sed 's/^rel-//')
         echo "✅ All tests passed on main branch! Creating release tag: $RELEASE_TAG"
@@ -53,7 +57,9 @@ if [ "$RUFF_SUCCESS" = "success" ] && [ "$BUILD_SUCCESS" = "success" ]; then
         git push origin "$RELEASE_TAG" --force
         echo "🚀 Release pipeline will be triggered with tag: $RELEASE_TAG"
     else
-        echo "✅ All tests passed on branch '$BRANCH_NAME', but release tags are only created on main branch"
+        echo "✅ All tests passed on branch/ref '$BRANCH_NAME', but release tags are only created on main branch"
+        echo "   Current commit: $CURRENT_COMMIT"
+        echo "   Main commit: $MAIN_COMMIT"
     fi
 else
     echo "❌ Tests failed, no release tag created"
