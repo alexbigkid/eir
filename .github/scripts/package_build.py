@@ -34,8 +34,8 @@ def calculate_sha256(file_path):
 def update_homebrew_formula(version, sha256_hash):
     """Update Homebrew formula with actual version and SHA256."""
     # Get OS name and architecture from environment
-    os_name = os.environ.get('OS_NAME', 'macos')
-    arch = os.environ.get('ARCH', 'universal')
+    os_name = os.environ.get("OS_NAME", "macos")
+    arch = os.environ.get("ARCH", "universal")
     # Create packages directory based on OS and architecture
     packages_dir = Path(f"packages-{os_name}-{arch}")
     packages_dir.mkdir(exist_ok=True)
@@ -83,8 +83,8 @@ def create_debian_package(version):
         print(f"Creating {deb_arch} package from {linux_binary}")
 
         # Get OS name and architecture from environment
-        os_name = os.environ.get('OS_NAME', 'linux')
-        arch = os.environ.get('ARCH', 'x86_64')
+        os_name = os.environ.get("OS_NAME", "linux")
+        arch = os.environ.get("ARCH", "x86_64")
 
         # Create package directory structure
         pkg_dir = Path(f"packages-{os_name}-{arch}/eir_{version}_{deb_arch}")
@@ -103,7 +103,7 @@ def create_debian_package(version):
         # Update control file with current version and architecture
         control_content = Path("debian/control").read_text(encoding="utf-8")
         # Replace any existing version with the new one
-        control_content = re.sub(r'Version:\s+[^\s]+', f'Version: {version}', control_content)
+        control_content = re.sub(r"Version:\s+[^\s]+", f"Version: {version}", control_content)
         control_content = control_content.replace(
             "Architecture: amd64", f"Architecture: {deb_arch}"
         )
@@ -251,8 +251,8 @@ Date: {now}
 def update_chocolatey_package(version, checksum):
     """Update Chocolatey package with actual version and checksum."""
     # Get OS name and architecture from environment
-    os_name = os.environ.get('OS_NAME', 'windows')
-    arch = os.environ.get('ARCH', 'amd64')
+    os_name = os.environ.get("OS_NAME", "windows")
+    arch = os.environ.get("ARCH", "amd64")
 
     # Create packages directory based on OS and architecture
     packages_dir = Path(f"packages-{os_name}-{arch}")
@@ -265,7 +265,7 @@ def update_chocolatey_package(version, checksum):
     nuspec_path = packages_dir / "eir.nuspec"
     content = nuspec_path.read_text(encoding="utf-8")
     # Replace any existing version with the new one
-    content = re.sub(r'<version>[^<]+</version>', f'<version>{version}</version>', content)
+    content = re.sub(r"<version>[^<]+</version>", f"<version>{version}</version>", content)
     nuspec_path.write_text(content, encoding="utf-8")
 
     # Update install script
