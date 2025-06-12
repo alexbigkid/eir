@@ -48,10 +48,9 @@ case $RELEASE_TYPE in
 esac
 
 new_version="${new_major}.${new_minor}.${new_patch}"
-version_tag="v${new_version}"
 
 echo "New version: $new_version"
-echo "Version tag: $version_tag"
+echo "Version tag: v$new_version"
 
 # Validate new version format
 if [[ ! "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -65,7 +64,6 @@ sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
 # Set GitHub Actions outputs if running in CI
 if [ -n "$GITHUB_OUTPUT" ]; then
     echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
-    echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
 fi
 
 echo "✅ Version bumped to $new_version"

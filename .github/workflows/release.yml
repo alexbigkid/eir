@@ -13,53 +13,14 @@ permissions:
   actions: read
 
 jobs:
-  # Check if we should proceed with release
-  check-release:
+  # Combined release check and version bump job
+  prepare-release:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       should_release: ${{ steps.check.outputs.should_release }}
       release_type: ${{ steps.check.outputs.release_type }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check for release tags
-        id: check
-        run: |
-          # Check if there are any patch/minor/major tags
-          if git tag -l | grep -E '^(patch|minor|major)$' > /dev/null; then
-            latest_tag=$(git tag -l | grep -E '^(patch|minor|major)$' | tail -1)
-            echo "Found release tag: $latest_tag"
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "release_type=$latest_tag" >> $GITHUB_OUTPUT
-
-            # Verify tag points to the latest commit
-            tag_commit=$(git rev-list -n 1 $latest_tag)
-            main_commit=$(git rev-parse HEAD)
-
-            if [ "$tag_commit" != "$main_commit" ]; then
-              echo "❌ Error: Tag must point to the latest commit on main branch"
-              echo "Tag commit: $tag_commit"
-              echo "Main commit: $main_commit"
-              exit 1
-            fi
-            echo "✅ Confirmed: Tag points to latest main branch commit"
-          else
-            echo "No release tags found, skipping release"
-            echo "should_release=false" >> $GITHUB_OUTPUT
-          fi
-
-  # Version bump job
-  version-bump:
-    needs: check-release
-    if: needs.check-release.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
-      version_tag: ${{ steps.bump.outputs.version_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,36 +29,46 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
+      - name: Check for release tags
+        id: check
+        run: ./.github/scripts/check_release_tags.sh
+
       - name: Set up Python
+        if: steps.check.outputs.should_release == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
       - name: Install uv
+        if: steps.check.outputs.should_release == 'true'
         uses: astral-sh/setup-uv@v3
 
       - name: Get current version and bump
+        if: steps.check.outputs.should_release == 'true'
         id: bump
-        run: ./.github/scripts/version_bump.sh ${{ needs.check-release.outputs.release_type }}
+        run: ./.github/scripts/version_bump.sh ${{ steps.check.outputs.release_type }}
 
       - name: Commit version bump and create release tag
+        if: steps.check.outputs.should_release == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add pyproject.toml
           git commit -m "🔖 Bump version to ${{ steps.bump.outputs.new_version }}"
-          git tag ${{ steps.bump.outputs.version_tag }}
+          git tag v${{ steps.bump.outputs.new_version }}
           git push origin HEAD:main
-          git push origin ${{ steps.bump.outputs.version_tag }}
+          git push origin v${{ steps.bump.outputs.new_version }}
 
       - name: Delete trigger tag
+        if: steps.check.outputs.should_release == 'true'
         run: |
           # Delete the original trigger tag to keep repo clean
-          git push --delete origin ${{ needs.check-release.outputs.release_type }}
+          git push --delete origin ${{ steps.check.outputs.release_type }}
 
-  # Third job: Build binaries (depends on version-bump success)
+  # Second job: Build binaries (depends on prepare-release success)
   build:
-    needs: [check-release, version-bump]
+    needs: prepare-release
+    if: needs.prepare-release.outputs.should_release == 'true'
     strategy:
       matrix:
         include:
@@ -150,32 +121,32 @@ jobs:
       - name: Test binary (Windows x86_64)
         if: matrix.os == 'windows-latest'
         run: |
-          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe --version
-          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe --help
+          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-x86_64.exe --version
+          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-x86_64.exe --help
 
       - name: Test binary (Windows ARM64)
         if: matrix.os == 'windows-11-arm'
         run: |
-          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe --version
-          .\dist\eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe --help
+          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-arm64.exe --version
+          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-arm64.exe --help
 
       - name: Test binary (macOS Universal)
         if: matrix.os == 'macos-latest'
         run: |
-          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --version
-          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-macos-universal --help
+          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-macos-universal --version
+          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-macos-universal --help
 
       - name: Test binary (Linux x86_64)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --version
-          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64 --help
+          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-x86_64 --version
+          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-x86_64 --help
 
       - name: Test binary (Linux ARM64)
         if: matrix.os == 'ubuntu-24.04-arm'
         run: |
-          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64 --version
-          ./dist/eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64 --help
+          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-aarch64 --version
+          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-aarch64 --help
 
       - name: Install APT tools
         if: matrix.os == 'ubuntu-latest'
@@ -194,7 +165,7 @@ jobs:
       - name: Upload binary artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eir-${{ needs.version-bump.outputs.new_version }}-${{ matrix.arch }}
+          name: eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch }}
           path: |
             dist/eir-*
             !dist/*.spec
@@ -203,7 +174,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: eir-${{ needs.version-bump.outputs.new_version }}-packages-linux
+          name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-linux
           path: |
             packages/*
             homebrew/*
@@ -213,15 +184,15 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: eir-${{ needs.version-bump.outputs.new_version }}-packages-windows
+          name: eir-${{ needs.prepare-release.outputs.new_version }}-packages-windows
           path: |
             packages/*
             homebrew/*
             chocolatey/*
 
-  # Fourth job: Create GitHub release (depends on all builds)
+  # Third job: Create GitHub release (depends on all builds)
   release:
-    needs: [check-release, version-bump, build]
+    needs: [prepare-release, build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -234,103 +205,15 @@ jobs:
         with:
           path: ./artifacts
 
-      - name: Prepare release assets
-        run: |
-          mkdir -p release-assets
-          find ./artifacts -name "eir-*" -type f -exec cp {} ./release-assets/ \;
-          # Copy package files if they exist
-          if [ -d "./artifacts/eir-${{ needs.version-bump.outputs.new_version }}-packages" ]; then
-            cp -r ./artifacts/eir-${{ needs.version-bump.outputs.new_version }}-packages/* ./release-assets/ 2>/dev/null || true
-          fi
-          ls -la ./release-assets/
+      - name: Prepare release assets and body
+        run: ./.github/scripts/create_github_release.sh ${{ needs.prepare-release.outputs.new_version }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.version-bump.outputs.version_tag }}
-          name: "Eir ${{ needs.version-bump.outputs.new_version }}"
-          body: |
-            ## 🚀 Eir ${{ needs.version-bump.outputs.new_version }}
-
-            ### 📦 Downloads
-
-            **macOS (Universal - Intel + Apple Silicon):**
-            - `eir-${{ needs.version-bump.outputs.new_version }}-macos-universal`
-
-            **Linux:**
-            - **x86_64** (Intel/AMD): `eir-${{ needs.version-bump.outputs.new_version }}-linux-x86_64`
-            - **ARM64** (ARM/Graviton): `eir-${{ needs.version-bump.outputs.new_version }}-linux-aarch64`
-
-            **Windows:**
-            - **x86_64** (Intel/AMD): `eir-${{ needs.version-bump.outputs.new_version }}-windows-x86_64.exe`
-            - **ARM64** (Surface Pro X): `eir-${{ needs.version-bump.outputs.new_version }}-windows-arm64.exe`
-
-            ### 🏗️ Architecture Support
-            - **✅ Intel/AMD x86_64**: Full support (Linux, Windows, macOS)
-            - **✅ ARM64**: Full support (Linux, Windows, macOS)
-            - **✅ Apple Silicon**: Native support via macOS Universal binary
-            - **✅ AWS Graviton**: Native ARM64 Linux support
-            - **✅ Raspberry Pi 4/5**: Native ARM64 Linux support
-            - **❌ 32-bit systems**: Not supported
-
-            ### 🔧 Installation
-
-            **macOS (Homebrew):**
-            ```bash
-            # Add our tap and install
-            brew tap alexbigkid/eir https://github.com/alexbigkid/eir
-            brew install eir
-            ```
-
-            **Ubuntu/Debian (APT):**
-            ```bash
-            # Add Eir APT repository (supports both amd64 and arm64)
-            echo 'deb [trusted=yes] https://alexbigkid.github.io/eir/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/eir.list
-            sudo apt update
-            sudo apt install eir
-            ```
-
-            **Manual .deb installation:**
-            ```bash
-            wget https://github.com/alexbigkid/eir/releases/download/v${{ needs.version-bump.outputs.new_version }}/eir_${{ needs.version-bump.outputs.new_version }}_amd64.deb
-            sudo dpkg -i eir_${{ needs.version-bump.outputs.new_version }}_amd64.deb
-            ```
-
-            **Windows (Chocolatey):**
-            ```cmd
-            # Install via Chocolatey (coming soon)
-            choco install eir
-            ```
-
-            **Manual Installation:**
-
-            *macOS/Linux:*
-            ```bash
-            # Download the binary for your platform
-            chmod +x eir-${{ needs.version-bump.outputs.new_version }}-<platform>
-            sudo mv eir-${{ needs.version-bump.outputs.new_version }}-<platform> /usr/local/bin/eir
-            ```
-
-            *Windows:*
-            ```cmd
-            # Download eir-${{ needs.version-bump.outputs.new_version }}-windows-amd64.exe
-            # Add to your PATH or run directly
-            ```
-
-            **Unsupported Architectures (ARM64 Linux, 32-bit systems):**
-            ```bash
-            # Install from source using pip
-            pip install git+https://github.com/alexbigkid/eir.git@v${{ needs.version-bump.outputs.new_version }}
-            ```
-
-            ### 📝 Changes
-            - Automated release build for version ${{ needs.version-bump.outputs.new_version }}
-            - Multi-platform binaries (macOS, Linux, Windows)
-            - Package manager support (Homebrew, APT, Chocolatey)
-            - See commit history for detailed changes
-
-            ---
-            🤖 Generated with [Claude Code](https://claude.ai/code)
+          tag_name: v${{ needs.prepare-release.outputs.new_version }}
+          name: "Eir ${{ needs.prepare-release.outputs.new_version }}"
+          body_path: ./release_body.md
           files: ./release-assets/*
           draft: false
           prerelease: false
@@ -338,9 +221,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Fifth job: Automated package publishing (depends on release)
+  # Fourth job: Automated package publishing (depends on release)
   publish-packages:
-    needs: [check-release, version-bump, build, release]
+    needs: [prepare-release, build, release]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -359,12 +242,12 @@ jobs:
       - name: Publish to Homebrew
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN || secrets.GITHUB_TOKEN }}
-        run: ./.github/scripts/publish_homebrew.sh ${{ needs.version-bump.outputs.new_version }}
+        run: ./.github/scripts/publish_homebrew.sh ${{ needs.prepare-release.outputs.new_version }}
 
       - name: Publish to APT
-        run: ./.github/scripts/publish_apt.sh ${{ needs.version-bump.outputs.new_version }}
+        run: ./.github/scripts/publish_apt.sh ${{ needs.prepare-release.outputs.new_version }}
 
       - name: Publish to Chocolatey
         env:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
-        run: ./.github/scripts/publish_chocolatey.sh ${{ needs.version-bump.outputs.new_version }}
+        run: ./.github/scripts/publish_chocolatey.sh ${{ needs.prepare-release.outputs.new_version }}
