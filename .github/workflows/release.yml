@@ -75,23 +75,28 @@ jobs:
           - name: "Linux amd64"
             os: ubuntu-latest
             arch: x86_64
+            arch_bin_ext: linux-x86_64
             runner: ubuntu-latest
           - name: "Linux arm64"
             os: ubuntu-24.04-arm
             arch: aarch64
+            arch_bin_ext: linux-aarch64
             runner: ubuntu-24.04-arm
           - name: "Windows amd64"
             os: windows-latest
             arch: amd64
+            arch_bin_ext: windows-x86_64.exe
             runner: windows-latest
           # Windows ARM64 temporarily disabled due to psutil build issues
           # - name: "Windows arm64"
           #   os: windows-11-arm
           #   arch: arm64
+          #   arch_bin_ext: windows-arm64.exe
           #   runner: windows-11-arm
           - name: "macOS Universal"
             os: macos-latest
             arch: universal
+            arch_bin_ext: macos-universal
             runner: macos-latest
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
@@ -118,35 +123,8 @@ jobs:
       - name: Build binary
         run: uv run python build.py
 
-      - name: Test binary (Windows x86_64)
-        if: matrix.os == 'windows-latest'
-        run: |
-          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-x86_64.exe --version
-          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-x86_64.exe --help
-
-      - name: Test binary (Windows ARM64)
-        if: matrix.os == 'windows-11-arm'
-        run: |
-          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-arm64.exe --version
-          .\dist\eir-${{ needs.prepare-release.outputs.new_version }}-windows-arm64.exe --help
-
-      - name: Test binary (macOS Universal)
-        if: matrix.os == 'macos-latest'
-        run: |
-          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-macos-universal --version
-          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-macos-universal --help
-
-      - name: Test binary (Linux x86_64)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-x86_64 --version
-          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-x86_64 --help
-
-      - name: Test binary (Linux ARM64)
-        if: matrix.os == 'ubuntu-24.04-arm'
-        run: |
-          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-aarch64 --version
-          ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-linux-aarch64 --help
+      - name: Test binary
+        run: ./.github/scripts/test_binary.sh ${{ needs.prepare-release.outputs.new_version }} ${{ matrix.arch_bin_ext }}
 
       - name: Install APT tools
         if: matrix.os == 'ubuntu-latest'
