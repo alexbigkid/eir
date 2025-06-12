@@ -10,12 +10,18 @@ mkdir -p packages
 # Find and copy package files from all artifacts
 # Look for .deb files in Linux package artifacts
 find ./artifacts -path "*/packages-linux-*/*.deb" -exec cp {} ./packages/ \; 2>/dev/null || true
+# Fallback: look for .deb files directly in Linux artifacts
+find ./artifacts -name "*-linux-*" -type d -exec find {} -name "*.deb" -exec cp {} ./packages/ \; 2>/dev/null || true
+
 # Look for .nupkg files in Windows package artifacts  
 find ./artifacts -path "*/packages-windows-*/*.nupkg" -exec cp {} ./packages/ \; 2>/dev/null || true
+# Fallback: look for .nupkg files directly in Windows artifacts
+find ./artifacts -name "*-windows-*" -type d -exec find {} -name "*.nupkg" -exec cp {} ./packages/ \; 2>/dev/null || true
+
 # Look for .rb files in macOS package artifacts
 mkdir -p ./homebrew
 find ./artifacts -path "*/packages-macos-*/*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
-# Also look for .rb files directly in macos artifacts (fallback)
+# Fallback: look for .rb files directly in macOS artifacts
 find ./artifacts -name "*-macos-*" -type d -exec find {} -name "*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
 
 # List what we found
