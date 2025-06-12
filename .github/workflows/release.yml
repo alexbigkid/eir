@@ -1,25 +1,22 @@
 name: Release Pipeline
 
 on:
-  workflow_run:
-    workflows: ["ExifImageRenamer"]
-    types:
-      - completed
-    branches:
-      - main
+  push:
+    tags:
+      - 'patch'
+      - 'minor'
+      - 'major'
 
 permissions:
   contents: write
   actions: read
 
 jobs:
-  # Combined release check and version bump job
+  # Version bump job
   prepare-release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
-      should_release: ${{ steps.check.outputs.should_release }}
-      release_type: ${{ steps.check.outputs.release_type }}
+      release_type: ${{ github.ref_name }}
       new_version: ${{ steps.bump.outputs.new_version }}
     steps:
       - name: Checkout code
@@ -29,27 +26,19 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
-      - name: Check for release tags
-        id: check
-        run: ./.github/scripts/check_release_tags.sh
-
       - name: Set up Python
-        if: steps.check.outputs.should_release == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
       - name: Install uv
-        if: steps.check.outputs.should_release == 'true'
         uses: astral-sh/setup-uv@v3
 
       - name: Get current version and bump
-        if: steps.check.outputs.should_release == 'true'
         id: bump
-        run: ./.github/scripts/version_bump.sh ${{ steps.check.outputs.release_type }}
+        run: ./.github/scripts/version_bump.sh ${{ github.ref_name }}
 
       - name: Commit version bump and create release tag
-        if: steps.check.outputs.should_release == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -60,15 +49,13 @@ jobs:
           git push origin v${{ steps.bump.outputs.new_version }}
 
       - name: Delete trigger tag
-        if: steps.check.outputs.should_release == 'true'
         run: |
           # Delete the original trigger tag to keep repo clean
-          git push --delete origin ${{ steps.check.outputs.release_type }}
+          git push --delete origin ${{ github.ref_name }}
 
   # Second job: Build binaries (depends on prepare-release success)
   build:
     needs: prepare-release
-    if: needs.prepare-release.outputs.should_release == 'true'
     strategy:
       matrix:
         include:

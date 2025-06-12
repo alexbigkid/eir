@@ -71,3 +71,19 @@ jobs:
                 files: ./coverage.xml
                 flags: pytest
                 name: codecov-coverage
+
+    handle-release-tags:
+        name: Handle Release Tags
+        needs: [ruff, build]
+        runs-on: ubuntu-latest
+        if: always()  # Run whether tests pass or fail
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+                token: ${{ secrets.GITHUB_TOKEN }}
+                persist-credentials: true
+
+            - name: Handle release tags
+              run: ./.github/scripts/handle_release_tags.sh "${{ needs.ruff.result }}" "${{ needs.build.result }}"
