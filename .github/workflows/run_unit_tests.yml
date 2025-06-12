@@ -89,7 +89,7 @@ jobs:
         name: Handle Release Tags
         needs: [ruff, unit-tests]
         runs-on: ubuntu-latest
-        if: always()  # Run whether tests pass or fail
+        if: always() && !cancelled()  # Run whether tests pass or fail, but not if cancelled due to concurrency
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
