@@ -6,15 +6,27 @@
     "python.testing.pytestEnabled": true,
     "cSpell.words": [
         "asyncio",
+        "choco",
+        "chocolateyinstall",
         "colorama",
         "decorater",
+        "distpath",
         "eventloop",
         "Exif",
         "exiftool",
         "Leica",
+        "noupx",
+        "onefile",
+        "outputdirectory",
+        "psutil",
         "pydngconverter",
+        "pyinstaller",
         "pytest",
         "renamer",
-        "THMB"
+        "scanpackages",
+        "specpath",
+        "THMB",
+        "workpath",
+        "zipf"
     ]
 }
