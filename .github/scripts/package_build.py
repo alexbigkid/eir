@@ -316,38 +316,43 @@ def main():
     version = get_version()
     print(f"Building packages for version: {version}")
 
-    # Ensure packages directory exists
-    Path("packages").mkdir(exist_ok=True)
+    # Get OS name and architecture from environment
+    os_name = os.environ.get('OS_NAME', platform.system().lower())
+    arch = os.environ.get('ARCH', 'unknown')
 
-    # Check for macOS binary and update Homebrew formula
-    macos_binary = None
-    for file in Path("dist").glob(f"eir-{version}-macos-*"):
-        if file.is_file():
-            macos_binary = file
-            break
-
-    if macos_binary:
-        sha256_hash = calculate_sha256(macos_binary)
-        update_homebrew_formula(version, sha256_hash)
-        print(f"Homebrew formula updated for {macos_binary}")
-    else:
-        print(f"Warning: No macOS binary found for version {version}")
-
-    # Create Debian package
-    if platform.system().lower() in ["linux", "darwin"]:  # Can build on Linux or macOS
-        create_debian_package(version)
-    else:
-        print("Skipping Debian package creation (requires Linux/macOS)")
-
-    # Create/update Chocolatey package
-    create_chocolatey_package(version)
-
-    print("\nPackage build complete!")
-    print("Files created in packages/ directory:")
-    if Path("packages").exists():
-        for file in Path("packages").iterdir():
+    # Run platform-specific package creation based on OS
+    if os_name == "macos":
+        # Check for macOS binary and update Homebrew formula
+        macos_binary = None
+        for file in Path("dist").glob(f"eir-{version}-macos-*"):
             if file.is_file():
-                print(f"  - {file.name}")
+                macos_binary = file
+                break
+
+        if macos_binary:
+            sha256_hash = calculate_sha256(macos_binary)
+            update_homebrew_formula(version, sha256_hash)
+            print(f"Homebrew formula updated for {macos_binary}")
+        else:
+            print(f"Warning: No macOS binary found for version {version}")
+
+    elif os_name == "linux":
+        # Create Debian package
+        create_debian_package(version)
+
+    elif os_name == "windows":
+        # Create/update Chocolatey package
+        create_chocolatey_package(version)
+
+    print(f"\nPackage build complete for {os_name}-{arch}!")
+    packages_dir = Path(f"packages-{os_name}-{arch}")
+    print(f"Files created in {packages_dir}/ directory:")
+    if packages_dir.exists():
+        for file in packages_dir.rglob("*"):
+            if file.is_file():
+                print(f"  - {file.relative_to(packages_dir)}")
+    else:
+        print("  (no files created)")
 
 
 if __name__ == "__main__":
