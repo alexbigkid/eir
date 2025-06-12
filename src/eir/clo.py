@@ -64,10 +64,7 @@ class CommandLineOptions:
         self.options = parser.parse_args()
 
         if self.options.version:
-            # Simple test bypassing constants
-            print("eir version: 0.1.47", flush=True)
-            print("This is a test output", flush=True)
-            sys.stdout.flush()
+            print(f"{CONST.NAME} version: {CONST.VERSION}", flush=True)
             sys.exit(0)
 
         if self.options.about:

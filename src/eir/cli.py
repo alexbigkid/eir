@@ -14,4 +14,7 @@ def main():
             logger=command_line_options.logger, image_dir=command_line_options.options.dir
         )
     )
-    # asyncio.run(eir())
+
+
+if __name__ == "__main__":
+    main()

@@ -15,6 +15,7 @@ class TestConst:
         with (
             patch("eir.constants.get_version", return_value="1.0.0"),
             patch.object(_Const, "_load_from_pyproject", return_value=None),
+            patch.object(_Const, "_load_from_build_constants", return_value=None),
         ):
             const = _Const()
             assert const.VERSION == "1.0.0"
@@ -27,6 +28,7 @@ class TestConst:
         with (
             patch("eir.constants.get_version", side_effect=PackageNotFoundError),
             patch.object(_Const, "_load_from_pyproject", return_value=None),
+            patch.object(_Const, "_load_from_build_constants", return_value=None),
         ):
             const = _Const()
             assert const.VERSION == "0.0.0-dev"
@@ -41,6 +43,7 @@ class TestConst:
                 "eir.constants.get_version", side_effect=PackageNotFoundError("Package not found")
             ),
             patch.object(_Const, "_load_from_pyproject", return_value=None),
+            patch.object(_Const, "_load_from_build_constants", return_value=None),
         ):
             const = _Const()
             assert const.LICENSE == "unknown"
@@ -78,7 +81,10 @@ class TestConst:
 
     def test_load_from_pyproject_success(self, project_root_dir):
         """Test loading from pyproject.toml successfully."""
-        with patch.object(_Const, "_find_project_root", return_value=project_root_dir):
+        with (
+            patch.object(_Const, "_find_project_root", return_value=project_root_dir),
+            patch.object(_Const, "_load_from_build_constants", return_value=None),
+        ):
             const = _Const()
 
             assert const.NAME == "eir"
@@ -126,6 +132,7 @@ class TestConst:
         with (
             patch("eir.constants.get_version", return_value="2.0.0"),
             patch.object(_Const, "_load_from_pyproject", return_value=None),
+            patch.object(_Const, "_load_from_build_constants", return_value=None),
         ):
             const = _Const()
             # Use object.__setattr__ to bypass read-only protection for testing

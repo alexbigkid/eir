@@ -84,7 +84,7 @@ class _Const:
         except ImportError:
             # build_constants.py not found - use hardcoded fallback for bundled executable
             if hasattr(sys, "_MEIPASS"):
-                object.__setattr__(self, "_version", "0.1.46")
+                object.__setattr__(self, "_version", "XX.XX.XX")
                 object.__setattr__(self, "_name", "eir")
                 object.__setattr__(self, "_license", {"text": "MIT"})
                 object.__setattr__(

@@ -39,7 +39,8 @@ debug = [
     "pip-chill",
     "pipdeptree",
     "pre-commit",
-    "wheel"
+    "wheel",
+    "pyinstaller>=6.14.1",
 ]
 
 
