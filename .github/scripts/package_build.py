@@ -317,11 +317,11 @@ def main():
     print(f"Building packages for version: {version}")
 
     # Get OS name and architecture from environment
-    os_name = os.environ.get('OS_NAME', platform.system().lower())
-    arch = os.environ.get('ARCH', 'unknown')
-    
+    os_name = os.environ.get("OS_NAME", platform.system().lower())
+    arch = os.environ.get("ARCH", "unknown")
+
     print(f"Environment: OS_NAME={os_name}, ARCH={arch}")
-    print(f"Available files in dist/:")
+    print("Available files in dist/:")
     if Path("dist").exists():
         for file in Path("dist").iterdir():
             print(f"  - {file.name}")
@@ -334,7 +334,7 @@ def main():
         macos_binary = None
         search_pattern = f"eir-{version}-{arch}"
         print(f"Searching for macOS binary with pattern: {search_pattern}")
-        
+
         # Look for binary with the actual architecture name (universal)
         for file in Path("dist").glob(search_pattern):
             print(f"Found candidate file: {file}")
