@@ -29,6 +29,8 @@ find ./artifacts -name "*-macos-*" -type d | while read dir; do
     echo "  Checking directory: $dir"
     find "$dir" -name "*.rb" | while read file; do
         echo "    Found .rb file: $file"
+        echo "    File content preview:"
+        head -n 5 "$file" | sed 's/^/      /'
         cp "$file" ./homebrew/
     done
 done

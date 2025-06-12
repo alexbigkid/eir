@@ -65,14 +65,21 @@ def build_executable():
 
     output_name = f"{app_name}-{version}-{platform_name}"
 
-    # Check if logging.yaml exists and get absolute path
+    # Check if required files exist and get absolute paths
     logging_yaml_path = Path("logging.yaml")
+    pyproject_path = Path("pyproject.toml")
+    
     if not logging_yaml_path.exists():
         print("Error: logging.yaml not found in project root")
         sys.exit(1)
+    
+    if not pyproject_path.exists():
+        print("Error: pyproject.toml not found in project root")
+        sys.exit(1)
 
-    # Use absolute path for PyInstaller
+    # Use absolute paths for PyInstaller
     logging_yaml_abs = str(logging_yaml_path.absolute())
+    pyproject_abs = str(pyproject_path.absolute())
 
     # PyInstaller command with Windows-specific optimizations
     cmd = [
@@ -90,6 +97,8 @@ def build_executable():
         # Include data files
         "--add-data",
         f"{logging_yaml_abs}:.",
+        "--add-data", 
+        f"{pyproject_abs}:.",
         # Hidden imports to ensure all modules are included
         "--hidden-import",
         "eir.cli",
