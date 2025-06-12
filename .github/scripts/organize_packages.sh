@@ -15,6 +15,8 @@ find ./artifacts -path "*/packages-windows-*/*.nupkg" -exec cp {} ./packages/ \;
 # Look for .rb files in macOS package artifacts
 mkdir -p ./homebrew
 find ./artifacts -path "*/packages-macos-*/*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
+# Also look for .rb files directly in macos artifacts (fallback)
+find ./artifacts -name "*-macos-*" -type d -exec find {} -name "*.rb" -exec cp {} ./homebrew/ \; 2>/dev/null || true
 
 # List what we found
 echo "📋 Package inventory:"
