@@ -1,4 +1,4 @@
-# EXIF Image Renamer ![Tests](https://github.com/alexbigkid/eir/actions/workflows/pipeline.yml/badge.svg) [![codecov](https://codecov.io/gh/alexbigkid/eir/branch/main/graph/badge.svg)](https://codecov.io/gh/alexbigkid/eir)
+# EXIF Image Renamer [!Tests](https://github.com/alexbigkid/eir/actions/workflows/pipeline.yml/badge.svg) [![codecov](https://codecov.io/gh/alexbigkid/eir/branch/main/graph/badge.svg)](https://codecov.io/gh/alexbigkid/eir)
 Renames all image files in the folder according to image file exif metadata for easy ordering and archiving
 
 [TOC]
@@ -56,7 +56,7 @@ uv run eir
 ## Documentation
 
 - [📦 Packaging Guide](docs/PACKAGING.md) - How packages are built for different platforms
-- [🏗️ Architecture Support](docs/ARCHITECTURE.md) - Supported CPU architectures and platforms  
+- [🏗️ Architecture Support](docs/ARCHITECTURE.md) - Supported CPU architectures and platforms
 - [🚀 Distribution Guide](docs/DISTRIBUTION.md) - How to distribute packages to package managers
 - [🔑 GitHub Secrets Setup](docs/GITHUB_SECRETS_SETUP.md) - CI/CD automation configuration
 - [🤖 Claude Instructions](docs/CLAUDE.md) - AI assistant development guidance
