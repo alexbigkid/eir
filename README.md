@@ -1,4 +1,4 @@
-# EXIF Picture Renamer [!Tests](https://github.com/alexbigkid/eir/actions/workflows/pipeline.yml/badge.svg) [![codecov](https://codecov.io/gh/alexbigkid/eir/branch/main/graph/badge.svg)](https://codecov.io/gh/alexbigkid/eir)
+# EXIF Picture Renamer [![Tests](https://github.com/alexbigkid/eir/actions/workflows/run_tests.yml/badge.svg)](https://github.com/alexbigkid/eir/actions/workflows/run_tests.yml) [![codecov](https://codecov.io/gh/alexbigkid/eir/branch/main/graph/badge.svg)](https://codecov.io/gh/alexbigkid/eir)
 Renames all image files in the folder according to image file exif metadata for easy ordering and archiving
 
 [TOC]
