@@ -13,10 +13,21 @@ if [ -z "$CHOCOLATEY_API_KEY" ]; then
     exit 0
 fi
 
+# Debug: Show what packages are available
+echo "🔍 Debugging package organization..."
+echo "Current directory contents:"
+ls -la ./ || true
+echo "Packages directory contents:"
+ls -la packages/ 2>/dev/null || echo "  (packages directory not found)"
+echo "Artifacts directory contents:"
+find ./artifacts -name "*.nupkg" 2>/dev/null || echo "  (no .nupkg files found in artifacts)"
+
 # Find Chocolatey package
 NUPKG_FILE=$(find packages/ -name "*.nupkg" | head -1)
 if [ -z "$NUPKG_FILE" ]; then
     echo "⚠️ No Chocolatey package found to upload"
+    echo "🔍 Searching in all directories for .nupkg files..."
+    find . -name "*.nupkg" 2>/dev/null || echo "  (no .nupkg files found anywhere)"
     exit 0
 fi
 

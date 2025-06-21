@@ -17,10 +17,16 @@ find ./artifacts -path "*/packages-linux-*/*.deb" -exec cp {} ./packages/ \; 2>/
 # Fallback: look for .deb files directly in Linux artifacts
 find ./artifacts -name "*-linux-*" -type d -exec find {} -name "*.deb" -exec cp {} ./packages/ \; 2>/dev/null || true
 
-# Look for .nupkg files in Windows package artifacts  
-find ./artifacts -path "*/packages-windows-*/*.nupkg" -exec cp {} ./packages/ \; 2>/dev/null || true
+# Look for .nupkg files in Windows package artifacts
+echo "🔍 Searching for Windows .nupkg files..."
+find ./artifacts -path "*/packages-windows-*/*.nupkg" -print -exec cp {} ./packages/ \; 2>/dev/null || true
 # Fallback: look for .nupkg files directly in Windows artifacts
-find ./artifacts -name "*-windows-*" -type d -exec find {} -name "*.nupkg" -exec cp {} ./packages/ \; 2>/dev/null || true
+find ./artifacts -name "*-windows-*" -type d | while IFS= read -r dir; do
+    echo "  Checking Windows artifact directory: $dir"
+    if find "$dir" -name "*.nupkg" -print -exec cp {} ./packages/ \; 2>/dev/null | grep -q ".nupkg"; then
+        echo "  Found and copied .nupkg file from $dir"
+    fi
+done
 
 # Look for .rb files in macOS package artifacts
 mkdir -p ./homebrew
