@@ -297,16 +297,38 @@ def create_chocolatey_package(version):
     checksum = calculate_sha256(windows_binary)
     update_chocolatey_package(version, checksum)
 
-    # Create nupkg if choco is available
+    # Create nupkg using choco pack
+    os_name = os.environ.get("OS_NAME", "windows")
+    arch = os.environ.get("ARCH", "amd64")
+    packages_dir = Path(f"packages-{os_name}-{arch}")
+
     try:
         subprocess.run(  # noqa: S603,S607
-            ["choco", "pack", "chocolatey/eir.nuspec", "--outputdirectory", "packages"],
+            ["choco", "pack", str(packages_dir / "eir.nuspec"), "--outputdirectory", str(packages_dir)],
             check=True,
         )
-        print(f"Created Chocolatey package: packages/eir.{version}.nupkg")
+        print(f"Created Chocolatey package: {packages_dir}/eir.{version}.nupkg")
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"Failed to create Chocolatey package: {e}")
         print("Note: Chocolatey CLI is required to build .nupkg files")
+        print("Will create the .nupkg manually using archive tools...")
+
+        # Fallback: create .nupkg manually (it's just a zip file)
+        import zipfile
+
+        nupkg_path = packages_dir / f"eir.{version}.nupkg"
+        with zipfile.ZipFile(nupkg_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Add nuspec file
+            zipf.write(packages_dir / "eir.nuspec", "eir.nuspec")
+
+            # Add tools directory
+            tools_dir = packages_dir / "tools"
+            for tool_file in tools_dir.rglob("*"):
+                if tool_file.is_file():
+                    arcname = f"tools/{tool_file.relative_to(tools_dir)}"
+                    zipf.write(tool_file, arcname)
+
+        print(f"Created Chocolatey package manually: {nupkg_path}")
 
 
 def main():

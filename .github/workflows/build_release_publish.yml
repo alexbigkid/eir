@@ -115,8 +115,14 @@ jobs:
       - name: Build binary
         run: uv run python .github/scripts/build.py
 
-      - name: Test binary
+      - name: Test binary (Unix)
+        if: matrix.os_name != 'windows'
         run: ./.github/scripts/test_binary.sh ${{ needs.prepare-release.outputs.new_version }} ${{ matrix.arch_bin_ext }}
+
+      - name: Test binary (Windows)
+        if: matrix.os_name == 'windows'
+        shell: pwsh
+        run: .\.github\scripts\test_binary.ps1 -Version ${{ needs.prepare-release.outputs.new_version }} -ArchBinExt ${{ matrix.arch_bin_ext }}
 
       - name: Install APT tools
         if: matrix.os == 'ubuntu-latest'
