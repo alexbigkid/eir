@@ -273,6 +273,12 @@ def update_chocolatey_package(version, checksum):
     content = install_path.read_text(encoding="utf-8")
     content = re.sub(r"\$version\s*=\s*'[^']*'", f"$version = '{version}'", content)
     content = content.replace("REPLACE_WITH_ACTUAL_CHECKSUM", checksum)
+    # Fix the URL to match the actual binary filename format
+    content = re.sub(
+        r"eir-\$version-windows-amd64\.exe",
+        "eir-$version-windows-x86_64.exe",
+        content
+    )
     install_path.write_text(content, encoding="utf-8")
 
     print(f"Updated Chocolatey package files for version {version}")
