@@ -43,7 +43,12 @@ try {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Version test passed" -ForegroundColor Green
         Write-Host "📄 Version output:" -ForegroundColor Cyan
-        Write-Host $VersionOutput
+        # Handle multi-line output properly
+        if ($VersionOutput -is [array]) {
+            $VersionOutput | ForEach-Object { Write-Host $_ }
+        } else {
+            Write-Host $VersionOutput
+        }
     } else {
         Write-Host "❌ Version test failed" -ForegroundColor Red
         exit 1
@@ -60,7 +65,12 @@ try {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Help test passed" -ForegroundColor Green
         Write-Host "📄 Help output:" -ForegroundColor Cyan
-        Write-Host $HelpOutput
+        # Handle multi-line output properly
+        if ($HelpOutput -is [array]) {
+            $HelpOutput | ForEach-Object { Write-Host $_ }
+        } else {
+            Write-Host $HelpOutput
+        }
     } else {
         Write-Host "❌ Help test failed" -ForegroundColor Red
         exit 1
@@ -77,7 +87,12 @@ try {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ About test passed" -ForegroundColor Green
         Write-Host "📄 About output:" -ForegroundColor Cyan
-        Write-Host $AboutOutput
+        # Handle multi-line output properly
+        if ($AboutOutput -is [array]) {
+            $AboutOutput | ForEach-Object { Write-Host $_ }
+        } else {
+            Write-Host $AboutOutput
+        }
     } else {
         Write-Host "❌ About test failed" -ForegroundColor Red
         exit 1
