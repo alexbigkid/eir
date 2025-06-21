@@ -5,17 +5,15 @@ $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 $version = '0.1.10'
 $url64 = "https://github.com/alexbigkid/eir/releases/download/v$version/eir-$version-windows-x86_64.exe"
 
-# For portable applications, use Install-ChocolateyZipPackage or Get-ChocolateyWebFile
-# According to Chocolatey docs, this is the correct approach for standalone executables
-$packageArgs = @{
-    packageName    = $packageName
-    fileFullPath   = Join-Path $toolsDir "eir.exe"
-    url64bit       = $url64
-    checksum64     = 'REPLACE_WITH_ACTUAL_CHECKSUM'
-    checksumType64 = 'sha256'
+# Download the executable using Get-ChocolateyWebFile with correct parameters
+$downloadPath = Join-Path $toolsDir "eir-$version-windows-x86_64.exe"
+Get-ChocolateyWebFile -PackageName $packageName -FileFullPath $downloadPath -Url64bit $url64 -Checksum64 'REPLACE_WITH_ACTUAL_CHECKSUM' -ChecksumType64 'sha256'
+
+# Rename the downloaded file to eir.exe
+$targetPath = Join-Path $toolsDir "eir.exe"
+if (Test-Path $downloadPath) {
+    Move-Item $downloadPath $targetPath -Force
 }
 
-# Download the executable directly to the tools directory
-Get-ChocolateyWebFile @packageArgs
-
-Write-Host "eir has been installed and is available in your PATH" -ForegroundColor Green
+# Create a shim for the executable
+Install-BinFile -Name 'eir' -Path $targetPath

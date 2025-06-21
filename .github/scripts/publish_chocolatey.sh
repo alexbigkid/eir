@@ -36,11 +36,18 @@ echo "🚀 Uploading to Chocolatey using .NET CLI..."
 # Check if dotnet is available
 if command -v dotnet >/dev/null 2>&1; then
     echo "📤 Pushing package with dotnet nuget push..."
-    if dotnet nuget push "$NUPKG_FILE" --source https://push.chocolatey.org/ --api-key "$CHOCOLATEY_API_KEY"; then
+    if dotnet nuget push "$NUPKG_FILE" --source https://push.chocolatey.org/ --api-key "$CHOCOLATEY_API_KEY" 2>&1 | tee push_output.log; then
         echo "✅ Chocolatey package uploaded successfully"
         exit 0
     else
-        echo "⚠️ dotnet nuget push failed, trying alternative method..."
+        echo "⚠️ dotnet nuget push failed, checking error details..."
+        if grep -q "previous version in a submitted state" push_output.log; then
+            echo "📋 Package has pending version awaiting moderation approval"
+            echo "💡 Action required: Wait for existing version to be approved before submitting new versions"
+            echo "🔗 Check status at: https://chocolatey.org/packages/eir"
+            exit 0  # Don't fail the pipeline for this expected condition
+        fi
+        echo "⚠️ Trying alternative method..."
     fi
 fi
 
@@ -49,9 +56,9 @@ echo "📥 Installing NuGet CLI as fallback..."
 # Download and install nuget.exe
 wget -q https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
 
-# Install mono to run nuget.exe on Linux
+# Install mono to run nuget.exe on Linux (minimized installation)
 sudo apt-get update -qq
-sudo apt-get install -y mono-complete
+sudo apt-get install -y mono-runtime
 
 # Create a wrapper script
 cat > nuget << 'EOF'
@@ -63,10 +70,19 @@ export PATH="$PWD:$PATH"
 
 # Push package using NuGet CLI
 echo "📤 Pushing package with NuGet CLI..."
-if nuget push "$NUPKG_FILE" -Source https://push.chocolatey.org/ -ApiKey "$CHOCOLATEY_API_KEY"; then
+if nuget push "$NUPKG_FILE" -Source https://push.chocolatey.org/ -ApiKey "$CHOCOLATEY_API_KEY" 2>&1 | tee push_output2.log; then
     echo "✅ Chocolatey package uploaded successfully"
 else
     echo "❌ Failed to upload Chocolatey package"
+    
+    # Check for specific error conditions
+    if grep -q "previous version in a submitted state" push_output2.log; then
+        echo "📋 Package has pending version awaiting moderation approval"
+        echo "💡 Action required: Wait for existing version to be approved before submitting new versions"
+        echo "🔗 Check status at: https://chocolatey.org/packages/eir"
+        exit 0  # Don't fail the pipeline for this expected condition
+    fi
+    
     echo ""
     echo "💡 Troubleshooting steps:"
     echo "   1. Verify CHOCOLATEY_API_KEY is valid and not expired"
