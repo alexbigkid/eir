@@ -52,15 +52,19 @@ elif [ "$HTTP_CODE" = "403" ]; then
     echo "   1. Verify CHOCOLATEY_API_KEY is valid and not expired"
     echo "   2. Check if API key has push permissions"
     echo "   3. Ensure package name 'eir' is available or you own it"
-    exit 1
+    echo ""
+    echo "⚠️ Chocolatey publish failed, but continuing pipeline..."
+    exit 0
 elif [ "$HTTP_CODE" = "409" ]; then
     echo "❌ Upload failed: 409 Conflict - Package version already exists"
     echo "🔍 Response body:"
     echo "$RESPONSE_BODY"
-    exit 1
+    echo "⚠️ Version conflict, but continuing pipeline..."
+    exit 0
 else
     echo "❌ Upload failed with HTTP code: $HTTP_CODE"
     echo "🔍 Response body:"
     echo "$RESPONSE_BODY"
-    exit 1
+    echo "⚠️ Chocolatey publish failed, but continuing pipeline..."
+    exit 0
 fi
