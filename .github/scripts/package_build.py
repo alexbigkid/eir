@@ -304,7 +304,13 @@ def create_chocolatey_package(version):
 
     try:
         subprocess.run(  # noqa: S603,S607
-            ["choco", "pack", str(packages_dir / "eir.nuspec"), "--outputdirectory", str(packages_dir)],
+            [
+                "choco",
+                "pack",
+                str(packages_dir / "eir.nuspec"),
+                "--outputdirectory",
+                str(packages_dir),
+            ],
             check=True,
         )
         print(f"Created Chocolatey package: {packages_dir}/eir.{version}.nupkg")
@@ -317,7 +323,7 @@ def create_chocolatey_package(version):
         import zipfile
 
         nupkg_path = packages_dir / f"eir.{version}.nupkg"
-        with zipfile.ZipFile(nupkg_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(nupkg_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             # Add nuspec file
             zipf.write(packages_dir / "eir.nuspec", "eir.nuspec")
 
