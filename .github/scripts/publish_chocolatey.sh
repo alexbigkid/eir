@@ -24,43 +24,53 @@ fi
 
 echo "📦 Found package: $NUPKG_FILE"
 
-# Upload package directly via Chocolatey API
-echo "🚀 Uploading to Chocolatey..."
+# Debug: Inspect package contents
+echo "🔍 Package inspection:"
+echo "Package size: $(ls -lh "$NUPKG_FILE" | awk '{print $5}')"
+echo "Package contents:"
+unzip -l "$NUPKG_FILE" 2>/dev/null || echo "  (could not list package contents)"
 
-# Store the response to check for errors
-RESPONSE=$(curl -X PUT \
-    -H "X-NuGet-ApiKey: $CHOCOLATEY_API_KEY" \
-    -H "Content-Type: application/octet-stream" \
-    --data-binary "@$NUPKG_FILE" \
-    -w "\n%{http_code}" \
-    "https://push.chocolatey.org/api/v2/package" 2>&1)
+# Upload package using .NET CLI (cross-platform approach)
+echo "🚀 Uploading to Chocolatey using .NET CLI..."
 
-# Extract HTTP status code from response
-HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+# Check if dotnet is available
+if command -v dotnet >/dev/null 2>&1; then
+    echo "📤 Pushing package with dotnet nuget push..."
+    if dotnet nuget push "$NUPKG_FILE" --source https://push.chocolatey.org/ --api-key "$CHOCOLATEY_API_KEY"; then
+        echo "✅ Chocolatey package uploaded successfully"
+        exit 0
+    else
+        echo "⚠️ dotnet nuget push failed, trying alternative method..."
+    fi
+fi
 
-echo "📋 HTTP Status Code: $HTTP_CODE"
+# Fallback: Install NuGet CLI if dotnet failed or isn't available
+echo "📥 Installing NuGet CLI as fallback..."
+# Download and install nuget.exe
+wget -q https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
 
-if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+# Install mono to run nuget.exe on Linux
+sudo apt-get update -qq
+sudo apt-get install -y mono-complete
+
+# Create a wrapper script
+cat > nuget << 'EOF'
+#!/bin/bash
+mono nuget.exe "$@"
+EOF
+chmod +x nuget
+export PATH="$PWD:$PATH"
+
+# Push package using NuGet CLI
+echo "📤 Pushing package with NuGet CLI..."
+if nuget push "$NUPKG_FILE" -Source https://push.chocolatey.org/ -ApiKey "$CHOCOLATEY_API_KEY"; then
     echo "✅ Chocolatey package uploaded successfully"
-elif [ "$HTTP_CODE" = "403" ]; then
-    echo "❌ Upload failed: 403 Forbidden - Invalid API key or insufficient permissions"
-    echo "🔍 Response body:"
-    echo "$RESPONSE_BODY"
+else
+    echo "❌ Failed to upload Chocolatey package"
     echo ""
     echo "💡 Troubleshooting steps:"
     echo "   1. Verify CHOCOLATEY_API_KEY is valid and not expired"
-    echo "   2. Check if API key has push permissions"
-    echo "   3. Ensure package name 'eir' is available or you own it"
-    exit 1
-elif [ "$HTTP_CODE" = "409" ]; then
-    echo "❌ Upload failed: 409 Conflict - Package version already exists"
-    echo "🔍 Response body:"
-    echo "$RESPONSE_BODY"
-    exit 1
-else
-    echo "❌ Upload failed with HTTP code: $HTTP_CODE"
-    echo "🔍 Response body:"
-    echo "$RESPONSE_BODY"
+    echo "   2. Check if package name 'eir' is available or you own it"
+    echo "   3. Ensure package version doesn't already exist"
     exit 1
 fi
