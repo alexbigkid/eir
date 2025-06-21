@@ -303,44 +303,57 @@ def create_chocolatey_package(version):
     checksum = calculate_sha256(windows_binary)
     update_chocolatey_package(version, checksum)
 
-    # Create nupkg using choco pack
+    # Create nupkg using proper Chocolatey tools
     os_name = os.environ.get("OS_NAME", "windows")
     arch = os.environ.get("ARCH", "amd64")
     packages_dir = Path(f"packages-{os_name}-{arch}")
 
+    # Store original working directory
+    original_cwd = os.getcwd()
+
     try:
-        subprocess.run(  # noqa: S603,S607
-            [
-                "choco",
-                "pack",
-                str(packages_dir / "eir.nuspec"),
-                "--outputdirectory",
-                str(packages_dir),
-            ],
-            check=True,
-        )
+        # Change to package directory for choco pack (required by Chocolatey)
+        os.chdir(packages_dir)
+
+        # Try choco pack first (proper method)
+        subprocess.run(["choco", "pack", "eir.nuspec"], check=True)  # noqa: S603,S607
         print(f"Created Chocolatey package: {packages_dir}/eir.{version}.nupkg")
+
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"Failed to create Chocolatey package: {e}")
-        print("Note: Chocolatey CLI is required to build .nupkg files")
-        print("Will create the .nupkg manually using archive tools...")
+        print(f"choco pack failed: {e}")
+        print("Trying alternative method with NuGet...")
 
-        # Fallback: create .nupkg manually (it's just a zip file)
-        import zipfile
+        try:
+            # Try with nuget.exe as fallback
+            subprocess.run(["nuget", "pack", "eir.nuspec"], check=True)  # noqa: S603,S607
+            print(f"Created Chocolatey package with NuGet: {packages_dir}/eir.{version}.nupkg")
 
-        nupkg_path = packages_dir / f"eir.{version}.nupkg"
-        with zipfile.ZipFile(nupkg_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-            # Add nuspec file
-            zipf.write(packages_dir / "eir.nuspec", "eir.nuspec")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e2:
+            print(f"NuGet pack also failed: {e2}")
+            print("Creating package manually as last resort...")
 
-            # Add tools directory
-            tools_dir = packages_dir / "tools"
-            for tool_file in tools_dir.rglob("*"):
-                if tool_file.is_file():
-                    arcname = f"tools/{tool_file.relative_to(tools_dir)}"
-                    zipf.write(tool_file, arcname)
+            # Manual creation with proper structure
+            import zipfile
 
-        print(f"Created Chocolatey package manually: {nupkg_path}")
+            nupkg_path = Path(f"eir.{version}.nupkg")
+            with zipfile.ZipFile(nupkg_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                # Add nuspec to root
+                zipf.write("eir.nuspec", "eir.nuspec")
+
+                # Add tools directory with correct structure
+                tools_dir = Path("tools")
+                if tools_dir.exists():
+                    for tool_file in tools_dir.rglob("*"):
+                        if tool_file.is_file():
+                            # Ensure forward slashes in archive paths
+                            arcname = str(tool_file).replace("\\", "/")
+                            zipf.write(tool_file, arcname)
+
+            print(f"Created Chocolatey package manually: {packages_dir}/{nupkg_path}")
+
+    finally:
+        # Always restore original working directory
+        os.chdir(original_cwd)
 
 
 def main():

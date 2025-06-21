@@ -3,22 +3,11 @@
   <metadata>
     <id>eir</id>
     <version>0.1.10</version>
-    <packageSourceUrl>https://github.com/alexbigkid/eir</packageSourceUrl>
-    <owners>alexbigkid</owners>
     <title>Eir - EXIF Image Renamer</title>
     <authors>ABK</authors>
-    <projectUrl>https://github.com/alexbigkid/eir</projectUrl>
-    <iconUrl>https://github.com/alexbigkid/eir/raw/main/assets/icon.png</iconUrl>
-    <copyright>2024 ABK</copyright>
-    <licenseUrl>https://github.com/alexbigkid/eir/blob/main/LICENSE</licenseUrl>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <projectSourceUrl>https://github.com/alexbigkid/eir</projectSourceUrl>
-    <docsUrl>https://github.com/alexbigkid/eir/blob/main/README.md</docsUrl>
-    <bugTrackerUrl>https://github.com/alexbigkid/eir/issues</bugTrackerUrl>
-    <tags>exif images photos rename convert raw dng photography</tags>
+    <owners>alexbigkid</owners>
     <summary>EXIF-based image renamer and RAW format converter</summary>
-    <description>
-Eir is a Python application for EXIF-based image renaming and RAW format conversion. 
+    <description>Eir is a Python application for EXIF-based image renaming and RAW format conversion. 
 
 Features:
 - Supports 15+ RAW formats (CR2, CR3, NEF, ARW, etc.) and standard image/video formats
@@ -26,9 +15,19 @@ Features:
 - File organization: YYYYMMDD_project_name/make_model_extension/YYYYMMDD-HHMM_project_name_###.ext
 - RAW to DNG conversion via pydngconverter
 - Modern async/reactive architecture with RxPY
-- Performance optimized with concurrent operations
-    </description>
+- Performance optimized with concurrent operations</description>
+    <projectUrl>https://github.com/alexbigkid/eir</projectUrl>
+    <packageSourceUrl>https://github.com/alexbigkid/eir</packageSourceUrl>
+    <projectSourceUrl>https://github.com/alexbigkid/eir</projectSourceUrl>
+    <docsUrl>https://github.com/alexbigkid/eir/blob/main/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/alexbigkid/eir/issues</bugTrackerUrl>
+    <tags>exif images photos rename convert raw dng photography cli</tags>
+    <copyright>2024 ABK</copyright>
+    <licenseUrl>https://github.com/alexbigkid/eir/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <releaseNotes>https://github.com/alexbigkid/eir/releases</releaseNotes>
+    <dependencies>
+    </dependencies>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
