@@ -29,8 +29,21 @@ class TestRealImageIntegration:
     def run_eir_binary(self, eir_binary, target_dir: Path) -> int:
         """Run eir binary on target directory and return exit code."""
         if eir_binary:
-            # Use compiled binary
-            cmd = [str(eir_binary), "-d", str(target_dir), "-q"]
+            # Use compiled binary - convert to absolute path
+            binary_path = Path(eir_binary)
+            if not binary_path.is_absolute():
+                # Convert relative path to absolute from current working directory
+                binary_path = Path.cwd() / binary_path
+
+            # Check if binary exists
+            if not binary_path.exists():
+                raise FileNotFoundError(f"Binary not found: {binary_path}")
+
+            # Make sure binary is executable on Unix systems
+            if not binary_path.name.endswith(".exe"):
+                binary_path.chmod(0o755)
+
+            cmd = [str(binary_path), "-d", str(target_dir), "-q"]
         else:
             # Use uv run for local development
             cmd = ["uv", "run", "eir", "-d", str(target_dir), "-q"]
