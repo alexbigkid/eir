@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from eir.processor import ImageProcessor
 from eir.logger_manager import LoggerManager
@@ -214,7 +214,7 @@ class TestRealImageIntegration:
             assert total_pattern_files > 0, f"No valid naming patterns found in {dir_name}"
 
             # Check for sequential numbering (should end with _001, _002, etc.)
-            for subdir, files in result["files_by_subdirectory"].items():
+            for _subdir, files in result["files_by_subdirectory"].items():
                 for file_name in files:
                     name_without_ext = file_name.rsplit(".", 1)[0]
                     assert name_without_ext.endswith(("_001", "_002", "_003")), (
@@ -266,7 +266,8 @@ class TestRealImageIntegration:
             for expected_brand in expected_brands:
                 brand_dirs = [d for d in created_dirs if expected_brand in d.lower()]
                 assert len(brand_dirs) > 0, (
-                    f"No {expected_brand} directories found in {dir_name}. Created: {created_dirs}"
+                    f"No {expected_brand} directories found in {dir_name}. "
+                    f"Created: {created_dirs}"
                 )
 
     @pytest.mark.asyncio
@@ -302,9 +303,6 @@ class TestDirectoryFormatValidation:
 
     def test_existing_directory_format_validation(self):
         """Test that our validation accepts the existing test directory formats."""
-        from eir.processor import ImageProcessor
-        from unittest.mock import Mock, patch
-
         mock_logger = Mock()
 
         # Test single date directories
@@ -329,9 +327,6 @@ class TestDirectoryFormatValidation:
 
     def test_date_range_directory_validation(self):
         """Test that date range format is properly validated."""
-        from eir.processor import ImageProcessor
-        from unittest.mock import Mock, patch
-
         mock_logger = Mock()
 
         with patch("eir.logger_manager.LoggerManager") as mock_lm:

@@ -47,13 +47,13 @@ def setup_mixed_directory():
                     copied_count += 1
                     print(f"  Copied: {file_path.name} -> {dest_path.name}")
 
-    print(f"\n✅ Mixed directory setup complete!")
+    print("\n✅ Mixed directory setup complete!")
     print(f"📁 Directory: {mixed_dir}")
     print(f"📄 Total files copied: {copied_count}")
 
     # List final contents
     files = list(mixed_dir.glob("*"))
-    print(f"📋 Files in mixed directory:")
+    print("📋 Files in mixed directory:")
     for file_path in sorted(files):
         if file_path.is_file():
             print(f"  - {file_path.name}")
