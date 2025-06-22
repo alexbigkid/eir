@@ -51,7 +51,7 @@ class TestRealImageIntegration:
         result = subprocess.run(  # noqa: S603
             cmd, capture_output=True, text=True, cwd=target_dir.parent, check=False
         )
-        
+
         # If binary failed, include stdout/stderr in the error for debugging
         if result.returncode != 0:
             error_msg = f"Binary exited with code {result.returncode}"
@@ -60,9 +60,9 @@ class TestRealImageIntegration:
             if result.stderr:
                 error_msg += f"\nSTDERR: {result.stderr}"
             # Store error details for debugging
-            if not hasattr(self, '_last_error'):
+            if not hasattr(self, "_last_error"):
                 self._last_error = error_msg
-        
+
         return result.returncode
 
     @pytest.fixture
@@ -145,7 +145,9 @@ class TestRealImageIntegration:
                     results[dir_name]["original_count"] = original_count
                     results[dir_name]["success"] = True
                 else:
-                    error_msg = getattr(self, '_last_error', f"Binary exited with code {exit_code}")
+                    error_msg = getattr(
+                        self, "_last_error", f"Binary exited with code {exit_code}"
+                    )
                     results[dir_name] = {
                         "success": False,
                         "error": error_msg,
@@ -186,7 +188,7 @@ class TestRealImageIntegration:
                 # Verify date range processing
                 self.verify_date_range_results(results)
             else:
-                error_msg = getattr(self, '_last_error', f"binary exited with code {exit_code}")
+                error_msg = getattr(self, "_last_error", f"binary exited with code {exit_code}")
                 pytest.fail(f"Date range directory processing failed: {error_msg}")
 
         except Exception as e:
@@ -306,8 +308,10 @@ class TestRealImageIntegration:
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
             if exit_code != 0:
-                error_msg = getattr(self, '_last_error', f"Binary failed with exit code {exit_code}")
-                assert False, error_msg
+                error_msg = getattr(
+                    self, "_last_error", f"Binary failed with exit code {exit_code}"
+                )
+                raise AssertionError(error_msg)
 
             # Check that subdirectories contain expected camera brands
             created_dirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
@@ -330,8 +334,10 @@ class TestRealImageIntegration:
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
             if exit_code != 0:
-                error_msg = getattr(self, '_last_error', f"Binary failed with exit code {exit_code}")
-                assert False, error_msg
+                error_msg = getattr(
+                    self, "_last_error", f"Binary failed with exit code {exit_code}"
+                )
+                raise AssertionError(error_msg)
 
             # Should have both RAW and compressed image directories
             created_dirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
