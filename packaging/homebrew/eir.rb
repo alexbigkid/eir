@@ -5,6 +5,9 @@ class Eir < Formula
   url "https://github.com/alexbigkid/eir/releases/download/v#{version}/eir-#{version}-macos-universal"
   sha256 "REPLACE_WITH_ACTUAL_SHA256"
 
+  depends_on "exiftool"
+  depends_on cask: "adobe-dng-converter"
+
   def install
     bin.install "eir-#{version}-macos-universal" => "eir"
   end

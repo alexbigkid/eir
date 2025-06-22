@@ -27,6 +27,8 @@ Features:
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <releaseNotes>https://github.com/alexbigkid/eir/releases</releaseNotes>
     <dependencies>
+      <dependency id="exiftool" />
+      <dependency id="adobe-dnc" />
     </dependencies>
   </metadata>
   <files>
