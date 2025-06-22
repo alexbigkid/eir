@@ -1,6 +1,5 @@
 """Integration tests using real image files - runs only in CI pipeline."""
 
-import os
 import shutil
 import tempfile
 import pytest
@@ -11,10 +10,8 @@ from eir.processor import ImageProcessor
 from eir.logger_manager import LoggerManager
 
 
-# Mark all tests in this file as pipeline-only
-pytestmark = pytest.mark.skipif(
-    os.getenv("CI") != "true", reason="Integration tests with real images run only in CI pipeline"
-)
+# Mark all tests in this file as integration tests
+pytestmark = pytest.mark.integration
 
 
 class TestRealImageIntegration:
@@ -24,12 +21,13 @@ class TestRealImageIntegration:
     def logger(self):
         """Get logger for tests."""
         logger_manager = LoggerManager()
+        logger_manager.configure(quiet=True)  # Configure for test environment
         return logger_manager.get_logger()
 
     @pytest.fixture
     def test_images_dir(self):
         """Get path to test images directory."""
-        return Path(__file__).parent / "test_images"
+        return Path(__file__).parent.parent / "test_images"
 
     @pytest.fixture
     def temp_workspace(self):
