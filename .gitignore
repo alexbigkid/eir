@@ -27,3 +27,4 @@ logs/
 test_data/
 .coverage
 coverage.xml
+**/20110709-20230809_img_unsorted/
