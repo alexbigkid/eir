@@ -138,6 +138,9 @@ jobs:
 
       - name: Test Chocolatey package
         if: matrix.os_name == 'windows'
+        env:
+          OS_NAME: ${{ matrix.os_name }}
+          ARCH: ${{ matrix.arch }}
         run: .\.github\scripts\test_chocolatey_package.ps1 -Version ${{ needs.prepare-release.outputs.new_version }}
         shell: pwsh
 
