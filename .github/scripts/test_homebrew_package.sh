@@ -138,15 +138,23 @@ if [ -n "$BINARY_FILE" ]; then
     
     # Verify SHA256 checksum
     if command -v shasum >/dev/null 2>&1; then
-        ACTUAL_SHA=$(shasum -a 256 "$BINARY_FILE" | cut -d' ' -f1)
-        FORMULA_SHA=$(grep "sha256" "$FORMULA_FILE" | sed 's/.*sha256 *"\([^"]*\)".*/\1/')
+        ACTUAL_SHA=$(shasum -a 256 "$BINARY_FILE" | cut -d' ' -f1 | tr -d '\n\r\t ')
+        FORMULA_SHA=$(grep "sha256" "$FORMULA_FILE" | sed 's/.*sha256 *"\([^"]*\)".*/\1/' | tr -d '\n\r\t ')
+        
+        # Debug output for troubleshooting
+        echo "  Checking checksums (lengths: actual=${#ACTUAL_SHA}, formula=${#FORMULA_SHA})"
         
         if [ "$ACTUAL_SHA" = "$FORMULA_SHA" ]; then
             echo "✅ SHA256 checksum matches"
         else
             echo "❌ SHA256 checksum mismatch"
-            echo "  Expected: $FORMULA_SHA"
-            echo "  Actual:   $ACTUAL_SHA"
+            echo "  Expected: '$FORMULA_SHA'"
+            echo "  Actual:   '$ACTUAL_SHA'"
+            # Show character-by-character comparison for debugging
+            if command -v xxd >/dev/null 2>&1; then
+                echo "  Expected (hex): $(echo -n "$FORMULA_SHA" | xxd -p)"
+                echo "  Actual (hex):   $(echo -n "$ACTUAL_SHA" | xxd -p)"
+            fi
             exit 1
         fi
     else
