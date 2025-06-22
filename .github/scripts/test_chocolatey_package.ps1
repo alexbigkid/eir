@@ -20,7 +20,7 @@ Write-Host "📂 Looking for packages in: $PackagesDir" -ForegroundColor Blue
 $NupkgFile = Get-ChildItem -Path $PackagesDir -Name "eir.$Version.nupkg" -ErrorAction SilentlyContinue
 if (-not $NupkgFile) {
     Write-Host "❌ Could not find Chocolatey package eir.$Version.nupkg in $PackagesDir" -ForegroundColor Red
-    Write-Host "📂 Available files in $PackagesDir:" -ForegroundColor Yellow
+    Write-Host "📂 Available files in ${PackagesDir}:" -ForegroundColor Yellow
     if (Test-Path $PackagesDir) {
         Get-ChildItem -Path $PackagesDir | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Gray }
     } else {
