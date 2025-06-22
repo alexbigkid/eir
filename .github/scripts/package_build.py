@@ -118,7 +118,7 @@ def create_debian_package(version):
 
         # Build the .deb package
         try:
-            deb_filename = f"packages/eir_{version}_{deb_arch}.deb"
+            deb_filename = f"packages-{os_name}-{arch}/eir_{version}_{deb_arch}.deb"
             subprocess.run(  # noqa: S603,S607
                 ["dpkg-deb", "--build", str(pkg_dir), deb_filename], check=True
             )
