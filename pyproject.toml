@@ -71,6 +71,12 @@ filterwarnings = [
 ]
 
 
+markers = [
+    "integration: marks tests as integration tests with real images (deselect with '-m \"not integration\"')",
+    "pipeline_only: marks tests that run only in CI pipeline",
+]
+
+
 [tool.coverage.run]
 source = ["eir"]
 branch = true

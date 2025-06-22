@@ -133,7 +133,7 @@ class ImageProcessor:
             last_part_of_dir = os.path.basename(os.path.normpath(dir_name_to_validate))
 
             # Support both single date and date range formats
-            match = re.match(r"^(\d{8}(?:-\d{8})?)_\w+$", last_part_of_dir)
+            match = re.match(r"^(\d{8}(?:-\d{8})?)_[\w-]+$", last_part_of_dir)
             if not match:
                 raise ValueError("Regex match failed")
 
