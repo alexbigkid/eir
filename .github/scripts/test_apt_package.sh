@@ -11,6 +11,13 @@ fi
 
 echo "📦 Testing APT package for version $VERSION"
 
+# Quick diagnostic: Check if dpkg-deb is available
+if command -v dpkg-deb >/dev/null 2>&1; then
+    echo "✅ dpkg-deb is available: $(dpkg-deb --version | head -1)"
+else
+    echo "❌ dpkg-deb is not available - this may explain missing .deb files"
+fi
+
 # Get OS details
 OS_NAME="${OS_NAME:-linux}"
 ARCH="${ARCH:-x86_64}"
