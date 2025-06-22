@@ -124,6 +124,17 @@ jobs:
         shell: pwsh
         run: .\.github\scripts\test_binary.ps1 -Version ${{ needs.prepare-release.outputs.new_version }} -ArchBinExt ${{ matrix.arch_bin_ext }}
 
+      - name: Install system dependencies for integration tests
+        run: |
+          if [[ "${{ matrix.os_name }}" == "macos" ]]; then
+            brew install exiftool
+          elif [[ "${{ matrix.os_name }}" == "linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y exiftool
+          elif [[ "${{ matrix.os_name }}" == "windows" ]]; then
+            choco install exiftool
+          fi
+
       - name: Run integration tests
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
