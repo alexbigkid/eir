@@ -102,6 +102,8 @@ class ImageProcessor:
             current_dir = os.getcwd()
             norm_path = os.path.basename(os.path.normpath(current_dir))
             dir_parts = norm_path.split("_")
+            # Project name is everything after the first underscore
+            # This works for both YYYYMMDD_name and YYYYMMDD-YYYYMMDD_name formats
             self._project_name = "_".join(dir_parts[1:])
             self._logger.info(f"{self._project_name = }")
         return self._project_name
@@ -124,22 +126,57 @@ class ImageProcessor:
 
     @function_trace
     def _validate_image_dir(self) -> None:
-        """Validate that directory follows YYYYMMDD_project_name format."""
+        """Validate directory follows YYYYMMDD_project or YYYYMMDD-YYYYMMDD_project format."""
         self._logger.debug(f"{self._op_dir = }")
         try:
             dir_name_to_validate = self._op_dir if self._op_dir != "." else os.getcwd()
             last_part_of_dir = os.path.basename(os.path.normpath(dir_name_to_validate))
 
-            match = re.match(r"^(\d{8})_\w+$", last_part_of_dir)
+            # Support both single date and date range formats
+            match = re.match(r"^(\d{8}(?:-\d{8})?)_\w+$", last_part_of_dir)
             if not match:
                 raise ValueError("Regex match failed")
 
-            datetime.strptime(match.group(1), "%Y%m%d")
+            # Validate the date(s)
+            date_part = match.group(1)
+            if "-" in date_part:
+                # Date range format: YYYYMMDD-YYYYMMDD
+                start_date, end_date = date_part.split("-")
+                datetime.strptime(start_date, "%Y%m%d")
+                datetime.strptime(end_date, "%Y%m%d")
+                # Validate that start_date <= end_date
+                if start_date > end_date:
+                    raise ValueError("Start date must be before or equal to end date")
+            else:
+                # Single date format: YYYYMMDD
+                datetime.strptime(date_part, "%Y%m%d")
 
         except (AttributeError, ValueError) as e:
             raise ValueError(
-                "Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project"
+                "Invalid directory format. Use: YYYYMMDD_project or YYYYMMDD-YYYYMMDD_project"
             ) from e
+
+    def _extract_directory_info(self) -> tuple[str, bool]:
+        """Extract directory date and determine if it's a date range format.
+
+        Returns:
+            tuple: (fallback_date, is_date_range)
+                - fallback_date: YYYYMMDD format for fallback use
+                - is_date_range: True if directory uses YYYYMMDD-YYYYMMDD format
+        """
+        dir_name_to_extract = self._op_dir if self._op_dir != "." else os.getcwd()
+        last_part_of_dir = os.path.basename(os.path.normpath(dir_name_to_extract))
+
+        # Extract date part (before first underscore)
+        date_part = last_part_of_dir.split("_")[0]
+
+        if "-" in date_part:
+            # Date range format: use start date as fallback
+            start_date = date_part.split("-")[0]
+            return start_date, True
+        else:
+            # Single date format
+            return date_part, False
 
     @function_trace
     def _change_to_image_dir(self) -> None:
@@ -187,12 +224,27 @@ class ImageProcessor:
         if not list_type:
             return None
 
-        # Process metadata
-        metadata[ExifTag.CREATE_DATE.value] = (
-            metadata.get(ExifTag.CREATE_DATE.value, self.EXIF_UNKNOWN)
-            .replace(":", "")
-            .replace(" ", "_")
-        )
+        # Process EXIF date with fallback to directory date
+        exif_date = metadata.get(ExifTag.CREATE_DATE.value)
+        if exif_date and exif_date != self.EXIF_UNKNOWN:
+            # EXIF success: "2024:12:10 14:30:05" → "20241210-143005"
+            try:
+                # Validate and format EXIF date
+                datetime.strptime(exif_date, "%Y:%m:%d %H:%M:%S")
+                formatted_date = exif_date.replace(":", "").replace(" ", "-")
+                metadata[ExifTag.CREATE_DATE.value] = formatted_date
+            except ValueError:
+                # Invalid EXIF date format, use fallback
+                fallback_date, _ = self._extract_directory_info()
+                metadata[ExifTag.CREATE_DATE.value] = fallback_date
+                self._logger.warning(
+                    f"Invalid EXIF date '{exif_date}', using directory date: {fallback_date}"
+                )
+        else:
+            # EXIF failure: use directory date fallback
+            fallback_date, _ = self._extract_directory_info()
+            metadata[ExifTag.CREATE_DATE.value] = fallback_date
+            self._logger.debug(f"No EXIF date found, using directory date: {fallback_date}")
         metadata[ExifTag.MAKE.value] = metadata.get(
             ExifTag.MAKE.value, self.EXIF_UNKNOWN
         ).replace(" ", "")
@@ -358,7 +410,7 @@ class ImageProcessor:
         """Process a group of files of the same type."""
         self._logger.info(f"Processing file group: {key = }, {value = }")
 
-        # First, rename all files
+        # First, rename all files with sequential numbering
         rename_tasks = []
         for directory, obj_list in value.items():
             file_ext = directory.split("_")[-1]
@@ -367,12 +419,22 @@ class ImageProcessor:
             if not os.path.exists(directory):
                 os.makedirs(directory)
 
-            for obj in obj_list:
-                new_file_name = (
-                    f"./{directory}/{obj[ExifTag.CREATE_DATE.value]}_"
-                    f"{self.project_name}.{file_ext}"
-                ).lower()
+            # Sequential numbering for this directory
+            for seq_num, obj in enumerate(obj_list, start=1):
+                date_part = obj[ExifTag.CREATE_DATE.value]
+
+                # Determine file name format based on whether EXIF date includes time
+                if "-" in date_part and len(date_part) == 15:  # Format: YYYYMMDD-HHMMSS
+                    new_file_name = (
+                        f"./{directory}/{date_part}_{self.project_name}_{seq_num:03d}.{file_ext}"
+                    ).lower()
+                else:  # Format: YYYYMMDD (fallback)
+                    new_file_name = (
+                        f"./{directory}/{date_part}_{self.project_name}_{seq_num:03d}.{file_ext}"
+                    ).lower()
+
                 old_file_name = obj[ExifTag.SOURCE_FILE.value]
+                self._logger.debug(f"Renaming: {old_file_name} → {new_file_name}")
                 rename_tasks.append(self._rename_file_async(old_file_name, new_file_name))
 
         if rename_tasks:

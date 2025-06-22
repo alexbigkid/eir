@@ -55,7 +55,7 @@ class TestDirectoryValidationAndNavigation:
 
         for invalid_dir in invalid_cases:
             processor = ImageProcessor(logger=mock_logger, op_dir=invalid_dir)
-            with pytest.raises(ValueError, match="Not a valid date / directory format"):
+            with pytest.raises(ValueError, match="Invalid directory format"):
                 processor._validate_image_dir()
 
     @patch("eir.logger_manager.LoggerManager")
@@ -552,7 +552,7 @@ class TestErrorHandlingAndEdgeCases:
         mock_exiftool.return_value.__enter__ = Mock(return_value=mock_helper)
         mock_exiftool.return_value.__exit__ = Mock(return_value=None)
 
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         with patch("eir.logger_manager.LoggerManager") as mock_lm:
             mock_lm.return_value.get_logger.return_value = mock_logger
@@ -568,7 +568,7 @@ class TestErrorHandlingAndEdgeCases:
         mock_converter.convert.side_effect = Exception("Conversion failed")
         mock_dng_converter.return_value = mock_converter
 
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         with (
             patch("os.path.exists", return_value=True),
@@ -578,7 +578,7 @@ class TestErrorHandlingAndEdgeCases:
 
     def test_process_metadata_edge_cases(self, mock_logger):
         """Test metadata processing edge cases."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Test with empty metadata
         result = processor._process_metadata({}, [])
@@ -603,7 +603,7 @@ class TestErrorHandlingAndEdgeCases:
         result = processor._process_metadata(metadata, ["test.jpg"])
         assert result is not None
         _, _, processed = result
-        assert processed["EXIF:CreateDate"] == ""
+        assert processed["EXIF:CreateDate"] == "20241210"  # Falls back to directory date
         # Empty string and "unknown" are both valid for missing data
         assert processed["EXIF:Make"] in ["unknown", ""]
         # Empty string and "unknown" are both valid for missing data
@@ -611,7 +611,7 @@ class TestErrorHandlingAndEdgeCases:
 
     def test_project_name_edge_cases(self, mock_logger):
         """Test project name extraction edge cases."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Test with complex directory names
         with (
@@ -629,7 +629,7 @@ class TestErrorHandlingAndEdgeCases:
     @pytest.mark.asyncio
     async def test_rename_file_async_various_errors(self, mock_logger):
         """Test file renaming with various error conditions."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         with patch("os.rename") as mock_rename:
             # Test PermissionError
@@ -664,7 +664,7 @@ class TestIntegrationScenarios:
 
     def test_multiple_file_types_classification(self, mock_logger):
         """Test classification of multiple file types in one batch."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Test CR2 classification
         metadata = {"SourceFile": "photo.cr2", "EXIF:Make": "Canon"}
@@ -688,7 +688,7 @@ class TestIntegrationScenarios:
 
     def test_camera_manufacturer_inference_comprehensive(self, mock_logger):
         """Test comprehensive camera manufacturer inference from extensions."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         test_cases = [
             ("photo.nef", "Nikon"),
@@ -719,7 +719,7 @@ class TestPerformanceAndConcurrency:
     @pytest.mark.asyncio
     async def test_concurrent_file_operations(self, mock_logger):
         """Test concurrent file operations handling."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Test concurrent rename operations
         with patch("os.rename") as mock_rename:
@@ -734,7 +734,7 @@ class TestPerformanceAndConcurrency:
     @pytest.mark.asyncio
     async def test_concurrent_raw_conversion(self, mock_logger):
         """Test concurrent RAW to DNG conversion."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         with patch.object(processor, "convert_raw_to_dng") as mock_convert:
             mock_convert.return_value = None
@@ -787,7 +787,7 @@ class TestAdvancedMetadataScenarios:
         which handles compressed image files that are NOT JPG files, ensuring they
         are classified as COMPRESSED_IMAGE_DICT instead of being checked for thumbnail status.
         """
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Test various non-JPG compressed image formats (line 183 coverage)
         test_cases = [
@@ -821,14 +821,14 @@ class TestAdvancedMetadataScenarios:
 
     def test_complex_exif_date_formats(self, mock_logger):
         """Test handling of various EXIF date formats."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         test_cases = [
-            ("2024:12:10 14:30:05", "20241210_143005"),
-            ("2024:01:01 00:00:00", "20240101_000000"),
-            ("2024:12:31 23:59:59", "20241231_235959"),
-            ("", ""),  # Empty string stays empty
-            ("invalid_date", "invalid_date"),  # Preserves invalid format
+            ("2024:12:10 14:30:05", "20241210-143005"),  # New format with dash
+            ("2024:01:01 00:00:00", "20240101-000000"),  # New format with dash
+            ("2024:12:31 23:59:59", "20241231-235959"),  # New format with dash
+            ("", "20241210"),  # Empty uses directory fallback
+            ("invalid_date", "20241210"),  # Invalid uses directory fallback
         ]
 
         for input_date, expected_output in test_cases:
@@ -844,7 +844,7 @@ class TestAdvancedMetadataScenarios:
 
     def test_complex_make_model_processing(self, mock_logger):
         """Test complex make/model processing scenarios."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         test_cases = [
             # (make, model, expected_make, expected_model)
@@ -879,7 +879,7 @@ class TestAdvancedMetadataScenarios:
 
     def test_file_extension_normalization(self, mock_logger):
         """Test file extension normalization and case handling."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         test_cases = [
             "test.CR2",
@@ -910,7 +910,7 @@ class TestRegexAndPatternMatching:
 
     def test_files_to_exclude_comprehensive(self, mock_logger):
         """Test comprehensive file exclusion patterns."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
         pattern = processor.FILES_TO_EXCLUDE_EXPRESSION
 
         # Files that should be excluded
@@ -941,7 +941,7 @@ class TestRegexAndPatternMatching:
 
     def test_directory_name_validation_regex(self, mock_logger):
         """Test directory name validation regex patterns."""
-        processor = ImageProcessor(logger=mock_logger, op_dir="test")
+        processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Valid patterns
         valid_dirs = [

@@ -200,7 +200,7 @@ class TestMetadataProcessing:
         list_type, dir_name, processed_metadata = result
         assert list_type == ListType.RAW_IMAGE_DICT
         assert dir_name == "canon_eosr5_cr2"
-        assert processed_metadata["EXIF:CreateDate"] == "20241210_143000"
+        assert processed_metadata["EXIF:CreateDate"] == "20241210-143000"
         assert processed_metadata["EXIF:Make"] == "Canon"
         assert processed_metadata["EXIF:Model"] == "EOSR5"
 
@@ -413,7 +413,7 @@ class TestComplexScenarios:
         _, _, processed_metadata = result
 
         assert (
-            processed_metadata["EXIF:CreateDate"] == "20241210_143005"
+            processed_metadata["EXIF:CreateDate"] == "20241210-143005"
         )  # Formatted for filename
 
     def test_file_extension_case_handling(self, mock_logger):
