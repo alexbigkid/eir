@@ -65,6 +65,8 @@ sources = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# Exclude integration tests from default discovery
+norecursedirs = ["tests/integration"]
 filterwarnings = [
     "ignore::DeprecationWarning:reactivex.*",
     "ignore:coroutine.*was never awaited:RuntimeWarning",
