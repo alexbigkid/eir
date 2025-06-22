@@ -7,7 +7,7 @@ from pathlib import Path
 
 def setup_mixed_directory():
     """Set up the mixed date range directory with files from all other directories."""
-    test_images_dir = Path(__file__).parent.parent / "test_images"
+    test_images_dir = Path(__file__).parent / "test_images"
     mixed_dir = test_images_dir / "20110709-20230809_img_unsorted"
 
     # Clear existing mixed directory

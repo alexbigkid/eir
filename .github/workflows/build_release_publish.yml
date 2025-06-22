@@ -124,6 +124,11 @@ jobs:
         shell: pwsh
         run: .\.github\scripts\test_binary.ps1 -Version ${{ needs.prepare-release.outputs.new_version }} -ArchBinExt ${{ matrix.arch_bin_ext }}
 
+      - name: Run integration tests
+        env:
+          EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
+        run: uv run pytest tests/integration/ -v
+
       - name: Install APT tools
         if: matrix.os_name == 'linux'
         run: |

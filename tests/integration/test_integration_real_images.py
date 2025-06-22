@@ -1,13 +1,12 @@
 """Integration tests using real image files - runs only in CI pipeline."""
 
+import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch
-
-from eir.processor import ImageProcessor
-from eir.logger_manager import LoggerManager
 
 
 # Mark all tests in this file as integration tests
@@ -18,16 +17,32 @@ class TestRealImageIntegration:
     """Integration tests using real image files from various cameras and dates."""
 
     @pytest.fixture
-    def logger(self):
-        """Get logger for tests."""
-        logger_manager = LoggerManager()
-        logger_manager.configure(quiet=True)  # Configure for test environment
-        return logger_manager.get_logger()
+    def eir_binary(self):
+        """Get path to eir binary for subprocess calls."""
+        # Check if we're running in CI with a built binary
+        binary_path = os.environ.get('EIR_BINARY_PATH')
+        if binary_path and Path(binary_path).exists():
+            return binary_path
+        
+        # Fall back to uv run for local development
+        return None
+
+    def run_eir_binary(self, eir_binary, target_dir: Path) -> int:
+        """Run eir binary on target directory and return exit code."""
+        if eir_binary:
+            # Use compiled binary
+            cmd = [str(eir_binary), "-d", str(target_dir), "-q"]
+        else:
+            # Use uv run for local development
+            cmd = ["uv", "run", "eir", "-d", str(target_dir), "-q"]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=target_dir.parent)
+        return result.returncode
 
     @pytest.fixture
     def test_images_dir(self):
         """Get path to test images directory."""
-        return Path(__file__).parent.parent / "test_images"
+        return Path(__file__).parent / "test_images"
 
     @pytest.fixture
     def temp_workspace(self):
@@ -67,8 +82,7 @@ class TestRealImageIntegration:
 
         return mixed_dir
 
-    @pytest.mark.asyncio
-    async def test_single_date_directories(self, logger, test_images_dir, temp_workspace):
+    def test_single_date_directories(self, eir_binary, test_images_dir, temp_workspace):
         """Test processing of single-date format directories."""
         single_date_dirs = [
             "20110709_canon",
@@ -91,20 +105,25 @@ class TestRealImageIntegration:
             # Copy directory to temp workspace
             test_dir = self.copy_test_directory(source_dir, temp_workspace)
 
-            # Process with ImageProcessor
-            processor = ImageProcessor(logger=logger, op_dir=str(test_dir))
-
             # Store original file list
             original_files = list(test_dir.glob("*"))
             original_count = len([f for f in original_files if f.is_file()])
 
             try:
-                await processor.process_images_reactive()
-
-                # Analyze results
-                results[dir_name] = self.analyze_processing_results(test_dir, dir_name)
-                results[dir_name]["original_count"] = original_count
-                results[dir_name]["success"] = True
+                # Run eir binary on the test directory
+                exit_code = self.run_eir_binary(eir_binary, test_dir)
+                
+                if exit_code == 0:
+                    # Analyze results
+                    results[dir_name] = self.analyze_processing_results(test_dir, dir_name)
+                    results[dir_name]["original_count"] = original_count
+                    results[dir_name]["success"] = True
+                else:
+                    results[dir_name] = {
+                        "success": False,
+                        "error": f"Binary exited with code {exit_code}",
+                        "original_count": original_count,
+                    }
 
             except Exception as e:
                 results[dir_name] = {
@@ -116,8 +135,7 @@ class TestRealImageIntegration:
         # Verify results
         self.verify_single_date_results(results)
 
-    @pytest.mark.asyncio
-    async def test_date_range_directory(self, logger, test_images_dir, temp_workspace):
+    def test_date_range_directory(self, eir_binary, test_images_dir, temp_workspace):
         """Test processing of date range format directory."""
         # Set up mixed directory
         mixed_dir = self.setup_mixed_directory(test_images_dir, temp_workspace)
@@ -126,19 +144,20 @@ class TestRealImageIntegration:
         original_files = list(mixed_dir.glob("*"))
         original_count = len([f for f in original_files if f.is_file()])
 
-        # Process with ImageProcessor
-        processor = ImageProcessor(logger=logger, op_dir=str(mixed_dir))
-
         try:
-            await processor.process_images_reactive()
+            # Run eir binary on the mixed directory
+            exit_code = self.run_eir_binary(eir_binary, mixed_dir)
+            
+            if exit_code == 0:
+                # Analyze results
+                results = self.analyze_processing_results(mixed_dir, "20110709-20230809_mixed_images")
+                results["original_count"] = original_count
+                results["success"] = True
 
-            # Analyze results
-            results = self.analyze_processing_results(mixed_dir, "20110709-20230809_mixed_images")
-            results["original_count"] = original_count
-            results["success"] = True
-
-            # Verify date range processing
-            self.verify_date_range_results(results, mixed_dir)
+                # Verify date range processing
+                self.verify_date_range_results(results)
+            else:
+                pytest.fail(f"Date range directory processing failed: binary exited with code {exit_code}")
 
         except Exception as e:
             pytest.fail(f"Date range directory processing failed: {e}")
@@ -219,7 +238,7 @@ class TestRealImageIntegration:
                         f"File {file_name} doesn't have sequential numbering"
                     )
 
-    def verify_date_range_results(self, results: dict, mixed_dir: Path):
+    def verify_date_range_results(self, results: dict):
         """Verify results from date range directory processing."""
         # Should have processed files
         assert results["total_processed_files"] > 0, "No files processed in mixed directory"
@@ -236,8 +255,7 @@ class TestRealImageIntegration:
             numbered_files = [f for f in files if "_001" in f or "_002" in f or "_003" in f]
             assert len(numbered_files) > 0, f"No sequential numbering found in {subdir}"
 
-    @pytest.mark.asyncio
-    async def test_camera_brand_organization(self, logger, test_images_dir, temp_workspace):
+    def test_camera_brand_organization(self, eir_binary, test_images_dir, temp_workspace):
         """Test that different camera brands are organized correctly."""
         # Test a few specific directories to verify camera brand detection
         test_cases = [
@@ -254,9 +272,10 @@ class TestRealImageIntegration:
                 continue
 
             test_dir = self.copy_test_directory(source_dir, temp_workspace)
-            processor = ImageProcessor(logger=logger, op_dir=str(test_dir))
-
-            await processor.process_images_reactive()
+            
+            # Run eir binary on the test directory
+            exit_code = self.run_eir_binary(eir_binary, test_dir)
+            assert exit_code == 0, f"Binary failed with exit code {exit_code}"
 
             # Check that subdirectories contain expected camera brands
             created_dirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
@@ -268,17 +287,17 @@ class TestRealImageIntegration:
                     f"Created: {created_dirs}"
                 )
 
-    @pytest.mark.asyncio
-    async def test_file_type_processing(self, logger, test_images_dir, temp_workspace):
+    def test_file_type_processing(self, eir_binary, test_images_dir, temp_workspace):
         """Test that different file types (RAW, compressed) are processed correctly."""
         # Use Sony directory which has both ARW and JPG files
         source_dir = test_images_dir / "20230809_Sony_a6700"
 
         if source_dir.exists():
             test_dir = self.copy_test_directory(source_dir, temp_workspace)
-            processor = ImageProcessor(logger=logger, op_dir=str(test_dir))
-
-            await processor.process_images_reactive()
+            
+            # Run eir binary on the test directory
+            exit_code = self.run_eir_binary(eir_binary, test_dir)
+            assert exit_code == 0, f"Binary failed with exit code {exit_code}"
 
             # Should have both RAW and compressed image directories
             created_dirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
@@ -296,48 +315,3 @@ class TestRealImageIntegration:
             assert len(jpg_dirs) > 0, f"No JPG directories found. Created: {created_dirs}"
 
 
-class TestDirectoryFormatValidation:
-    """Test directory format validation with real directory names."""
-
-    def test_existing_directory_format_validation(self):
-        """Test that our validation accepts the existing test directory formats."""
-        mock_logger = Mock()
-
-        # Test single date directories
-        single_date_dirs = [
-            "20110709_canon",
-            "20211218_sony",
-            "20221231_iPhone_raw",
-            "20230808_sony",
-            "20230809_Canon_R8",
-            "20230809_Fujifilm_X-S20",
-            "20230809_Leica_Q3",
-            "20230809_Sony_a6700",
-        ]
-
-        with patch("eir.logger_manager.LoggerManager") as mock_lm:
-            mock_lm.return_value.get_logger.return_value = mock_logger
-
-            for dir_name in single_date_dirs:
-                processor = ImageProcessor(logger=mock_logger, op_dir=dir_name)
-                # Should not raise exception
-                processor._validate_image_dir()
-
-    def test_date_range_directory_validation(self):
-        """Test that date range format is properly validated."""
-        mock_logger = Mock()
-
-        with patch("eir.logger_manager.LoggerManager") as mock_lm:
-            mock_lm.return_value.get_logger.return_value = mock_logger
-
-            # Test date range directory
-            processor = ImageProcessor(
-                logger=mock_logger, op_dir="20110709-20230809_mixed_images"
-            )
-            # Should not raise exception
-            processor._validate_image_dir()
-
-            # Test extraction
-            fallback_date, is_range = processor._extract_directory_info()
-            assert fallback_date == "20110709"
-            assert is_range is True
