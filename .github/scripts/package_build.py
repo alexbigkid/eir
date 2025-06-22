@@ -119,14 +119,31 @@ def create_debian_package(version):
         # Build the .deb package
         try:
             deb_filename = f"packages-{os_name}-{arch}/eir_{version}_{deb_arch}.deb"
-            subprocess.run(  # noqa: S603,S607
-                ["dpkg-deb", "--build", str(pkg_dir), deb_filename], check=True
-            )
-            print(f"Created Debian package: {deb_filename}")
-            created_packages.append(deb_filename)
+            print(f"Running: dpkg-deb --build {pkg_dir} {deb_filename}")
 
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            print(f"Failed to create {deb_arch} Debian package: {e}")
+            # Ensure the target directory exists
+            Path(deb_filename).parent.mkdir(parents=True, exist_ok=True)
+
+            result = subprocess.run(  # noqa: S603,S607
+                ["dpkg-deb", "--build", str(pkg_dir), deb_filename],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            print(f"stdout: {result.stdout}")
+
+            if Path(deb_filename).exists():
+                print(f"✅ Created Debian package: {deb_filename}")
+                created_packages.append(deb_filename)
+            else:
+                print(f"❌ dpkg-deb command succeeded but file not found: {deb_filename}")
+
+        except subprocess.CalledProcessError as e:
+            print(f"❌ dpkg-deb failed with exit code {e.returncode}")
+            print(f"stdout: {e.stdout}")
+            print(f"stderr: {e.stderr}")
+        except FileNotFoundError as e:
+            print(f"❌ dpkg-deb command not found: {e}")
             print("Note: dpkg-deb is required to build Debian packages")
 
     # Create APT repository with all packages
@@ -275,9 +292,7 @@ def update_chocolatey_package(version, checksum):
     content = content.replace("REPLACE_WITH_ACTUAL_CHECKSUM", checksum)
     # Fix the URL to match the actual binary filename format
     content = re.sub(
-        r"eir-\$version-windows-amd64\.exe",
-        "eir-$version-windows-x86_64.exe",
-        content
+        r"eir-\$version-windows-amd64\.exe", "eir-$version-windows-x86_64.exe", content
     )
     install_path.write_text(content, encoding="utf-8")
 
