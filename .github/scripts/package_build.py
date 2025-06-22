@@ -121,6 +121,15 @@ def create_debian_package(version):
             deb_filename = f"packages-{os_name}-{arch}/eir_{version}_{deb_arch}.deb"
             print(f"Running: dpkg-deb --build {pkg_dir} {deb_filename}")
 
+            # Debug: Show package structure before building
+            print(f"📂 Package directory structure for {pkg_dir}:")
+            for path in sorted(pkg_dir.rglob("*")):
+                if path.is_file():
+                    perms = oct(path.stat().st_mode)[-3:]
+                    size = path.stat().st_size
+                    rel_path = path.relative_to(pkg_dir)
+                    print(f"  {perms} {size:>8} {rel_path}")
+
             # Ensure the target directory exists
             Path(deb_filename).parent.mkdir(parents=True, exist_ok=True)
 
