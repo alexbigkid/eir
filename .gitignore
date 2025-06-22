@@ -24,6 +24,6 @@ apt-repo/
 
 logs/
 **/.DS_Store
-test_images/
+test_data/
 .coverage
 coverage.xml
