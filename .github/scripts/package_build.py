@@ -40,7 +40,7 @@ def update_homebrew_formula(version, sha256_hash):
     packages_dir = Path(f"packages-{os_name}-{arch}")
     packages_dir.mkdir(exist_ok=True)
 
-    formula_path = Path("homebrew/eir.rb")
+    formula_path = Path("packaging/homebrew/eir.rb")
     content = formula_path.read_text()
 
     # Update version and SHA256
@@ -101,7 +101,7 @@ def create_debian_package(version):
         debian_dir.mkdir(exist_ok=True)
 
         # Update control file with current version and architecture
-        control_content = Path("debian/control").read_text(encoding="utf-8")
+        control_content = Path("packaging/debian/control").read_text(encoding="utf-8")
         # Replace any existing version with the new one
         control_content = re.sub(r"Version:\s+[^\s]+", f"Version: {version}", control_content)
         control_content = control_content.replace(
@@ -113,8 +113,8 @@ def create_debian_package(version):
 
         # Copy other debian files
         for other_file in ["copyright"]:
-            if Path(f"debian/{other_file}").exists():
-                shutil.copy2(f"debian/{other_file}", debian_dir / other_file)
+            if Path(f"packaging/debian/{other_file}").exists():
+                shutil.copy2(f"packaging/debian/{other_file}", debian_dir / other_file)
 
         # Build the .deb package
         try:
@@ -285,7 +285,7 @@ def update_chocolatey_package(version, checksum):
     packages_dir.mkdir(exist_ok=True)
 
     # Copy chocolatey directory structure directly to packages directory
-    shutil.copytree("chocolatey", packages_dir, dirs_exist_ok=True)
+    shutil.copytree("packaging/chocolatey", packages_dir, dirs_exist_ok=True)
 
     # Update nuspec file
     nuspec_path = packages_dir / "eir.nuspec"
