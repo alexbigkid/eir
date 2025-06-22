@@ -144,6 +144,20 @@ jobs:
         run: .\.github\scripts\test_chocolatey_package.ps1 -Version ${{ needs.prepare-release.outputs.new_version }}
         shell: pwsh
 
+      - name: Test APT package
+        if: matrix.os_name == 'linux'
+        env:
+          OS_NAME: ${{ matrix.os_name }}
+          ARCH: ${{ matrix.arch }}
+        run: ./.github/scripts/test_apt_package.sh ${{ needs.prepare-release.outputs.new_version }}
+
+      - name: Test Homebrew package
+        if: matrix.os_name == 'macos'
+        env:
+          OS_NAME: ${{ matrix.os_name }}
+          ARCH: ${{ matrix.arch }}
+        run: ./.github/scripts/test_homebrew_package.sh ${{ needs.prepare-release.outputs.new_version }}
+
       - name: Upload binary artifacts
         uses: actions/upload-artifact@v4
         with:

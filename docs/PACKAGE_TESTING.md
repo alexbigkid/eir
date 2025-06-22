@@ -1,46 +1,90 @@
-# Chocolatey Package Testing Guide
+# Package Testing Guide
 
-This document describes how to test Chocolatey packages for the `eir` project both in CI/CD pipelines and locally.
+This document describes how to test packages for the `eir` project across different package managers (Chocolatey, APT, Homebrew) both in CI/CD pipelines and locally.
 
 ## Overview
 
-The project includes multiple levels of Chocolatey package testing:
+The project includes comprehensive package testing for all supported package managers:
 
-1. **Automated CI Testing** - Runs on every Windows build in GitHub Actions
+### Package Manager Support
+- **Chocolatey** (Windows) - `.nupkg` packages
+- **APT** (Linux) - `.deb` packages  
+- **Homebrew** (macOS) - `.rb` formula files
+
+### Testing Levels
+1. **Automated CI Testing** - Runs on every platform build in GitHub Actions
 2. **Local Testing** - Quick verification on developer machines  
-3. **Full Environment Testing** - Using Chocolatey's official test environment
+3. **Full Environment Testing** - Using official test environments
 
 ## Automated CI Testing
 
 ### What's Tested
 
-The CI pipeline automatically tests:
-- ✅ Package structure validation
+The CI pipeline automatically tests all package formats:
+
+#### Chocolatey (Windows)
+- ✅ Package structure validation (.nupkg)
 - ✅ PowerShell script syntax checking
 - ✅ Metadata verification
 - ✅ Binary availability and execution
 - ✅ Version consistency
 
-### Test Script
+#### APT (Linux)
+- ✅ Package structure validation (.deb)
+- ✅ Control file verification
+- ✅ File contents and permissions
+- ✅ Package quality checks (lintian)
+- ✅ Binary availability and execution
 
-The test runs automatically on Windows builds via:
-```powershell
+#### Homebrew (macOS)
+- ✅ Formula syntax validation (.rb)
+- ✅ Formula structure verification
+- ✅ SHA256 checksum validation
+- ✅ Binary availability and execution
+- ✅ Homebrew audit checks
+
+### Test Scripts
+
+Tests run automatically on platform-specific builds:
+
+```bash
+# Chocolatey (Windows)
 .\.github\scripts\test_chocolatey_package.ps1 -Version $VERSION
+
+# APT (Linux)
+./.github/scripts/test_apt_package.sh $VERSION
+
+# Homebrew (macOS)
+./.github/scripts/test_homebrew_package.sh $VERSION
 ```
 
 ## Local Testing
 
 ### Quick Testing
 
-For basic validation on your local Windows machine:
+For basic validation on your local machine:
 
+#### Chocolatey (Windows)
 ```powershell
 # Run the same tests as CI
 .\.github\scripts\test_chocolatey_package.ps1 -Version "0.1.58"
 ```
 
+#### APT (Linux)
+```bash
+# Run the same tests as CI
+./.github/scripts/test_apt_package.sh "0.1.58"
+```
+
+#### Homebrew (macOS)
+```bash
+# Run the same tests as CI
+./.github/scripts/test_homebrew_package.sh "0.1.58"
+```
+
 ### Manual Package Testing
 
+#### Chocolatey (Windows)
 ```powershell
 # Build the package locally
 uv run python .github/scripts/package_build.py
@@ -50,6 +94,27 @@ choco install eir --source .\packages-windows-amd64 --version 0.1.58 --whatif
 
 # Full local installation test
 choco install eir --source .\packages-windows-amd64 --version 0.1.58 --force
+```
+
+#### APT (Linux)
+```bash
+# Build the package locally
+uv run python .github/scripts/package_build.py
+
+# Test package info
+dpkg -I ./packages-linux-x86_64/eir_0.1.58_amd64.deb
+
+# Test installation (requires sudo)
+sudo dpkg -i ./packages-linux-x86_64/eir_0.1.58_amd64.deb
+```
+
+#### Homebrew (macOS)
+```bash
+# Build the package locally
+uv run python .github/scripts/package_build.py
+
+# Test formula installation (local)
+brew install --build-from-source ./packages-macos-universal/eir.rb
 ```
 
 ## Full Environment Testing
