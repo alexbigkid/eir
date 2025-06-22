@@ -13,14 +13,46 @@ $OSName = $env:OS_NAME
 $Arch = $env:ARCH
 $PackagesDir = "packages-$OSName-$Arch"
 
+Write-Host "📍 Current directory: $(Get-Location)" -ForegroundColor Blue
+Write-Host "📂 Looking for packages in: $PackagesDir" -ForegroundColor Blue
+
 # Find the .nupkg file
 $NupkgFile = Get-ChildItem -Path $PackagesDir -Name "eir.$Version.nupkg" -ErrorAction SilentlyContinue
 if (-not $NupkgFile) {
-    Write-Host "❌ Could not find Chocolatey package eir.$Version.nupkg" -ForegroundColor Red
-    exit 1
+    Write-Host "❌ Could not find Chocolatey package eir.$Version.nupkg in $PackagesDir" -ForegroundColor Red
+    Write-Host "📂 Available files in $PackagesDir:" -ForegroundColor Yellow
+    if (Test-Path $PackagesDir) {
+        Get-ChildItem -Path $PackagesDir | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Gray }
+    } else {
+        Write-Host "  Directory $PackagesDir does not exist" -ForegroundColor Gray
+    }
+    
+    # Try to find the package in other locations
+    Write-Host "🔍 Searching for .nupkg files in current directory..." -ForegroundColor Yellow
+    $AllNupkgFiles = Get-ChildItem -Path . -Name "*.nupkg" -Recurse -ErrorAction SilentlyContinue
+    if ($AllNupkgFiles) {
+        Write-Host "📦 Found .nupkg files:" -ForegroundColor Blue
+        $AllNupkgFiles | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+        
+        # Try to find one matching our version
+        $VersionMatch = $AllNupkgFiles | Where-Object { $_ -like "*$Version*" } | Select-Object -First 1
+        if ($VersionMatch) {
+            Write-Host "✅ Found matching package: $VersionMatch" -ForegroundColor Green
+            $NupkgPath = $VersionMatch
+            # Update PackagesDir to the actual location
+            $PackagesDir = Split-Path $VersionMatch -Parent
+            if ([string]::IsNullOrEmpty($PackagesDir)) { $PackagesDir = "." }
+        } else {
+            exit 1
+        }
+    } else {
+        Write-Host "❌ No .nupkg files found anywhere" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    $NupkgPath = Join-Path $PackagesDir $NupkgFile
 }
 
-$NupkgPath = Join-Path $PackagesDir $NupkgFile
 Write-Host "📦 Found package: $NupkgPath" -ForegroundColor Green
 
 # Test 1: Verify package structure
