@@ -2,8 +2,7 @@
 
 import os
 import shutil
-import subprocess
-import sys
+import subprocess  # noqa: S404
 import tempfile
 import pytest
 from pathlib import Path
@@ -20,10 +19,10 @@ class TestRealImageIntegration:
     def eir_binary(self):
         """Get path to eir binary for subprocess calls."""
         # Check if we're running in CI with a built binary
-        binary_path = os.environ.get('EIR_BINARY_PATH')
+        binary_path = os.environ.get("EIR_BINARY_PATH")
         if binary_path and Path(binary_path).exists():
             return binary_path
-        
+
         # Fall back to uv run for local development
         return None
 
@@ -35,8 +34,10 @@ class TestRealImageIntegration:
         else:
             # Use uv run for local development
             cmd = ["uv", "run", "eir", "-d", str(target_dir), "-q"]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=target_dir.parent)
+
+        result = subprocess.run(  # noqa: S603
+            cmd, capture_output=True, text=True, cwd=target_dir.parent, check=False
+        )
         return result.returncode
 
     @pytest.fixture
@@ -112,7 +113,7 @@ class TestRealImageIntegration:
             try:
                 # Run eir binary on the test directory
                 exit_code = self.run_eir_binary(eir_binary, test_dir)
-                
+
                 if exit_code == 0:
                     # Analyze results
                     results[dir_name] = self.analyze_processing_results(test_dir, dir_name)
@@ -147,17 +148,21 @@ class TestRealImageIntegration:
         try:
             # Run eir binary on the mixed directory
             exit_code = self.run_eir_binary(eir_binary, mixed_dir)
-            
+
             if exit_code == 0:
                 # Analyze results
-                results = self.analyze_processing_results(mixed_dir, "20110709-20230809_mixed_images")
+                results = self.analyze_processing_results(
+                    mixed_dir, "20110709-20230809_mixed_images"
+                )
                 results["original_count"] = original_count
                 results["success"] = True
 
                 # Verify date range processing
                 self.verify_date_range_results(results)
             else:
-                pytest.fail(f"Date range directory processing failed: binary exited with code {exit_code}")
+                pytest.fail(
+                    f"Date range directory processing failed: binary exited with code {exit_code}"
+                )
 
         except Exception as e:
             pytest.fail(f"Date range directory processing failed: {e}")
@@ -272,7 +277,7 @@ class TestRealImageIntegration:
                 continue
 
             test_dir = self.copy_test_directory(source_dir, temp_workspace)
-            
+
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
             assert exit_code == 0, f"Binary failed with exit code {exit_code}"
@@ -294,7 +299,7 @@ class TestRealImageIntegration:
 
         if source_dir.exists():
             test_dir = self.copy_test_directory(source_dir, temp_workspace)
-            
+
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
             assert exit_code == 0, f"Binary failed with exit code {exit_code}"
@@ -313,5 +318,3 @@ class TestRealImageIntegration:
             # Should have JPG directory
             jpg_dirs = [d for d in created_dirs if "jpg" in d.lower()]
             assert len(jpg_dirs) > 0, f"No JPG directories found. Created: {created_dirs}"
-
-
