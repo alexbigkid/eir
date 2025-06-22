@@ -136,6 +136,11 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: uv run python .github/scripts/package_build.py
 
+      - name: Test Chocolatey package
+        if: matrix.os_name == 'windows'
+        run: .\.github\scripts\test_chocolatey_package.ps1 -Version ${{ needs.prepare-release.outputs.new_version }}
+        shell: pwsh
+
       - name: Upload binary artifacts
         uses: actions/upload-artifact@v4
         with:
