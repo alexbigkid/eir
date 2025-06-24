@@ -143,9 +143,12 @@ jobs:
         shell: pwsh
         run: |
           choco install exiftool -y
-          choco install adobe-dnc -y
+          # Skip Adobe DNG Converter on Windows due to 1.65GB download size
+          # Integration tests will test core functionality without DNG conversion
 
       - name: Run integration tests
+        # Only run integration tests on macOS where Adobe DNG Converter is available
+        if: matrix.os_name == 'macos'
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
         run: uv run pytest tests/integration/ -v
