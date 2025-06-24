@@ -94,6 +94,9 @@ class ImageProcessor:
             set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts])
         )
         self._project_name = None
+        
+        # Configure DNG converter early
+        self._configure_dng_converter()
 
     @property
     def project_name(self) -> str:
@@ -124,6 +127,16 @@ class ImageProcessor:
 
         # Configure DNG converter based on platform
         self._configure_dng_converter()
+        
+        # Debug: Check environment variable before conversion
+        env_var = os.environ.get("PYDNG_DNG_CONVERTER")
+        self._logger.info(f"PYDNG_DNG_CONVERTER environment variable: {env_var}")
+        
+        if env_var:
+            env_path = Path(env_var)
+            self._logger.info(f"DNGLab binary exists: {env_path.exists()}")
+            if env_path.exists():
+                self._logger.info(f"DNGLab binary is executable: {os.access(env_var, os.X_OK)}")
 
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
         await py_dng.convert()
@@ -134,7 +147,7 @@ class ImageProcessor:
 
         if platform.system().lower() == "linux":
             # On Linux, try to use bundled DNGLab
-            self._logger.debug(
+            self._logger.info(
                 f"Configuring DNG converter for Linux, machine: {platform.machine()}"
             )
             dnglab_path = self._find_dnglab_binary()
@@ -159,42 +172,42 @@ class ImageProcessor:
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
 
-        self._logger.debug(f"Looking for DNGLab binary, machine: {machine}, arch: {dnglab_arch}")
+        self._logger.info(f"Looking for DNGLab binary, machine: {machine}, arch: {dnglab_arch}")
 
         # Try bundled DNGLab first (PyInstaller extracts to temp dir)
         if getattr(sys, "frozen", False):
             # Running as compiled binary
             bundle_dir = sys._MEIPASS  # PyInstaller temp directory
-            self._logger.debug(f"Running as compiled binary, bundle_dir: {bundle_dir}")
+            self._logger.info(f"Running as compiled binary, bundle_dir: {bundle_dir}")
             dnglab_bundled = Path(bundle_dir) / "tools" / "linux" / f"dnglab_{dnglab_arch}"
-            self._logger.debug(f"Checking bundled DNGLab: {dnglab_bundled}")
+            self._logger.info(f"Checking bundled DNGLab: {dnglab_bundled}")
             if dnglab_bundled.exists():
-                self._logger.debug(f"Found bundled DNGLab: {dnglab_bundled}")
+                self._logger.info(f"Found bundled DNGLab: {dnglab_bundled}")
                 return str(dnglab_bundled)
             else:
-                self._logger.debug(f"Bundled DNGLab not found: {dnglab_bundled}")
+                self._logger.warning(f"Bundled DNGLab not found: {dnglab_bundled}")
                 # List available files in bundle tools directory for debugging
                 tools_dir = Path(bundle_dir) / "tools" / "linux"
                 if tools_dir.exists():
                     available_files = list(tools_dir.glob("*"))
-                    self._logger.debug(f"Available files in {tools_dir}: {available_files}")
+                    self._logger.warning(f"Available files in {tools_dir}: {available_files}")
                 else:
-                    self._logger.debug(f"Tools directory not found: {tools_dir}")
+                    self._logger.warning(f"Tools directory not found: {tools_dir}")
 
         # Try system PATH
         dnglab_system = shutil.which("dnglab")
         if dnglab_system:
-            self._logger.debug(f"Found DNGLab in system PATH: {dnglab_system}")
+            self._logger.info(f"Found DNGLab in system PATH: {dnglab_system}")
             return dnglab_system
 
         # Try local tools directory (development)
         dnglab_local = Path("tools") / "linux" / f"dnglab_{dnglab_arch}"
-        self._logger.debug(f"Checking local DNGLab: {dnglab_local}")
+        self._logger.info(f"Checking local DNGLab: {dnglab_local}")
         if dnglab_local.exists():
-            self._logger.debug(f"Found local DNGLab: {dnglab_local}")
+            self._logger.info(f"Found local DNGLab: {dnglab_local}")
             return str(dnglab_local.absolute())
 
-        self._logger.debug("No DNGLab binary found")
+        self._logger.warning("No DNGLab binary found")
         return None
 
     @function_trace
