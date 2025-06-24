@@ -134,7 +134,9 @@ class ImageProcessor:
 
         if platform.system().lower() == "linux":
             # On Linux, try to use bundled DNGLab
-            self._logger.debug(f"Configuring DNG converter for Linux, machine: {platform.machine()}")
+            self._logger.debug(
+                f"Configuring DNG converter for Linux, machine: {platform.machine()}"
+            )
             dnglab_path = self._find_dnglab_binary()
             if dnglab_path:
                 os.environ["PYDNG_DNG_CONVERTER"] = dnglab_path
@@ -156,7 +158,7 @@ class ImageProcessor:
 
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
-        
+
         self._logger.debug(f"Looking for DNGLab binary, machine: {machine}, arch: {dnglab_arch}")
 
         # Try bundled DNGLab first (PyInstaller extracts to temp dir)

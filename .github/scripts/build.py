@@ -142,7 +142,7 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         dnglab_path = Path(f"tools/linux/dnglab_{dnglab_arch}")
         print(f"🔍 Looking for DNGLab binary: {dnglab_path}")
         print(f"🔍 Machine: {machine}, Arch: {dnglab_arch}")
-        
+
         # Check if tools/linux directory exists
         tools_linux_dir = Path("tools/linux")
         if tools_linux_dir.exists():
@@ -150,11 +150,13 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
             print(f"📁 Available files in tools/linux: {available_files}")
         else:
             print("❌ tools/linux directory does not exist")
-        
+
         if dnglab_path.exists():
             dnglab_binary = str(dnglab_path.absolute())
             file_size = dnglab_path.stat().st_size
-            print(f"📦 Found DNGLab binary for bundling: {dnglab_binary} (size: {file_size} bytes)")
+            print(
+                f"📦 Found DNGLab binary for bundling: {dnglab_binary} (size: {file_size} bytes)"
+            )
         else:
             print(f"❌ DNGLab binary not found: {dnglab_path}")
 
