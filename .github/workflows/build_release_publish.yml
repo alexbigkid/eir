@@ -128,11 +128,14 @@ jobs:
         run: |
           if [[ "${{ matrix.os_name }}" == "macos" ]]; then
             brew install exiftool
+            brew install --cask adobe-dng-converter
           elif [[ "${{ matrix.os_name }}" == "linux" ]]; then
             sudo apt-get update
             sudo apt-get install -y exiftool
+            # Adobe DNG Converter not available on Linux - tests may fail
           elif [[ "${{ matrix.os_name }}" == "windows" ]]; then
             choco install exiftool
+            choco install adobe-dnc
           fi
 
       - name: Run integration tests
