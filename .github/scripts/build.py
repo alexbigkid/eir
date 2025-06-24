@@ -51,33 +51,33 @@ def clean_build_dirs():
 def download_dnglab_for_linux():
     """Download DNGLab binary for Linux DNG conversion."""
     if platform.system().lower() != "linux":
-        print(f"🚫 Skipping DNGLab download - not Linux (current: {platform.system()})")
+        print(f"Skipping DNGLab download - not Linux (current: {platform.system()})")
         return  # Only download on Linux
 
-    print("📥 Downloading DNGLab for Linux DNG conversion...")
-    print(f"🔍 Current working directory: {Path.cwd()}")
+    print("Downloading DNGLab for Linux DNG conversion...")
+    print(f"Current working directory: {Path.cwd()}")
 
     # Run the download script
     script_path = Path("tools/download_dnglab.sh")
-    print(f"🔍 Looking for download script: {script_path}")
+    print(f"Looking for download script: {script_path}")
     if script_path.exists():
-        print(f"✅ Found download script: {script_path}")
-        print("🚀 Running DNGLab download script...")
+        print(f"Found download script: {script_path}")
+        print("Running DNGLab download script...")
         result = subprocess.run([str(script_path)], check=False)  # noqa: S603
         if result.returncode == 0:
-            print("✅ DNGLab downloaded successfully")
+            print("DNGLab downloaded successfully")
         else:
-            print(f"⚠️  DNGLab download failed with exit code {result.returncode}")
-            print("⚠️  DNG conversion may not work")
+            print(f"DNGLab download failed with exit code {result.returncode}")
+            print("DNG conversion may not work")
     else:
-        print(f"❌ DNGLab download script not found: {script_path}")
-        print("📁 Available files in tools directory:")
+        print(f"DNGLab download script not found: {script_path}")
+        print("Available files in tools directory:")
         tools_dir = Path("tools")
         if tools_dir.exists():
             for file in tools_dir.glob("*"):
                 print(f"   - {file}")
         else:
-            print("   ❌ tools directory does not exist")
+            print("   tools directory does not exist")
 
 
 def build_executable():
@@ -140,25 +140,23 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
         dnglab_path = Path(f"tools/linux/dnglab_{dnglab_arch}")
-        print(f"🔍 Looking for DNGLab binary: {dnglab_path}")
-        print(f"🔍 Machine: {machine}, Arch: {dnglab_arch}")
+        print(f"Looking for DNGLab binary: {dnglab_path}")
+        print(f"Machine: {machine}, Arch: {dnglab_arch}")
 
         # Check if tools/linux directory exists
         tools_linux_dir = Path("tools/linux")
         if tools_linux_dir.exists():
             available_files = list(tools_linux_dir.glob("*"))
-            print(f"📁 Available files in tools/linux: {available_files}")
+            print(f"Available files in tools/linux: {available_files}")
         else:
-            print("❌ tools/linux directory does not exist")
+            print("tools/linux directory does not exist")
 
         if dnglab_path.exists():
             dnglab_binary = str(dnglab_path.absolute())
             file_size = dnglab_path.stat().st_size
-            print(
-                f"📦 Found DNGLab binary for bundling: {dnglab_binary} (size: {file_size} bytes)"
-            )
+            print(f"Found DNGLab binary for bundling: {dnglab_binary} (size: {file_size} bytes)")
         else:
-            print(f"❌ DNGLab binary not found: {dnglab_path}")
+            print(f"DNGLab binary not found: {dnglab_path}")
 
     # PyInstaller command with Windows-specific optimizations
     cmd = [
