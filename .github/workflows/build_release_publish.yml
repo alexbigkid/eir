@@ -124,19 +124,25 @@ jobs:
         shell: pwsh
         run: .\.github\scripts\test_binary.ps1 -Version ${{ needs.prepare-release.outputs.new_version }} -ArchBinExt ${{ matrix.arch_bin_ext }}
 
-      - name: Install system dependencies for integration tests
+      - name: Install system dependencies for integration tests (macOS)
+        if: matrix.os_name == 'macos'
         run: |
-          if [[ "${{ matrix.os_name }}" == "macos" ]]; then
-            brew install exiftool
-            brew install --cask adobe-dng-converter
-          elif [[ "${{ matrix.os_name }}" == "linux" ]]; then
-            sudo apt-get update
-            sudo apt-get install -y exiftool
-            # Adobe DNG Converter not available on Linux - tests may fail
-          elif [[ "${{ matrix.os_name }}" == "windows" ]]; then
-            choco install exiftool
-            choco install adobe-dnc
-          fi
+          brew install exiftool
+          brew install --cask adobe-dng-converter
+
+      - name: Install system dependencies for integration tests (Linux)
+        if: matrix.os_name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y exiftool
+          # Adobe DNG Converter not available on Linux - tests may fail
+
+      - name: Install system dependencies for integration tests (Windows)
+        if: matrix.os_name == 'windows'
+        shell: pwsh
+        run: |
+          choco install exiftool -y
+          choco install adobe-dnc -y
 
       - name: Run integration tests
         env:
@@ -230,7 +236,7 @@ jobs:
 
       # TEMPORARILY DISABLED: Publishing steps disabled during Nuitka conversion
       # Re-enable these steps after successfully converting from PyInstaller to Nuitka
-      
+
       # - name: Publish to Homebrew
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN || secrets.GITHUB_TOKEN }}
