@@ -52,9 +52,9 @@ def download_dnglab_for_linux():
     """Download DNGLab binary for Linux DNG conversion."""
     if platform.system().lower() != "linux":
         return  # Only download on Linux
-    
+
     print("📥 Downloading DNGLab for Linux DNG conversion...")
-    
+
     # Run the download script
     script_path = Path("tools/download_dnglab.sh")
     if script_path.exists():
@@ -117,10 +117,10 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     # Use absolute paths for PyInstaller
     logging_yaml_abs = str(logging_yaml_path.absolute())
     pyproject_abs = str(pyproject_path.absolute())
-    
+
     # Download DNGLab for Linux builds
     download_dnglab_for_linux()
-    
+
     # Check for DNGLab binary to bundle on Linux
     dnglab_binary = None
     if platform.system().lower() == "linux":
@@ -148,46 +148,46 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "--add-data",
         f"{logging_yaml_abs}:.",
         "--add-data",
-        f"{pyproject_abs}:.",]
-    
+        f"{pyproject_abs}:.",
+    ]
+
     # Add DNGLab binary for Linux builds
     if dnglab_binary:
-        cmd.extend([
-            "--add-binary",
-            f"{dnglab_binary}:tools/linux/",
-        ])
-    
+        cmd.extend(["--add-binary", f"{dnglab_binary}:tools/linux/"])
+
     # Continue with hidden imports
-    cmd.extend([
-        "--hidden-import",
-        "eir.cli",
-        "--hidden-import",
-        "eir.processor",
-        "--hidden-import",
-        "eir.logger_manager",
-        "--hidden-import",
-        "eir.abk_common",
-        "--hidden-import",
-        "eir.constants",
-        "--hidden-import",
-        "eir.build_constants",
-        "--hidden-import",
-        "eir.clo",
-        "--hidden-import",
-        "colorama",
-        "--hidden-import",
-        "reactivex",
-        "--hidden-import",
-        "exiftool",
-        "--hidden-import",
-        "pydngconverter",
-        "--hidden-import",
-        "PyYAML",
-        "--hidden-import",
-        "yaml",
-        # Entry point
-        "src/eir/cli.py",
-    ])
+    cmd.extend(
+        [
+            "--hidden-import",
+            "eir.cli",
+            "--hidden-import",
+            "eir.processor",
+            "--hidden-import",
+            "eir.logger_manager",
+            "--hidden-import",
+            "eir.abk_common",
+            "--hidden-import",
+            "eir.constants",
+            "--hidden-import",
+            "eir.build_constants",
+            "--hidden-import",
+            "eir.clo",
+            "--hidden-import",
+            "colorama",
+            "--hidden-import",
+            "reactivex",
+            "--hidden-import",
+            "exiftool",
+            "--hidden-import",
+            "pydngconverter",
+            "--hidden-import",
+            "PyYAML",
+            "--hidden-import",
+            "yaml",
+            # Entry point
+            "src/eir/cli.py",
+        ]
+    )
 
     # Add Windows-specific options to avoid DLL loading issues
     if platform.system().lower() == "windows":
