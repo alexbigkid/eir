@@ -59,19 +59,18 @@ jobs:
     strategy:
       matrix:
         include:
-          # Linux builds temporarily disabled to test macOS/Windows integration
-          # - name: "Linux amd64"
-          #   os: ubuntu-latest
-          #   arch: x86_64
-          #   arch_bin_ext: linux-x86_64
-          #   runner: ubuntu-latest
-          #   os_name: linux
-          # - name: "Linux arm64"
-          #   os: ubuntu-24.04-arm
-          #   arch: aarch64
-          #   arch_bin_ext: linux-aarch64
-          #   runner: ubuntu-24.04-arm
-          #   os_name: linux
+          - name: "Linux amd64"
+            os: ubuntu-latest
+            arch: x86_64
+            arch_bin_ext: linux-x86_64
+            runner: ubuntu-latest
+            os_name: linux
+          - name: "Linux arm64"
+            os: ubuntu-24.04-arm
+            arch: aarch64
+            arch_bin_ext: linux-aarch64
+            runner: ubuntu-24.04-arm
+            os_name: linux
           - name: "Windows amd64"
             os: windows-latest
             arch: amd64
@@ -147,8 +146,8 @@ jobs:
           # Integration tests will test core functionality without DNG conversion
 
       - name: Run integration tests
-        # Only run integration tests on macOS where Adobe DNG Converter is available
-        if: matrix.os_name == 'macos'
+        # Run integration tests on macOS (Adobe DNG Converter) and Linux (DNGLab)
+        if: matrix.os_name == 'macos' || matrix.os_name == 'linux'
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
         run: uv run pytest tests/integration/ -v

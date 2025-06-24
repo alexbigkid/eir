@@ -48,6 +48,25 @@ def clean_build_dirs():
             shutil.rmtree(dir_name)
 
 
+def download_dnglab_for_linux():
+    """Download DNGLab binary for Linux DNG conversion."""
+    if platform.system().lower() != "linux":
+        return  # Only download on Linux
+    
+    print("📥 Downloading DNGLab for Linux DNG conversion...")
+    
+    # Run the download script
+    script_path = Path("tools/download_dnglab.sh")
+    if script_path.exists():
+        result = subprocess.run([str(script_path)], check=False)  # noqa: S603
+        if result.returncode == 0:
+            print("✅ DNGLab downloaded successfully")
+        else:
+            print("⚠️  DNGLab download failed - DNG conversion may not work")
+    else:
+        print("⚠️  DNGLab download script not found")
+
+
 def build_executable():
     """Build the standalone executable."""
     platform_name = get_platform_name()
@@ -98,6 +117,19 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     # Use absolute paths for PyInstaller
     logging_yaml_abs = str(logging_yaml_path.absolute())
     pyproject_abs = str(pyproject_path.absolute())
+    
+    # Download DNGLab for Linux builds
+    download_dnglab_for_linux()
+    
+    # Check for DNGLab binary to bundle on Linux
+    dnglab_binary = None
+    if platform.system().lower() == "linux":
+        machine = platform.machine().lower()
+        dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+        dnglab_path = Path(f"tools/linux/dnglab_{dnglab_arch}")
+        if dnglab_path.exists():
+            dnglab_binary = str(dnglab_path.absolute())
+            print(f"📦 Found DNGLab binary for bundling: {dnglab_binary}")
 
     # PyInstaller command with Windows-specific optimizations
     cmd = [
@@ -116,8 +148,17 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "--add-data",
         f"{logging_yaml_abs}:.",
         "--add-data",
-        f"{pyproject_abs}:.",
-        # Hidden imports to ensure all modules are included
+        f"{pyproject_abs}:.",]
+    
+    # Add DNGLab binary for Linux builds
+    if dnglab_binary:
+        cmd.extend([
+            "--add-binary",
+            f"{dnglab_binary}:tools/linux/",
+        ])
+    
+    # Continue with hidden imports
+    cmd.extend([
         "--hidden-import",
         "eir.cli",
         "--hidden-import",
@@ -146,7 +187,7 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "yaml",
         # Entry point
         "src/eir/cli.py",
-    ]
+    ])
 
     # Add Windows-specific options to avoid DLL loading issues
     if platform.system().lower() == "windows":

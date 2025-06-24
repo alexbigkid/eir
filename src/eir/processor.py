@@ -121,8 +121,56 @@ class ImageProcessor:
         """Convert RAW files to DNG format."""
         if not os.path.exists(dst_dir):
             os.makedirs(dst_dir)
+        
+        # Configure DNG converter based on platform
+        self._configure_dng_converter()
+        
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
         await py_dng.convert()
+    
+    def _configure_dng_converter(self) -> None:
+        """Configure DNG converter based on platform and available tools."""
+        import platform
+        import sys
+        
+        if platform.system().lower() == "linux":
+            # On Linux, try to use bundled DNGLab
+            dnglab_path = self._find_dnglab_binary()
+            if dnglab_path:
+                os.environ["PYDNG_DNG_CONVERTER"] = dnglab_path
+                self._logger.info(f"Configured DNGLab for DNG conversion: {dnglab_path}")
+            else:
+                self._logger.warning("DNGLab not found - DNG conversion may fail on Linux")
+    
+    def _find_dnglab_binary(self) -> str | None:
+        """Find DNGLab binary in bundled resources or system PATH."""
+        import platform
+        import sys
+        import shutil
+        
+        machine = platform.machine().lower()
+        dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+        
+        # Try bundled DNGLab first (PyInstaller extracts to temp dir)
+        if getattr(sys, 'frozen', False):
+            # Running as compiled binary
+            import tempfile
+            bundle_dir = sys._MEIPASS  # PyInstaller temp directory
+            dnglab_bundled = Path(bundle_dir) / "tools" / "linux" / f"dnglab_{dnglab_arch}"
+            if dnglab_bundled.exists():
+                return str(dnglab_bundled)
+        
+        # Try system PATH
+        dnglab_system = shutil.which("dnglab")
+        if dnglab_system:
+            return dnglab_system
+        
+        # Try local tools directory (development)
+        dnglab_local = Path("tools") / "linux" / f"dnglab_{dnglab_arch}"
+        if dnglab_local.exists():
+            return str(dnglab_local.absolute())
+        
+        return None
 
     @function_trace
     def _validate_image_dir(self) -> None:
