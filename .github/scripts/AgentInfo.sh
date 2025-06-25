@@ -139,7 +139,7 @@ BashInfo() {
     bash --version
 }
 
-SysteVariablesSettings() {
+SystemVariablesSettings() {
     echo
     echo -e "${GREEN}----------------------------------------------------------------------${NC}"
     echo -e "${GREEN}| ${FUNCNAME[0]}${NC}"
@@ -154,7 +154,7 @@ SysteVariablesSettings() {
 # main
 #---------------------------
 echo
-echo "-> $0 ($@)"
+echo "-> $0 ($*)"
 
 DateAndTimeInfo
 NumberOfProcessingCores
@@ -165,7 +165,7 @@ NodeInfo
 PythonInfo
 BashInfo
 BrewInfo
-SysteVariablesSettings
+SystemVariablesSettings
 
 echo "<- $0 (0)"
 echo
