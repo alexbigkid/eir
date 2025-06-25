@@ -156,37 +156,49 @@ class ImageProcessor:
 
     def _configure_dng_converter(self) -> None:
         """Configure DNG converter based on platform and available tools."""
-        if platform.system().lower() == "linux":
-            # On Linux, try to use bundled DNGLab
+        system_name = platform.system().lower()
+        if system_name in ["linux", "windows"]:
+            # On Linux and Windows, try to use bundled DNGLab
             self._logger.info(
-                f"Configuring DNG converter for Linux, machine: {platform.machine()}"
+                f"Configuring DNG converter for {system_name}, machine: {platform.machine()}"
             )
             dnglab_path = self._find_dnglab_binary()
             if dnglab_path:
                 os.environ["PYDNG_DNG_CONVERTER"] = dnglab_path
                 self._logger.info(f"Configured DNGLab for DNG conversion: {dnglab_path}")
-                # Verify the binary is executable
+                # Verify the binary exists and is executable (Linux) or just exists (Windows)
                 dnglab_file = Path(dnglab_path)
-                if dnglab_file.exists() and os.access(dnglab_path, os.X_OK):
-                    self._logger.info(f"DNGLab binary is executable: {dnglab_path}")
+                if dnglab_file.exists():
+                    if system_name == "linux" and not os.access(dnglab_path, os.X_OK):
+                        self._logger.warning(f"DNGLab binary is not executable: {dnglab_path}")
+                    else:
+                        self._logger.info(f"DNGLab binary found and ready: {dnglab_path}")
                 else:
-                    self._logger.warning(f"DNGLab binary is not executable: {dnglab_path}")
+                    self._logger.warning(f"DNGLab binary file not found: {dnglab_path}")
             else:
-                self._logger.warning("DNGLab not found - DNG conversion may fail on Linux")
+                self._logger.warning(f"DNGLab not found - DNG conversion may fail on {system_name}")
 
     def _find_dnglab_binary(self) -> str | None:
         """Find DNGLab binary in bundled resources or system PATH."""
         machine = platform.machine().lower()
-        dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+        system_name = platform.system().lower()
+        
+        # Map machine architecture to binary naming conventions
+        if system_name == "windows":
+            dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
+            binary_name = "dnglab.exe"
+        else:  # Linux
+            dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+            binary_name = "dnglab"
 
-        self._logger.info(f"Looking for DNGLab binary, machine: {machine}, arch: {dnglab_arch}")
+        self._logger.info(f"Looking for DNGLab binary, system: {system_name}, machine: {machine}, arch: {dnglab_arch}")
 
         # Try bundled DNGLab first (PyInstaller extracts to temp dir)
         if getattr(sys, "frozen", False):
             # Running as compiled binary
-            bundle_dir = sys._MEIPASS  # PyInstaller temp directory
+            bundle_dir = getattr(sys, "_MEIPASS", "")  # PyInstaller temp directory
             self._logger.info(f"Running as compiled binary, bundle_dir: {bundle_dir}")
-            dnglab_bundled = Path(bundle_dir) / "tools" / "linux" / dnglab_arch / "dnglab"
+            dnglab_bundled = Path(bundle_dir) / "tools" / system_name / dnglab_arch / binary_name
             self._logger.info(f"Checking bundled DNGLab: {dnglab_bundled}")
             if dnglab_bundled.exists():
                 self._logger.info(f"Found bundled DNGLab: {dnglab_bundled}")
@@ -194,7 +206,7 @@ class ImageProcessor:
             else:
                 self._logger.warning(f"Bundled DNGLab not found: {dnglab_bundled}")
                 # List available files in bundle tools directory for debugging
-                tools_dir = Path(bundle_dir) / "tools" / "linux" / dnglab_arch
+                tools_dir = Path(bundle_dir) / "tools" / system_name / dnglab_arch
                 if tools_dir.exists():
                     available_files = list(tools_dir.glob("*"))
                     self._logger.warning(f"Available files in {tools_dir}: {available_files}")
@@ -202,13 +214,13 @@ class ImageProcessor:
                     self._logger.warning(f"Tools directory not found: {tools_dir}")
 
         # Try system PATH
-        dnglab_system = shutil.which("dnglab")
+        dnglab_system = shutil.which(binary_name)
         if dnglab_system:
             self._logger.info(f"Found DNGLab in system PATH: {dnglab_system}")
             return dnglab_system
 
         # Try local build directory (development)
-        dnglab_local = Path("build") / "linux" / "tools" / dnglab_arch / "dnglab"
+        dnglab_local = Path("build") / system_name / "tools" / dnglab_arch / binary_name
         self._logger.info(f"Checking local DNGLab: {dnglab_local}")
         if dnglab_local.exists():
             self._logger.info(f"Found local DNGLab: {dnglab_local}")

@@ -165,9 +165,9 @@ jobs:
         run: |
           uv run pytest tests/integration/ -v
           
-          Write-Host "🔍 Listing integration test output directories for verification..."
-          Get-ChildItem -Path $env:TEMP -Directory -Name "*eir*", "*test*" -ErrorAction SilentlyContinue | Select-Object -First 20
-          Get-ChildItem -Path . -Directory -Name "*processed*", "*_canon_*", "*_sony_*", "*_fujifilm_*", "*_leica_*" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 10
+          Write-Host "Listing integration test output directories for verification..."
+          Get-ChildItem -Path $env:TEMP -Directory | Where-Object { $_.Name -like "*eir*" -or $_.Name -like "*test*" } | Select-Object -First 20
+          Get-ChildItem -Path . -Directory -Recurse | Where-Object { $_.Name -like "*processed*" -or $_.Name -like "*_canon_*" -or $_.Name -like "*_sony_*" -or $_.Name -like "*_fujifilm_*" -or $_.Name -like "*_leica_*" } | Select-Object -First 10
 
       - name: Install APT tools
         if: matrix.os_name == 'linux'
