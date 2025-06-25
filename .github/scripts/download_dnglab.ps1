@@ -56,12 +56,12 @@ function Download-AndSetupDNGLab {
         [string]$Platform
     )
     
-    $url = "https://github.com/dnglab/dnglab/releases/download/${Version}/${BinaryInfo.Binary}_${Version}${BinaryInfo.Extension}"
-    $buildPath = "./build/${Platform}/tools/$($BinaryInfo.Arch)"
-    $zipPath = "${buildPath}/dnglab.zip"
-    $exePath = "${buildPath}/dnglab.exe"
+    $url = "https://github.com/dnglab/dnglab/releases/download/$Version/$($BinaryInfo.Binary)_$Version$($BinaryInfo.Extension)"
+    $buildPath = "./build/$Platform/tools/$($BinaryInfo.Arch)"
+    $zipPath = "$buildPath/dnglab.zip"
+    $exePath = "$buildPath/dnglab.exe"
     
-    Write-Host "📥 Downloading DNGLab ${Version} for $($BinaryInfo.Arch)..." -ForegroundColor Cyan
+    Write-Host "📥 Downloading DNGLab $Version for $($BinaryInfo.Arch)..." -ForegroundColor Cyan
     Write-Host "🔗 URL: $url" -ForegroundColor Yellow
     
     # Create build directory structure if it doesn't exist
@@ -113,7 +113,7 @@ function Test-DNGLabBinary {
         [string]$Arch
     )
     
-    $exePath = "./build/${Platform}/tools/${Arch}/dnglab.exe"
+    $exePath = "./build/$Platform/tools/$Arch/dnglab.exe"
     
     # Verify download
     if (Test-Path $exePath) {
@@ -147,7 +147,7 @@ function Test-DNGLabBinary {
 # Main execution
 # =============================================================================
 Write-Host ""
-Write-Host "-> $PSCommandPath ($args)" -ForegroundColor Magenta
+Write-Host "Start: $PSCommandPath ($args)" -ForegroundColor Magenta
 
 try {
     $version = Get-LatestDNGLabVersion
@@ -156,11 +156,11 @@ try {
     Test-DNGLabBinary -Platform $Platform -Arch $binaryInfo.Arch
     
     Write-Host "🎉 DNGLab setup complete!" -ForegroundColor Green
-    Write-Host "<- $PSCommandPath (0)" -ForegroundColor Magenta
+    Write-Host "Exit: $PSCommandPath (0)" -ForegroundColor Magenta
     exit 0
 }
 catch {
     Write-Host "❌ DNGLab setup failed: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "<- $PSCommandPath (1)" -ForegroundColor Magenta
+    Write-Host "Exit: $PSCommandPath (1)" -ForegroundColor Magenta
     exit 1
 }
