@@ -6,6 +6,7 @@ import logging.config
 import logging.handlers
 from pathlib import Path
 import queue
+import sys
 import yaml
 import atexit
 
@@ -119,6 +120,13 @@ class LoggerManager:
         return self._logger
 
     def _find_project_root(self) -> Path:
+        # First, check if we're in a PyInstaller bundle
+        if hasattr(sys, "_MEIPASS"):
+            bundle_dir = Path(sys._MEIPASS)
+            if (bundle_dir / "pyproject.toml").exists():
+                return bundle_dir
+
+        # Fall back to normal project root search
         start = Path.cwd()
         for parent in [start, *start.parents]:
             if (parent / "pyproject.toml").exists():
