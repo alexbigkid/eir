@@ -176,6 +176,76 @@ class ImageProcessor:
 
             pydngconverter.compat.get_compat_path = patched_get_compat_path
 
+            # Also patch the convert_file method to add proper error handling
+            from pydngconverter import main as pydng_main
+            original_convert_file = pydng_main.DNGConverter.convert_file
+
+            async def patched_convert_file(self, *, destination: str = None, job = None, log=None):
+                """Enhanced convert_file with better error handling and logging."""
+                import asyncio
+                from pydngconverter import compat
+                
+                log = log or self._logger
+                log.debug("starting conversion: %s", job.source.name)
+                source_path = await compat.get_compat_path(job.source)
+                log.debug("determined source path: %s", source_path)
+                dng_args = [*self.parameters.iter_args, "-d", destination, str(source_path)]
+                
+                # Log the full command being executed
+                full_command = f"{self.bin_exec} {' '.join(dng_args)}"
+                log.info("Executing DNGLab command: %s", full_command)
+                
+                # Validate arguments before execution
+                log.debug("DNGLab binary: %s", self.bin_exec)
+                log.debug("DNGLab arguments: %s", dng_args)
+                log.debug("Source file exists: %s", Path(source_path).exists())
+                log.debug("Destination directory exists: %s", Path(destination).exists())
+                log.debug("Current working directory: %s", Path.cwd())
+                
+                log.info(
+                    "converting: %s => %s",
+                    job.source.name,
+                    job.destination_filename,
+                )
+                
+                try:
+                    proc = await asyncio.create_subprocess_exec(
+                        self.bin_exec, 
+                        *dng_args, 
+                        stdout=asyncio.subprocess.PIPE, 
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await proc.communicate()
+                    
+                    # Check return code and log any errors
+                    if proc.returncode != 0:
+                        log.error("DNGLab conversion failed with return code %d", proc.returncode)
+                        if stderr:
+                            stderr_text = stderr.decode('utf-8', errors='replace')
+                            log.error("DNGLab stderr: %s", stderr_text)
+                        if stdout:
+                            stdout_text = stdout.decode('utf-8', errors='replace')
+                            log.error("DNGLab stdout: %s", stdout_text)
+                        # Still report as finished to maintain compatibility, but with error info
+                        log.warning("Conversion reported as finished despite errors")
+                    else:
+                        log.info("DNGLab conversion succeeded (return code 0)")
+                        if stdout:
+                            stdout_text = stdout.decode('utf-8', errors='replace')
+                            if stdout_text.strip():
+                                log.debug("DNGLab stdout: %s", stdout_text.strip())
+                                
+                except Exception as e:
+                    log.error("Exception during DNGLab subprocess execution: %s", e)
+                    raise
+                
+                log.info("finished conversion: %s", job.destination_filename)
+                return job.destination
+
+            # Apply the patch
+            pydng_main.DNGConverter.convert_file = patched_convert_file
+            self._logger.info("Applied enhanced convert_file patch with error handling")
+
         # Perform conversion with detailed logging
         self._logger.info("Starting pydngconverter.convert() operation...")
         try:
