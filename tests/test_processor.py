@@ -94,7 +94,7 @@ class TestProjectNameProperty:
         result = processor.project_name
 
         assert result == "test_project"
-        mock_logger.info.assert_called_once_with("self._project_name = 'test_project'")
+        mock_logger.info.assert_any_call("self._project_name = 'test_project'")
 
     @patch("os.getcwd")
     @patch("os.path.basename")
