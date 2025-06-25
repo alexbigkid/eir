@@ -163,8 +163,12 @@ class TestLoggerManager:
         """Test _find_project_root raises error when not found."""
         manager = LoggerManager()
 
+        # Create a fake __file__ path that also doesn't contain pyproject.toml
+        fake_file_path = temp_dir / "fake_module.py"
+
         with (
             patch("eir.logger_manager.Path.cwd", return_value=temp_dir),
+            patch("eir.logger_manager.__file__", str(fake_file_path)),
             pytest.raises(FileNotFoundError, match="pyproject.toml not found"),
         ):
             manager._find_project_root()

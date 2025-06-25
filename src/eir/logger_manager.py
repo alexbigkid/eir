@@ -54,8 +54,11 @@ class LoggerManager:
                 return
 
             root_dir = self._find_project_root()
+
+            # Create logs directory if needed for file logging
             if log_into_file:
-                (root_dir / "logs").mkdir(parents=True, exist_ok=True)
+                logs_dir = root_dir / "logs"
+                logs_dir.mkdir(parents=True, exist_ok=True)
 
             # Setup threaded logging using YAML configuration
             self._setup_yaml_threaded_logging(root_dir, log_into_file)
@@ -78,6 +81,14 @@ class LoggerManager:
         config_path = root_dir / "logging.yaml"
         with config_path.open("r", encoding="utf-8") as stream:
             config_yaml = yaml.safe_load(stream)
+
+        # Ensure logs directory exists before configuring file handler
+        logs_dir = root_dir / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        # Update the file handler path to be absolute (if it exists)
+        if "fileHandler" in config_yaml.get("handlers", {}):
+            config_yaml["handlers"]["fileHandler"]["filename"] = str(logs_dir / "eir.log")
 
         # Inject the queue instance into the configuration
         config_yaml["handlers"]["queueHandler"]["queue"] = self._log_queue
@@ -126,9 +137,15 @@ class LoggerManager:
             if (bundle_dir / "pyproject.toml").exists():
                 return bundle_dir
 
-        # Fall back to normal project root search
-        start = Path.cwd()
-        for parent in [start, *start.parents]:
-            if (parent / "pyproject.toml").exists():
-                return parent
+        # Try multiple starting points to find project root
+        search_paths = [
+            Path.cwd(),  # Current working directory
+            Path(__file__).parent.parent.parent,  # Relative to this source file (src/eir/../..)
+        ]
+
+        for start in search_paths:
+            for parent in [start, *start.parents]:
+                if (parent / "pyproject.toml").exists():
+                    return parent
+
         raise FileNotFoundError("pyproject.toml not found")
