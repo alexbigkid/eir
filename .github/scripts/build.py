@@ -48,6 +48,31 @@ def clean_build_dirs():
             shutil.rmtree(dir_name)
 
 
+def download_dnglab_for_windows():
+    """Download DNGLab binary for Windows DNG conversion."""
+    if platform.system().lower() != "windows":
+        print(f"Skipping DNGLab download - not Windows (current: {platform.system()})")
+        return  # Only download on Windows
+
+    print("Downloading DNGLab for Windows DNG conversion...")
+    print(f"Current working directory: {Path.cwd()}")
+
+    # Run the PowerShell download script
+    script_path = Path(".github/scripts/download_dnglab.ps1")
+    print(f"Looking for download script: {script_path}")
+    if script_path.exists():
+        print(f"Found download script: {script_path}")
+        print("Running DNGLab download script...")
+        result = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script_path)], check=False)  # noqa: S603
+        if result.returncode == 0:
+            print("DNGLab downloaded successfully")
+        else:
+            print(f"DNGLab download failed with exit code {result.returncode}")
+            print("DNG conversion may not work")
+    else:
+        print(f"DNGLab download script not found: {script_path}")
+
+
 def download_dnglab_for_linux():
     """Download DNGLab binary for Linux DNG conversion."""
     if platform.system().lower() != "linux":
@@ -131,12 +156,15 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     logging_yaml_abs = str(logging_yaml_path.absolute())
     pyproject_abs = str(pyproject_path.absolute())
 
-    # Download DNGLab for Linux builds
+    # Download DNGLab for platform-specific builds
     download_dnglab_for_linux()
+    download_dnglab_for_windows()
 
-    # Check for DNGLab binary to bundle on Linux
+    # Check for DNGLab binary to bundle
     dnglab_binary = None
-    if platform.system().lower() == "linux":
+    system_name = platform.system().lower()
+    
+    if system_name == "linux":
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
         dnglab_path = Path(f"build/linux/tools/{dnglab_arch}/dnglab")
@@ -150,6 +178,28 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
             print(f"Available files in build/linux/tools/{dnglab_arch}: {available_files}")
         else:
             print(f"build/linux/tools/{dnglab_arch} directory does not exist")
+
+        if dnglab_path.exists():
+            dnglab_binary = str(dnglab_path.absolute())
+            file_size = dnglab_path.stat().st_size
+            print(f"Found DNGLab binary for bundling: {dnglab_binary} (size: {file_size} bytes)")
+        else:
+            print(f"DNGLab binary not found: {dnglab_path}")
+    
+    elif system_name == "windows":
+        machine = platform.machine().lower()
+        dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
+        dnglab_path = Path(f"build/windows/tools/{dnglab_arch}/dnglab.exe")
+        print(f"Looking for DNGLab binary: {dnglab_path}")
+        print(f"Machine: {machine}, Arch: {dnglab_arch}")
+
+        # Check if build/windows/tools directory exists
+        build_tools_dir = Path(f"build/windows/tools/{dnglab_arch}")
+        if build_tools_dir.exists():
+            available_files = list(build_tools_dir.glob("*"))
+            print(f"Available files in build/windows/tools/{dnglab_arch}: {available_files}")
+        else:
+            print(f"build/windows/tools/{dnglab_arch} directory does not exist")
 
         if dnglab_path.exists():
             dnglab_binary = str(dnglab_path.absolute())
@@ -178,11 +228,16 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         f"{pyproject_abs}:.",
     ]
 
-    # Add DNGLab binary for Linux builds
+    # Add DNGLab binary for platform-specific builds
     if dnglab_binary:
-        machine = platform.machine().lower()
-        dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
-        cmd.extend(["--add-binary", f"{dnglab_binary}:tools/linux/{dnglab_arch}/"])
+        if system_name == "linux":
+            machine = platform.machine().lower()
+            dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+            cmd.extend(["--add-binary", f"{dnglab_binary}:tools/linux/{dnglab_arch}/"])
+        elif system_name == "windows":
+            machine = platform.machine().lower()
+            dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
+            cmd.extend(["--add-binary", f"{dnglab_binary}:tools/windows/{dnglab_arch}/"])
 
     # Continue with hidden imports
     cmd.extend(

@@ -142,15 +142,32 @@ jobs:
         shell: pwsh
         run: |
           choco install exiftool -y
-          # Skip Adobe DNG Converter on Windows due to 1.65GB download size
-          # Integration tests will test core functionality without DNG conversion
+          # DNGLab will be downloaded and bundled during build process
 
-      - name: Run integration tests
+      - name: Run integration tests (Unix)
         # Run integration tests on macOS (Adobe DNG Converter) and Linux (DNGLab)
         if: matrix.os_name == 'macos' || matrix.os_name == 'linux'
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
-        run: uv run pytest tests/integration/ -v
+        run: |
+          uv run pytest tests/integration/ -v
+          
+          echo "🔍 Listing integration test output directories for verification..."
+          find /tmp -type d -name "*eir*" -o -name "*test*" 2>/dev/null | head -20 || echo "No test directories found in /tmp"
+          find . -type d -name "*processed*" -o -name "*_canon_*" -o -name "*_sony_*" -o -name "*_fujifilm_*" -o -name "*_leica_*" 2>/dev/null | head -10 || echo "No processed directories found"
+
+      - name: Run integration tests (Windows)
+        # Run integration tests on Windows with DNGLab
+        if: matrix.os_name == 'windows'
+        env:
+          EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
+        shell: pwsh
+        run: |
+          uv run pytest tests/integration/ -v
+          
+          Write-Host "🔍 Listing integration test output directories for verification..."
+          Get-ChildItem -Path $env:TEMP -Directory -Name "*eir*", "*test*" -ErrorAction SilentlyContinue | Select-Object -First 20
+          Get-ChildItem -Path . -Directory -Name "*processed*", "*_canon_*", "*_sony_*", "*_fujifilm_*", "*_leica_*" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 10
 
       - name: Install APT tools
         if: matrix.os_name == 'linux'
