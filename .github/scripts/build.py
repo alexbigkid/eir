@@ -58,7 +58,7 @@ def download_dnglab_for_linux():
     print(f"Current working directory: {Path.cwd()}")
 
     # Run the download script
-    script_path = Path("tools/download_dnglab.sh")
+    script_path = Path(".github/scripts/download_dnglab.sh")
     print(f"Looking for download script: {script_path}")
     if script_path.exists():
         print(f"Found download script: {script_path}")
@@ -139,17 +139,17 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     if platform.system().lower() == "linux":
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
-        dnglab_path = Path(f"tools/linux/dnglab_{dnglab_arch}")
+        dnglab_path = Path(f"build/linux/tools/{dnglab_arch}/dnglab")
         print(f"Looking for DNGLab binary: {dnglab_path}")
         print(f"Machine: {machine}, Arch: {dnglab_arch}")
 
-        # Check if tools/linux directory exists
-        tools_linux_dir = Path("tools/linux")
-        if tools_linux_dir.exists():
-            available_files = list(tools_linux_dir.glob("*"))
-            print(f"Available files in tools/linux: {available_files}")
+        # Check if build/linux/tools directory exists
+        build_tools_dir = Path(f"build/linux/tools/{dnglab_arch}")
+        if build_tools_dir.exists():
+            available_files = list(build_tools_dir.glob("*"))
+            print(f"Available files in build/linux/tools/{dnglab_arch}: {available_files}")
         else:
-            print("tools/linux directory does not exist")
+            print(f"build/linux/tools/{dnglab_arch} directory does not exist")
 
         if dnglab_path.exists():
             dnglab_binary = str(dnglab_path.absolute())
@@ -180,7 +180,9 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
 
     # Add DNGLab binary for Linux builds
     if dnglab_binary:
-        cmd.extend(["--add-binary", f"{dnglab_binary}:tools/linux/"])
+        machine = platform.machine().lower()
+        dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+        cmd.extend(["--add-binary", f"{dnglab_binary}:tools/linux/{dnglab_arch}/"])
 
     # Continue with hidden imports
     cmd.extend(

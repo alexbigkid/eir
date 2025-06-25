@@ -186,7 +186,7 @@ class ImageProcessor:
             # Running as compiled binary
             bundle_dir = sys._MEIPASS  # PyInstaller temp directory
             self._logger.info(f"Running as compiled binary, bundle_dir: {bundle_dir}")
-            dnglab_bundled = Path(bundle_dir) / "tools" / "linux" / f"dnglab_{dnglab_arch}"
+            dnglab_bundled = Path(bundle_dir) / "tools" / "linux" / dnglab_arch / "dnglab"
             self._logger.info(f"Checking bundled DNGLab: {dnglab_bundled}")
             if dnglab_bundled.exists():
                 self._logger.info(f"Found bundled DNGLab: {dnglab_bundled}")
@@ -194,7 +194,7 @@ class ImageProcessor:
             else:
                 self._logger.warning(f"Bundled DNGLab not found: {dnglab_bundled}")
                 # List available files in bundle tools directory for debugging
-                tools_dir = Path(bundle_dir) / "tools" / "linux"
+                tools_dir = Path(bundle_dir) / "tools" / "linux" / dnglab_arch
                 if tools_dir.exists():
                     available_files = list(tools_dir.glob("*"))
                     self._logger.warning(f"Available files in {tools_dir}: {available_files}")
@@ -207,8 +207,8 @@ class ImageProcessor:
             self._logger.info(f"Found DNGLab in system PATH: {dnglab_system}")
             return dnglab_system
 
-        # Try local tools directory (development)
-        dnglab_local = Path("tools") / "linux" / f"dnglab_{dnglab_arch}"
+        # Try local build directory (development)
+        dnglab_local = Path("build") / "linux" / "tools" / dnglab_arch / "dnglab"
         self._logger.info(f"Checking local DNGLab: {dnglab_local}")
         if dnglab_local.exists():
             self._logger.info(f"Found local DNGLab: {dnglab_local}")

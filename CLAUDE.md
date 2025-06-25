@@ -55,5 +55,10 @@ Eir is a Python application for EXIF-based image renaming and RAW format convers
 ## Testing Notes
 - Don't run integration tests locally. The integration tests should be ran only on GitHub Action pipeline
 
+## Build System
+- DNGLab binaries are downloaded automatically during build process to `build/{platform}/tools/{arch}/`
+- Binaries are always the latest version from GitHub releases
+- No binaries are committed to the repository
+
 ## Code Structure
 - Try to use import statements on the top of the file. Only use imports inside function if there is no other way.
