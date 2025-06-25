@@ -5,10 +5,12 @@ import os
 import re
 import asyncio
 import threading
+import platform
+import sys
+import shutil
 from pathlib import Path
 from datetime import datetime
 from enum import Enum
-import shutil
 import json
 from typing import Any
 
@@ -16,6 +18,7 @@ import reactivex as rx
 from reactivex import operators as ops
 from reactivex.scheduler.eventloop import AsyncIOScheduler
 from pydngconverter import DNGConverter
+import pydngconverter.compat
 import exiftool
 
 from eir.abk_common import function_trace, PerformanceTimer
@@ -139,12 +142,19 @@ class ImageProcessor:
                 self._logger.info(f"DNGLab binary is executable: {os.access(env_var, os.X_OK)}")
 
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
+
+        # Patch pydngconverter to avoid Wine on Linux when using DNGLab
+        if platform.system().lower() == "linux" and os.environ.get("PYDNG_DNG_CONVERTER"):
+            async def patched_get_compat_path(path):
+                # Use native path on Linux when DNGLab is configured
+                return str(Path(path))
+
+            pydngconverter.compat.get_compat_path = patched_get_compat_path
+
         await py_dng.convert()
 
     def _configure_dng_converter(self) -> None:
         """Configure DNG converter based on platform and available tools."""
-        import platform
-
         if platform.system().lower() == "linux":
             # On Linux, try to use bundled DNGLab
             self._logger.info(
@@ -165,10 +175,6 @@ class ImageProcessor:
 
     def _find_dnglab_binary(self) -> str | None:
         """Find DNGLab binary in bundled resources or system PATH."""
-        import platform
-        import sys
-        import shutil
-
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
 
