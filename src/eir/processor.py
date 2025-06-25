@@ -166,12 +166,17 @@ class ImageProcessor:
         self._logger.info(f"DNGConverter binary path: {py_dng.bin_exec}")
         self._logger.info(f"DNGConverter binary type: {type(py_dng.bin_exec)}")
 
-        # Patch pydngconverter to avoid Wine on Linux when using DNGLab
-        if platform.system().lower() == "linux" and os.environ.get("PYDNG_DNG_CONVERTER"):
-            self._logger.info("Applying Linux DNGLab compatibility patch (avoiding Wine)")
+        # Patch pydngconverter when using DNGLab (Linux/Windows)
+        if (
+            os.environ.get("PYDNG_DNG_CONVERTER")
+            and "dnglab" in os.environ.get("PYDNG_DNG_CONVERTER", "").lower()
+        ):
+            self._logger.info(
+                "Applying DNGLab compatibility patch (using correct command syntax)"
+            )
 
             async def patched_get_compat_path(path):
-                # Use native path on Linux when DNGLab is configured
+                # Use native path when DNGLab is configured (avoid Wine path conversion)
                 native_path = str(Path(path))
                 self._logger.debug(f"Patched compat path: {path} -> {native_path}")
                 return native_path
