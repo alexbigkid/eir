@@ -5,25 +5,31 @@ set -e
 
 # Function to auto-detect latest DNGLab version from GitHub API
 get_latest_dnglab_version() {
-    echo "🔍 Detecting latest DNGLab version..."
+    local LCL_VERSION_VAR=$1
     local LCL_VERSION=""
+    local LCL_EXIT_CODE=0
+
+    echo "🔍 Detecting latest DNGLab version..." >&2
 
     if command -v curl >/dev/null 2>&1; then
         LCL_VERSION=$(curl -s https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     elif command -v wget >/dev/null 2>&1; then
         LCL_VERSION=$(wget -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     else
-        echo "❌ Neither curl nor wget found. Cannot detect latest version."
-        exit 1
+        echo "❌ Neither curl nor wget found. Cannot detect latest version." >&2
+        LCL_EXIT_CODE=1
+        return $LCL_EXIT_CODE
     fi
 
     if [ -z "$LCL_VERSION" ]; then
-        echo "❌ Failed to detect latest DNGLab version. Falling back to v0.7.0"
-        echo "v0.7.0"
+        echo "❌ Failed to detect latest DNGLab version. Falling back to v0.7.0" >&2
+        eval "$LCL_VERSION_VAR"="v0.7.0"
     else
-        echo "✅ Latest DNGLab version: $LCL_VERSION"
-        echo "$LCL_VERSION"
+        echo "✅ Latest DNGLab version: $LCL_VERSION" >&2
+        eval "$LCL_VERSION_VAR"="$LCL_VERSION"
     fi
+
+    return $LCL_EXIT_CODE
 }
 
 # Function to detect architecture and map to DNGLab release naming
@@ -35,7 +41,7 @@ get_dnglab_binary_info() {
 
     LCL_ARCH=$(uname -m)
 
-    echo "🔍 Detecting architecture: $LCL_ARCH"
+    echo "🔍 Detecting architecture: $LCL_ARCH" >&2
 
     case $LCL_ARCH in
         x86_64)
@@ -131,7 +137,7 @@ echo ""
 echo "-> $0 ($*)"
 
 PLATFORM="linux"
-DNGLAB_VERSION=$(get_latest_dnglab_version)
+get_latest_dnglab_version DNGLAB_VERSION || exit 1
 get_dnglab_binary_info DNGLAB_ARCH DNGLAB_BINARY || exit 1
 download_and_setup_dnglab "$DNGLAB_VERSION" "$DNGLAB_ARCH" "$DNGLAB_BINARY" "$PLATFORM" || exit 1
 verify_and_test_dnglab "$PLATFORM" "$DNGLAB_ARCH" || exit 1
