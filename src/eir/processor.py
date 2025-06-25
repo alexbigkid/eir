@@ -125,8 +125,10 @@ class ImageProcessor:
 
     async def convert_raw_to_dng(self, src_dir: str, dst_dir: str) -> None:
         """Convert RAW files to DNG format."""
+        self._logger.info(f"Starting DNG conversion: {src_dir} -> {dst_dir}")
         if not os.path.exists(dst_dir):
             os.makedirs(dst_dir)
+            self._logger.info(f"Created destination directory: {dst_dir}")
 
         # Configure DNG converter based on platform
         self._configure_dng_converter()
@@ -140,45 +142,157 @@ class ImageProcessor:
             self._logger.info(f"DNGLab binary exists: {env_path.exists()}")
             if env_path.exists():
                 self._logger.info(f"DNGLab binary is executable: {os.access(env_var, os.X_OK)}")
+                self._logger.info(f"DNGLab binary size: {env_path.stat().st_size} bytes")
+        else:
+            self._logger.warning(
+                "No DNGLab binary configured - will use default Adobe DNG Converter"
+            )
 
+        # List RAW files to be converted
+        src_path = Path(src_dir)
+        if src_path.exists():
+            raw_files = list(src_path.glob("*"))
+            self._logger.info(f"Found {len(raw_files)} files in source directory:")
+            for raw_file in raw_files:
+                self._logger.info(f"  - {raw_file.name} ({raw_file.stat().st_size} bytes)")
+        else:
+            self._logger.warning(f"Source directory does not exist: {src_dir}")
+            return
+
+        self._logger.info(f"Initializing DNGConverter with source={src_dir}, dest={dst_dir}")
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
+        # Log DNGConverter configuration
+        self._logger.info("DNGConverter initialized successfully")
 
         # Patch pydngconverter to avoid Wine on Linux when using DNGLab
         if platform.system().lower() == "linux" and os.environ.get("PYDNG_DNG_CONVERTER"):
+            self._logger.info("Applying Linux DNGLab compatibility patch (avoiding Wine)")
 
             async def patched_get_compat_path(path):
                 # Use native path on Linux when DNGLab is configured
-                return str(Path(path))
+                native_path = str(Path(path))
+                self._logger.debug(f"Patched compat path: {path} -> {native_path}")
+                return native_path
 
             pydngconverter.compat.get_compat_path = patched_get_compat_path
 
-        await py_dng.convert()
+        # Perform conversion with detailed logging
+        self._logger.info("Starting pydngconverter.convert() operation...")
+        try:
+            await py_dng.convert()
+            self._logger.info("pydngconverter.convert() completed without exceptions")
+            # Check conversion results
+            dst_path = Path(dst_dir)
+            if dst_path.exists():
+                converted_files = list(dst_path.glob("*"))
+                self._logger.info(
+                    f"Conversion completed - found {len(converted_files)} files in destination:"
+                )
+                for converted_file in converted_files:
+                    self._logger.info(
+                        f"  - {converted_file.name} ({converted_file.stat().st_size} bytes)"
+                    )
+                if len(converted_files) == 0:
+                    self._logger.warning(
+                        "No files found in destination directory after conversion!"
+                    )
+                    self._logger.warning("This indicates DNGLab may not be working properly")
+            else:
+                self._logger.error(
+                    f"Destination directory disappeared after conversion: {dst_dir}"
+                )
+
+        except Exception as e:
+            self._logger.error(f"Exception during DNG conversion: {type(e).__name__}: {e}")
+            # Re-raise the exception to maintain original behavior
+            raise
 
     def _configure_dng_converter(self) -> None:
         """Configure DNG converter based on platform and available tools."""
         system_name = platform.system().lower()
+        self._logger.info(f"Configuring DNG converter for platform: {system_name}")
+
         if system_name in ["linux", "windows"]:
             # On Linux and Windows, try to use bundled DNGLab
             self._logger.info(
-                f"Configuring DNG converter for {system_name}, machine: {platform.machine()}"
+                f"Attempting DNGLab configuration for {system_name}, "
+                f"machine: {platform.machine()}"
             )
             dnglab_path = self._find_dnglab_binary()
             if dnglab_path:
+                # Set environment variable for pydngconverter
+                old_env = os.environ.get("PYDNG_DNG_CONVERTER")
                 os.environ["PYDNG_DNG_CONVERTER"] = dnglab_path
-                self._logger.info(f"Configured DNGLab for DNG conversion: {dnglab_path}")
+                self._logger.info(f"Set PYDNG_DNG_CONVERTER: {old_env} -> {dnglab_path}")
+
                 # Verify the binary exists and is executable (Linux) or just exists (Windows)
                 dnglab_file = Path(dnglab_path)
                 if dnglab_file.exists():
-                    if system_name == "linux" and not os.access(dnglab_path, os.X_OK):
-                        self._logger.warning(f"DNGLab binary is not executable: {dnglab_path}")
-                    else:
-                        self._logger.info(f"DNGLab binary found and ready: {dnglab_path}")
+                    file_size = dnglab_file.stat().st_size
+                    self._logger.info(f"DNGLab binary verification - size: {file_size} bytes")
+
+                    if system_name == "linux":
+                        is_executable = os.access(dnglab_path, os.X_OK)
+                        self._logger.info(f"DNGLab executable check (Linux): {is_executable}")
+                        if not is_executable:
+                            self._logger.warning(
+                                f"DNGLab binary is not executable: {dnglab_path}"
+                            )
+                            self._logger.info("Attempting to make DNGLab executable...")
+                            try:
+                                os.chmod(dnglab_path, 0o755)  # noqa: S103
+                                self._logger.info("Successfully made DNGLab executable")
+                            except Exception as e:
+                                self._logger.error(f"Failed to make DNGLab executable: {e}")
+
+                    # Test DNGLab binary functionality
+                    self._test_dnglab_binary(dnglab_path)
                 else:
-                    self._logger.warning(f"DNGLab binary file not found: {dnglab_path}")
+                    self._logger.error(f"DNGLab binary file not found at path: {dnglab_path}")
+                    # Unset environment variable if binary doesn't exist
+                    if "PYDNG_DNG_CONVERTER" in os.environ:
+                        del os.environ["PYDNG_DNG_CONVERTER"]
+                        self._logger.info(
+                            "Removed invalid PYDNG_DNG_CONVERTER environment variable"
+                        )
             else:
                 self._logger.warning(
-                    f"DNGLab not found - DNG conversion may fail on {system_name}"
+                    f"DNGLab binary not found - will fall back to default "
+                    f"Adobe DNG Converter on {system_name}"
                 )
+        else:
+            self._logger.info(f"Platform {system_name} will use default Adobe DNG Converter")
+
+    def _test_dnglab_binary(self, dnglab_path: str) -> None:
+        """Test DNGLab binary to verify it's working."""
+        try:
+            import subprocess  # noqa: S404
+
+            self._logger.info(f"Testing DNGLab binary functionality: {dnglab_path}")
+
+            # Test with --help flag to verify binary works
+            result = subprocess.run(  # noqa: S603
+                [dnglab_path, "--help"], capture_output=True, text=True, timeout=10, check=False
+            )
+
+            if result.returncode == 0:
+                self._logger.info("✅ DNGLab binary test successful (--help worked)")
+                # Log first few lines of help output for verification
+                help_lines = result.stdout.split("\n")[:3]
+                for line in help_lines:
+                    if line.strip():
+                        self._logger.info(f"DNGLab help: {line.strip()}")
+            else:
+                self._logger.warning(
+                    f"⚠️  DNGLab binary test failed with exit code {result.returncode}"
+                )
+                if result.stderr:
+                    self._logger.warning(f"DNGLab stderr: {result.stderr[:200]}")
+
+        except subprocess.TimeoutExpired:
+            self._logger.warning("DNGLab binary test timed out after 10 seconds")
+        except Exception as e:
+            self._logger.warning(f"DNGLab binary test failed with exception: {e}")
 
     def _find_dnglab_binary(self) -> str | None:
         """Find DNGLab binary in bundled resources or system PATH."""
@@ -194,9 +308,12 @@ class ImageProcessor:
             binary_name = "dnglab"
 
         self._logger.info(
-            f"Looking for DNGLab binary, system: {system_name}, "
-            f"machine: {machine}, arch: {dnglab_arch}"
+            f"Searching for DNGLab binary - system: {system_name}, "
+            f"machine: {machine}, mapped_arch: {dnglab_arch}, binary_name: {binary_name}"
         )
+
+        search_locations = []
+        found_binary = None
 
         # Try bundled DNGLab first (PyInstaller extracts to temp dir)
         if getattr(sys, "frozen", False):
@@ -204,35 +321,99 @@ class ImageProcessor:
             bundle_dir = getattr(sys, "_MEIPASS", "")  # PyInstaller temp directory
             self._logger.info(f"Running as compiled binary, bundle_dir: {bundle_dir}")
             dnglab_bundled = Path(bundle_dir) / "tools" / system_name / dnglab_arch / binary_name
-            self._logger.info(f"Checking bundled DNGLab: {dnglab_bundled}")
+            search_locations.append(("bundled", str(dnglab_bundled)))
+
+            self._logger.info(f"Checking bundled location: {dnglab_bundled}")
             if dnglab_bundled.exists():
-                self._logger.info(f"Found bundled DNGLab: {dnglab_bundled}")
-                return str(dnglab_bundled)
+                self._logger.info(f"✅ Found bundled DNGLab: {dnglab_bundled}")
+                found_binary = str(dnglab_bundled)
             else:
-                self._logger.warning(f"Bundled DNGLab not found: {dnglab_bundled}")
+                self._logger.warning(f"❌ Bundled DNGLab not found: {dnglab_bundled}")
                 # List available files in bundle tools directory for debugging
                 tools_dir = Path(bundle_dir) / "tools" / system_name / dnglab_arch
                 if tools_dir.exists():
                     available_files = list(tools_dir.glob("*"))
                     self._logger.warning(f"Available files in {tools_dir}: {available_files}")
+                    # Also check parent directories
+                    parent_tools = Path(bundle_dir) / "tools"
+                    if parent_tools.exists():
+                        subdirs = [d for d in parent_tools.iterdir() if d.is_dir()]
+                        self._logger.warning(
+                            f"Available platform directories: {[d.name for d in subdirs]}"
+                        )
                 else:
-                    self._logger.warning(f"Tools directory not found: {tools_dir}")
+                    self._logger.warning(f"❌ Tools directory not found: {tools_dir}")
+                    # Check if tools directory exists at all
+                    bundle_tools = Path(bundle_dir) / "tools"
+                    if bundle_tools.exists():
+                        self._logger.warning(
+                            f"Tools directory exists but missing platform/arch: {bundle_tools}"
+                        )
+                        subdirs = list(bundle_tools.iterdir())
+                        self._logger.warning(
+                            f"Available items in tools: {[str(d) for d in subdirs]}"
+                        )
+                    else:
+                        self._logger.warning(f"No tools directory in bundle: {bundle_dir}")
+                        bundle_contents = (
+                            list(Path(bundle_dir).iterdir()) if Path(bundle_dir).exists() else []
+                        )
+                        self._logger.warning(
+                            f"Bundle directory contents: {[d.name for d in bundle_contents[:10]]}"
+                        )
 
-        # Try system PATH
-        dnglab_system = shutil.which(binary_name)
-        if dnglab_system:
-            self._logger.info(f"Found DNGLab in system PATH: {dnglab_system}")
-            return dnglab_system
+        # Try system PATH if not found in bundle
+        if not found_binary:
+            self._logger.info(f"Checking system PATH for: {binary_name}")
+            dnglab_system = shutil.which(binary_name)
+            search_locations.append(("system_path", dnglab_system or "not found"))
+            if dnglab_system:
+                self._logger.info(f"✅ Found DNGLab in system PATH: {dnglab_system}")
+                found_binary = dnglab_system
+            else:
+                self._logger.info("❌ DNGLab not found in system PATH")
 
-        # Try local build directory (development)
-        dnglab_local = Path("build") / system_name / "tools" / dnglab_arch / binary_name
-        self._logger.info(f"Checking local DNGLab: {dnglab_local}")
-        if dnglab_local.exists():
-            self._logger.info(f"Found local DNGLab: {dnglab_local}")
-            return str(dnglab_local.absolute())
+        # Try local build directory (development) if still not found
+        if not found_binary:
+            dnglab_local = Path("build") / system_name / "tools" / dnglab_arch / binary_name
+            search_locations.append(("local_build", str(dnglab_local)))
+            self._logger.info(f"Checking local build directory: {dnglab_local}")
+            if dnglab_local.exists():
+                self._logger.info(f"✅ Found local DNGLab: {dnglab_local}")
+                found_binary = str(dnglab_local.absolute())
+            else:
+                self._logger.info(f"❌ Local DNGLab not found: {dnglab_local}")
+                # Check if build directory structure exists
+                build_dir = Path("build")
+                if build_dir.exists():
+                    platform_dir = build_dir / system_name
+                    if platform_dir.exists():
+                        tools_dir = platform_dir / "tools"
+                        if tools_dir.exists():
+                            arch_dirs = list(tools_dir.iterdir())
+                            arch_names = [d.name for d in arch_dirs if d.is_dir()]
+                            self._logger.info(f"Available architectures in build: {arch_names}")
+                        else:
+                            self._logger.info(
+                                f"No tools directory in platform build: {platform_dir}"
+                            )
+                    else:
+                        available_platforms = [d.name for d in build_dir.iterdir() if d.is_dir()]
+                        self._logger.info(f"Available platforms in build: {available_platforms}")
+                else:
+                    self._logger.info(
+                        "No build directory found (normal in CI/packaged environments)"
+                    )
 
-        self._logger.warning("No DNGLab binary found")
-        return None
+        # Log search summary
+        self._logger.info("DNGLab binary search summary:")
+        for location_type, path in search_locations:
+            status = "✅ FOUND" if found_binary and path == found_binary else "❌ not found"
+            self._logger.info(f"  {location_type}: {path} - {status}")
+
+        if not found_binary:
+            self._logger.warning("❌ No DNGLab binary found in any search location")
+        return found_binary
 
     @function_trace
     def _validate_image_dir(self) -> None:
@@ -559,7 +740,7 @@ class ImageProcessor:
         self._logger.info(f"Handling RAW conversion: {ListType.RAW_IMAGE_DICT.value = }")
 
         convert_list: list[tuple[str, str]] = []
-        for old_dir, _obj_list in value.items():
+        for old_dir in value:
             base_dir, dir_ext = old_dir.rsplit("_", 1)
             if dir_ext == "dng":
                 continue
