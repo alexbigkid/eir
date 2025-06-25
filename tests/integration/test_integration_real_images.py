@@ -44,14 +44,26 @@ class TestRealImageIntegration:
             if not binary_path.name.endswith(".exe"):
                 binary_path.chmod(0o755)
 
-            cmd = [str(binary_path), "-d", str(target_dir), "-q"]
+            # Use default logging (no -q flag) to capture DNG conversion logging
+            cmd = [str(binary_path), "-d", str(target_dir)]
         else:
-            # Use uv run for local development
-            cmd = ["uv", "run", "eir", "-d", str(target_dir), "-q"]
+            # Use uv run for local development with default logging
+            cmd = ["uv", "run", "eir", "-d", str(target_dir)]
 
         result = subprocess.run(  # noqa: S603
             cmd, capture_output=True, text=True, cwd=target_dir.parent, check=False
         )
+
+        # Always show stdout/stderr for DNG conversion debugging
+        if result.stdout:
+            print(f"\n=== EIR BINARY OUTPUT FOR {target_dir.name} ===")
+            print(result.stdout)
+            print("=== END EIR BINARY OUTPUT ===\n")
+
+        if result.stderr:
+            print(f"\n=== EIR BINARY STDERR FOR {target_dir.name} ===")
+            print(result.stderr)
+            print("=== END EIR BINARY STDERR ===\n")
 
         # If binary failed, include stdout/stderr in the error for debugging
         if result.returncode != 0:
@@ -146,6 +158,53 @@ class TestRealImageIntegration:
 
         return mixed_dir
 
+    def check_dng_conversion_results(self, processed_dir: Path, dir_name: str) -> None:
+        """Check DNG conversion results and report any issues."""
+        print(f"\n=== DNG CONVERSION ANALYSIS FOR {dir_name} ===")
+
+        dng_dirs = []
+        raw_dirs = []
+
+        for item in processed_dir.iterdir():
+            if item.is_dir():
+                if "_dng" in item.name:
+                    dng_dirs.append(item)
+                elif any(ext in item.name for ext in ["_cr2", "_cr3", "_arw", "_raf", "_nef"]):
+                    raw_dirs.append(item)
+
+        print(f"Found {len(raw_dirs)} RAW directories and {len(dng_dirs)} DNG directories")
+
+        for raw_dir in raw_dirs:
+            raw_files = [f for f in raw_dir.iterdir() if f.is_file()]
+            corresponding_dng = processed_dir / raw_dir.name.replace(
+                raw_dir.name.split("_")[-1], "dng"
+            )
+
+            print(f"\nRAW Directory: {raw_dir.name}")
+            print(f"  - RAW files: {len(raw_files)}")
+            for raw_file in raw_files:
+                print(f"    - {raw_file.name} ({raw_file.stat().st_size} bytes)")
+
+            if corresponding_dng.exists():
+                dng_files = [f for f in corresponding_dng.iterdir() if f.is_file()]
+                print(f"  - Corresponding DNG directory: {corresponding_dng.name}")
+                print(f"  - DNG files: {len(dng_files)}")
+                for dng_file in dng_files:
+                    print(f"    - {dng_file.name} ({dng_file.stat().st_size} bytes)")
+
+                if len(dng_files) == 0:
+                    print(f"  ⚠️  WARNING: DNG directory {corresponding_dng.name} is EMPTY!")
+                    print(f"       Expected {len(raw_files)} DNG files but found 0")
+                elif len(dng_files) != len(raw_files):
+                    print("  ⚠️  WARNING: File count mismatch!")
+                    print(f"       RAW files: {len(raw_files)}, DNG files: {len(dng_files)}")
+                else:
+                    print(f"  ✅ SUCCESS: {len(dng_files)} DNG files created successfully")
+            else:
+                print("  ❌ ERROR: No corresponding DNG directory found!")
+
+        print("=== END DNG CONVERSION ANALYSIS ===\n")
+
     def test_single_date_directories(self, eir_binary, test_images_dir, temp_workspace):
         """Test processing of single-date format directories."""
         single_date_dirs = [
@@ -184,6 +243,9 @@ class TestRealImageIntegration:
                     self.show_directory_tree(
                         test_dir, f"Directory structure after processing {dir_name}"
                     )
+
+                    # Check for empty DNG directories and report
+                    self.check_dng_conversion_results(test_dir, dir_name)
 
                     # Analyze results
                     results[dir_name] = self.analyze_processing_results(test_dir, dir_name)
@@ -229,6 +291,9 @@ class TestRealImageIntegration:
                 self.show_directory_tree(
                     mixed_dir, "Directory structure after processing mixed date range"
                 )
+
+                # Check for empty DNG directories and report
+                self.check_dng_conversion_results(mixed_dir, "20110709-20230809_mixed_images")
 
                 # Analyze results
                 results = self.analyze_processing_results(
@@ -368,6 +433,9 @@ class TestRealImageIntegration:
             if exit_code == 0:
                 # Show directory structure before analysis
                 self.show_directory_tree(test_dir, f"Camera brand organization for {dir_name}")
+
+                # Check for empty DNG directories and report
+                self.check_dng_conversion_results(test_dir, dir_name)
             else:
                 error_msg = getattr(
                     self, "_last_error", f"Binary failed with exit code {exit_code}"
@@ -400,6 +468,9 @@ class TestRealImageIntegration:
                 self.show_directory_tree(
                     test_dir, "File type processing results (RAW + compressed)"
                 )
+
+                # Check for empty DNG directories and report
+                self.check_dng_conversion_results(test_dir, "20230809_Sony_a6700")
             else:
                 error_msg = getattr(
                     self, "_last_error", f"Binary failed with exit code {exit_code}"
