@@ -181,8 +181,15 @@ class ImageProcessor:
         try:
             await py_dng.convert()
             self._logger.info("pydngconverter.convert() completed without exceptions")
-            # Check conversion results
+            # Check conversion results with detailed path analysis
             dst_path = Path(dst_dir)
+            src_path = Path(src_dir)
+
+            self._logger.info("Post-conversion analysis:")
+            self._logger.info(f"  Source directory: {src_path.absolute()}")
+            self._logger.info(f"  Destination directory: {dst_path.absolute()}")
+            self._logger.info(f"  Current working directory: {Path.cwd()}")
+
             if os.path.exists(dst_dir):
                 converted_files = list(dst_path.glob("*"))
                 self._logger.info(
@@ -197,6 +204,19 @@ class ImageProcessor:
                         "No files found in destination directory after conversion!"
                     )
                     self._logger.warning("This indicates DNGLab may not be working properly")
+
+                    # Search for DNG files in nearby directories to debug the issue
+                    self._logger.info(
+                        "Searching for DNG files in current and parent directories..."
+                    )
+                    cwd = Path.cwd()
+                    for search_dir in [cwd, cwd.parent, src_path.parent]:
+                        if search_dir.exists():
+                            dng_files = list(search_dir.rglob("*.dng"))
+                            if dng_files:
+                                self._logger.info(f"Found DNG files in {search_dir}:")
+                                for dng_file in dng_files[:5]:  # Limit output
+                                    self._logger.info(f"  - {dng_file}")
             else:
                 self._logger.error(
                     f"Destination directory disappeared after conversion: {dst_dir}"

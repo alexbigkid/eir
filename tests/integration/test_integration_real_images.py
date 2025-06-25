@@ -193,15 +193,15 @@ class TestRealImageIntegration:
                     print(f"    - {dng_file.name} ({dng_file.stat().st_size} bytes)")
 
                 if len(dng_files) == 0:
-                    print(f"  ⚠️  WARNING: DNG directory {corresponding_dng.name} is EMPTY!")
-                    print(f"       Expected {len(raw_files)} DNG files but found 0")
+                    print(f"  WARNING: DNG directory {corresponding_dng.name} is EMPTY!")
+                    print(f"           Expected {len(raw_files)} DNG files but found 0")
                 elif len(dng_files) != len(raw_files):
-                    print("  ⚠️  WARNING: File count mismatch!")
-                    print(f"       RAW files: {len(raw_files)}, DNG files: {len(dng_files)}")
+                    print("  WARNING: File count mismatch!")
+                    print(f"           RAW files: {len(raw_files)}, DNG files: {len(dng_files)}")
                 else:
-                    print(f"  ✅ SUCCESS: {len(dng_files)} DNG files created successfully")
+                    print(f"  SUCCESS: {len(dng_files)} DNG files created successfully")
             else:
-                print("  ❌ ERROR: No corresponding DNG directory found!")
+                print("  ERROR: No corresponding DNG directory found!")
 
         print("=== END DNG CONVERSION ANALYSIS ===\n")
 
