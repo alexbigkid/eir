@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess  # noqa: S404
 import tempfile
+import platform
 import pytest
 from pathlib import Path
 
@@ -82,6 +83,43 @@ class TestRealImageIntegration:
         shutil.copytree(source_dir, dest_dir)
         return dest_dir
 
+    def show_directory_tree(self, directory: Path, title: str) -> None:
+        """Show directory structure using tree command."""
+        print(f"\n{title}")
+        print("=" * len(title))
+
+        try:
+            if platform.system().lower() == "windows":
+                # Windows tree command
+                result = subprocess.run(
+                    ["tree", str(directory), "/F"], capture_output=True, text=True, check=False
+                )
+            else:
+                # Unix tree command
+                result = subprocess.run(
+                    ["tree", str(directory)], capture_output=True, text=True, check=False
+                )
+
+            if result.returncode == 0:
+                print(result.stdout)
+            else:
+                # Fallback if tree command fails
+                print(f"Directory: {directory}")
+                for item in sorted(directory.rglob("*")):
+                    if item.is_file():
+                        rel_path = item.relative_to(directory)
+                        print(f"  {rel_path}")
+        except Exception as e:
+            print(f"Could not display tree structure: {e}")
+            # Simple fallback listing
+            print(f"Directory contents of {directory}:")
+            for item in sorted(directory.iterdir()):
+                if item.is_dir():
+                    file_count = len([f for f in item.rglob("*") if f.is_file()])
+                    print(f"  {item.name}/ ({file_count} files)")
+                else:
+                    print(f"  {item.name}")
+
     def setup_mixed_directory(self, test_images_dir: Path, temp_workspace: Path) -> Path:
         """Set up the mixed date range directory with files from all other directories."""
         mixed_dir = temp_workspace / "20110709-20230809_mixed_images"
@@ -139,15 +177,14 @@ class TestRealImageIntegration:
                 # Run eir binary on the test directory
                 exit_code = self.run_eir_binary(eir_binary, test_dir)
 
-                # Show immediate directory structure after processing
-                if exit_code == 0:
-                    print(f"\n📋 Directory structure after processing {dir_name}:")
-                    for item in sorted(test_dir.iterdir()):
-                        if item.is_dir():
-                            file_count = len([f for f in item.iterdir() if f.is_file()])
-                            print(f"   📂 {item.name}/ ({file_count} files)")
+                # Directory structure will be shown after all tests complete
 
                 if exit_code == 0:
+                    # Show directory structure before analysis
+                    self.show_directory_tree(
+                        test_dir, f"Directory structure after processing {dir_name}"
+                    )
+
                     # Analyze results
                     results[dir_name] = self.analyze_processing_results(test_dir, dir_name)
                     results[dir_name]["original_count"] = original_count
@@ -185,15 +222,14 @@ class TestRealImageIntegration:
             # Run eir binary on the mixed directory
             exit_code = self.run_eir_binary(eir_binary, mixed_dir)
 
-            # Show immediate directory structure after processing
-            if exit_code == 0:
-                print("\n📋 Directory structure after processing mixed directory:")
-                for item in sorted(mixed_dir.iterdir()):
-                    if item.is_dir():
-                        file_count = len([f for f in item.iterdir() if f.is_file()])
-                        print(f"   📂 {item.name}/ ({file_count} files)")
+            # Directory structure will be shown after all tests complete
 
             if exit_code == 0:
+                # Show directory structure before analysis
+                self.show_directory_tree(
+                    mixed_dir, "Directory structure after processing mixed date range"
+                )
+
                 # Analyze results
                 results = self.analyze_processing_results(
                     mixed_dir, "20110709-20230809_mixed_images"
@@ -220,31 +256,19 @@ class TestRealImageIntegration:
             "total_processed_files": 0,
         }
 
-        # Log processing results for verification
-        print(f"\n📁 Processing results for {dir_name}:")
-        print(f"   Workspace: {processed_dir}")
-
         # Find created subdirectories
         for item in processed_dir.iterdir():
             if item.is_dir():
                 results["subdirectories"].append(item.name)
-                print(f"   📂 Created subdirectory: {item.name}")
 
                 # Analyze files in each subdirectory
                 files = [f.name for f in item.iterdir() if f.is_file()]
                 results["files_by_subdirectory"][item.name] = files
                 results["total_processed_files"] += len(files)
 
-                print(
-                    f"      📄 Files ({len(files)}): {', '.join(files[:3])}"
-                    + (f", ... (+{len(files) - 3} more)" if len(files) > 3 else "")
-                )
-
                 # Analyze naming patterns
                 for file_name in files:
                     self.analyze_file_naming_pattern(file_name, results["file_naming_patterns"])
-
-        print(f"   ✅ Total processed files: {results['total_processed_files']}")
         return results
 
     def analyze_file_naming_pattern(self, file_name: str, patterns: dict):
@@ -339,18 +363,12 @@ class TestRealImageIntegration:
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
 
-            # Show immediate directory structure after processing
-            if exit_code == 0:
-                print(
-                    f"\n📋 Directory structure after processing "
-                    f"{test_dir.parent.name}/{test_dir.name}:"
-                )
-                for item in sorted(test_dir.iterdir()):
-                    if item.is_dir():
-                        file_count = len([f for f in item.iterdir() if f.is_file()])
-                        print(f"   📂 {item.name}/ ({file_count} files)")
+            # Directory structure will be shown after all tests complete
 
-            if exit_code != 0:
+            if exit_code == 0:
+                # Show directory structure before analysis
+                self.show_directory_tree(test_dir, f"Camera brand organization for {dir_name}")
+            else:
                 error_msg = getattr(
                     self, "_last_error", f"Binary failed with exit code {exit_code}"
                 )
@@ -377,18 +395,12 @@ class TestRealImageIntegration:
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
 
-            # Show immediate directory structure after processing
             if exit_code == 0:
-                print(
-                    f"\n📋 Directory structure after processing "
-                    f"{test_dir.parent.name}/{test_dir.name}:"
+                # Show directory structure before analysis
+                self.show_directory_tree(
+                    test_dir, "File type processing results (RAW + compressed)"
                 )
-                for item in sorted(test_dir.iterdir()):
-                    if item.is_dir():
-                        file_count = len([f for f in item.iterdir() if f.is_file()])
-                        print(f"   📂 {item.name}/ ({file_count} files)")
-
-            if exit_code != 0:
+            else:
                 error_msg = getattr(
                     self, "_last_error", f"Binary failed with exit code {exit_code}"
                 )

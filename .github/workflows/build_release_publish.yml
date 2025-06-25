@@ -127,21 +127,21 @@ jobs:
       - name: Install system dependencies for integration tests (macOS)
         if: matrix.os_name == 'macos'
         run: |
-          brew install exiftool
+          brew install exiftool tree
           brew install --cask adobe-dng-converter
 
       - name: Install system dependencies for integration tests (Linux)
         if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y exiftool
+          sudo apt-get install -y exiftool tree
           # Adobe DNG Converter not available on Linux - tests may fail
 
       - name: Install system dependencies for integration tests (Windows)
         if: matrix.os_name == 'windows'
         shell: pwsh
         run: |
-          choco install exiftool -y
+          choco install exiftool tree -y
           # DNGLab will be downloaded and bundled during build process
 
       - name: Run integration tests (Unix)
@@ -152,15 +152,16 @@ jobs:
         run: |
           uv run pytest tests/integration/ -v -s
           
-          echo "📊 Integration test verification completed successfully!"
-          echo "✅ All integration tests passed - temporary directories were properly cleaned up"
-          echo "📁 Test coverage included:"
+          echo ""
+          echo "Integration test verification completed successfully!"
+          echo "All integration tests passed with real directory structures shown above"
+          echo "Test coverage included:"
           echo "  - Single date directories (Canon, Sony, iPhone, etc.)"
           echo "  - Date range mixed directories" 
           echo "  - Camera brand organization verification"
           echo "  - File type processing (RAW + compressed formats)"
-          echo "🔧 DNG conversion tool: DNGLab (bundled)"
-          echo "📦 Test workspace: Temporary directories (auto-cleanup enabled)"
+          echo "DNG conversion tool: DNGLab (bundled)"
+          echo "Test workspace: Temporary directories (auto-cleanup enabled)"
 
       - name: Run integration tests (Windows)
         # Run integration tests on Windows with DNGLab
@@ -171,8 +172,9 @@ jobs:
         run: |
           uv run pytest tests/integration/ -v -s
           
+          Write-Host ""
           Write-Host "Integration test verification completed successfully!" -ForegroundColor Green
-          Write-Host "All integration tests passed - temporary directories were properly cleaned up" -ForegroundColor Green
+          Write-Host "All integration tests passed with real directory structures shown above" -ForegroundColor Green
           Write-Host "Test coverage included:" -ForegroundColor Cyan
           Write-Host "  - Single date directories (Canon, Sony, iPhone, etc.)" -ForegroundColor White
           Write-Host "  - Date range mixed directories" -ForegroundColor White
