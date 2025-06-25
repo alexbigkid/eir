@@ -176,13 +176,15 @@ class ImageProcessor:
                 else:
                     self._logger.warning(f"DNGLab binary file not found: {dnglab_path}")
             else:
-                self._logger.warning(f"DNGLab not found - DNG conversion may fail on {system_name}")
+                self._logger.warning(
+                    f"DNGLab not found - DNG conversion may fail on {system_name}"
+                )
 
     def _find_dnglab_binary(self) -> str | None:
         """Find DNGLab binary in bundled resources or system PATH."""
         machine = platform.machine().lower()
         system_name = platform.system().lower()
-        
+
         # Map machine architecture to binary naming conventions
         if system_name == "windows":
             dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
@@ -191,7 +193,10 @@ class ImageProcessor:
             dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
             binary_name = "dnglab"
 
-        self._logger.info(f"Looking for DNGLab binary, system: {system_name}, machine: {machine}, arch: {dnglab_arch}")
+        self._logger.info(
+            f"Looking for DNGLab binary, system: {system_name}, "
+            f"machine: {machine}, arch: {dnglab_arch}"
+        )
 
         # Try bundled DNGLab first (PyInstaller extracts to temp dir)
         if getattr(sys, "frozen", False):
