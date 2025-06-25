@@ -63,7 +63,9 @@ def download_dnglab_for_windows():
     if script_path.exists():
         print(f"Found download script: {script_path}")
         print("Running DNGLab download script...")
-        result = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script_path)], check=False)  # noqa: S603
+        result = subprocess.run(
+            ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script_path)], check=False
+        )  # noqa: S603
         if result.returncode == 0:
             print("DNGLab downloaded successfully")
         else:
@@ -163,7 +165,7 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     # Check for DNGLab binary to bundle
     dnglab_binary = None
     system_name = platform.system().lower()
-    
+
     if system_name == "linux":
         machine = platform.machine().lower()
         dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
@@ -185,7 +187,7 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
             print(f"Found DNGLab binary for bundling: {dnglab_binary} (size: {file_size} bytes)")
         else:
             print(f"DNGLab binary not found: {dnglab_path}")
-    
+
     elif system_name == "windows":
         machine = platform.machine().lower()
         dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
