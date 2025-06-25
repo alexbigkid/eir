@@ -145,6 +145,7 @@ class ImageProcessor:
 
         # Patch pydngconverter to avoid Wine on Linux when using DNGLab
         if platform.system().lower() == "linux" and os.environ.get("PYDNG_DNG_CONVERTER"):
+
             async def patched_get_compat_path(path):
                 # Use native path on Linux when DNGLab is configured
                 return str(Path(path))
