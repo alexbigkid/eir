@@ -94,7 +94,7 @@ class ImageProcessor:
             set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts])
         )
         self._project_name = None
-        
+
         # Configure DNG converter early
         self._configure_dng_converter()
 
@@ -127,11 +127,11 @@ class ImageProcessor:
 
         # Configure DNG converter based on platform
         self._configure_dng_converter()
-        
+
         # Debug: Check environment variable before conversion
         env_var = os.environ.get("PYDNG_DNG_CONVERTER")
         self._logger.info(f"PYDNG_DNG_CONVERTER environment variable: {env_var}")
-        
+
         if env_var:
             env_path = Path(env_var)
             self._logger.info(f"DNGLab binary exists: {env_path.exists()}")
