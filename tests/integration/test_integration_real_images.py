@@ -139,6 +139,14 @@ class TestRealImageIntegration:
                 # Run eir binary on the test directory
                 exit_code = self.run_eir_binary(eir_binary, test_dir)
 
+                # Show immediate directory structure after processing
+                if exit_code == 0:
+                    print(f"\n📋 Directory structure after processing {dir_name}:")
+                    for item in sorted(test_dir.iterdir()):
+                        if item.is_dir():
+                            file_count = len([f for f in item.iterdir() if f.is_file()])
+                            print(f"   📂 {item.name}/ ({file_count} files)")
+
                 if exit_code == 0:
                     # Analyze results
                     results[dir_name] = self.analyze_processing_results(test_dir, dir_name)
@@ -177,6 +185,14 @@ class TestRealImageIntegration:
             # Run eir binary on the mixed directory
             exit_code = self.run_eir_binary(eir_binary, mixed_dir)
 
+            # Show immediate directory structure after processing
+            if exit_code == 0:
+                print("\n📋 Directory structure after processing mixed directory:")
+                for item in sorted(mixed_dir.iterdir()):
+                    if item.is_dir():
+                        file_count = len([f for f in item.iterdir() if f.is_file()])
+                        print(f"   📂 {item.name}/ ({file_count} files)")
+
             if exit_code == 0:
                 # Analyze results
                 results = self.analyze_processing_results(
@@ -204,20 +220,31 @@ class TestRealImageIntegration:
             "total_processed_files": 0,
         }
 
+        # Log processing results for verification
+        print(f"\n📁 Processing results for {dir_name}:")
+        print(f"   Workspace: {processed_dir}")
+
         # Find created subdirectories
         for item in processed_dir.iterdir():
             if item.is_dir():
                 results["subdirectories"].append(item.name)
+                print(f"   📂 Created subdirectory: {item.name}")
 
                 # Analyze files in each subdirectory
                 files = [f.name for f in item.iterdir() if f.is_file()]
                 results["files_by_subdirectory"][item.name] = files
                 results["total_processed_files"] += len(files)
 
+                print(
+                    f"      📄 Files ({len(files)}): {', '.join(files[:3])}"
+                    + (f", ... (+{len(files) - 3} more)" if len(files) > 3 else "")
+                )
+
                 # Analyze naming patterns
                 for file_name in files:
                     self.analyze_file_naming_pattern(file_name, results["file_naming_patterns"])
 
+        print(f"   ✅ Total processed files: {results['total_processed_files']}")
         return results
 
     def analyze_file_naming_pattern(self, file_name: str, patterns: dict):
@@ -311,6 +338,18 @@ class TestRealImageIntegration:
 
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
+
+            # Show immediate directory structure after processing
+            if exit_code == 0:
+                print(
+                    f"\n📋 Directory structure after processing "
+                    f"{test_dir.parent.name}/{test_dir.name}:"
+                )
+                for item in sorted(test_dir.iterdir()):
+                    if item.is_dir():
+                        file_count = len([f for f in item.iterdir() if f.is_file()])
+                        print(f"   📂 {item.name}/ ({file_count} files)")
+
             if exit_code != 0:
                 error_msg = getattr(
                     self, "_last_error", f"Binary failed with exit code {exit_code}"
@@ -337,6 +376,18 @@ class TestRealImageIntegration:
 
             # Run eir binary on the test directory
             exit_code = self.run_eir_binary(eir_binary, test_dir)
+
+            # Show immediate directory structure after processing
+            if exit_code == 0:
+                print(
+                    f"\n📋 Directory structure after processing "
+                    f"{test_dir.parent.name}/{test_dir.name}:"
+                )
+                for item in sorted(test_dir.iterdir()):
+                    if item.is_dir():
+                        file_count = len([f for f in item.iterdir() if f.is_file()])
+                        print(f"   📂 {item.name}/ ({file_count} files)")
+
             if exit_code != 0:
                 error_msg = getattr(
                     self, "_last_error", f"Binary failed with exit code {exit_code}"
