@@ -150,7 +150,7 @@ jobs:
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
         run: |
-          uv run pytest tests/integration/ -v
+          uv run pytest tests/integration/ -v -s
           
           echo "📊 Integration test verification completed successfully!"
           echo "✅ All integration tests passed - temporary directories were properly cleaned up"
@@ -169,7 +169,7 @@ jobs:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
         shell: pwsh
         run: |
-          uv run pytest tests/integration/ -v
+          uv run pytest tests/integration/ -v -s
           
           Write-Host "Integration test verification completed successfully!" -ForegroundColor Green
           Write-Host "All integration tests passed - temporary directories were properly cleaned up" -ForegroundColor Green
