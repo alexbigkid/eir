@@ -1,4 +1,4 @@
-← [Back to Main Documentation](../README.md)
+← [Back to Main Documentation](README.md)
 
 # CLAUDE.md
 
@@ -51,3 +51,9 @@ Eir is a Python application for EXIF-based image renaming and RAW format convers
 - Async/await throughout with RxPY for reactive programming patterns
 - Comprehensive EXIF metadata support for multiple camera manufacturers
 - Performance tracing available via `@function_trace` decorator and PerformanceTimer context manager
+
+## Testing Notes
+- Don't run integration tests locally. The integration tests should be ran only on GitHub Action pipeline
+
+## Code Structure
+- Try to use import statements on the top of the file. Only use imports inside function if there is no other way.
