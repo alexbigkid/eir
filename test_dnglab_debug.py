@@ -35,16 +35,17 @@ async def test_dnglab_directly(dnglab_path: str, test_files_dir: str):
     test_file = test_files[0]
     logger.info(f"Testing with file: {test_file}")
 
-    # Build DNGLab command similar to what pydngconverter uses
+    # Build DNGLab command with correct syntax
+    output_file = output_dir / f"{test_file.stem}.dng"
     cmd = [
         dnglab_path,
-        "-c",  # compression
-        "-cr14.0",  # camera raw version
-        "-dng1.6",  # DNG version
-        "-p1",  # preview
-        "-d",
-        str(output_dir),  # destination
+        "convert",  # DNGLab convert subcommand
+        "--compression",
+        "lossless",
+        "--dng-preview",
+        "true",
         str(test_file),  # source
+        str(output_file),  # destination file
     ]
 
     logger.info(f"Executing direct DNGLab command: {' '.join(cmd)}")

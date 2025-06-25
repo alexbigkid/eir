@@ -163,6 +163,8 @@ class ImageProcessor:
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
         # Log DNGConverter configuration
         self._logger.info("DNGConverter initialized successfully")
+        self._logger.info(f"DNGConverter binary path: {py_dng.bin_exec}")
+        self._logger.info(f"DNGConverter binary type: {type(py_dng.bin_exec)}")
 
         # Patch pydngconverter to avoid Wine on Linux when using DNGLab
         if platform.system().lower() == "linux" and os.environ.get("PYDNG_DNG_CONVERTER"):
@@ -182,17 +184,48 @@ class ImageProcessor:
             async def patched_convert_file(self, *, destination: str = None, job=None, log=None):
                 """Enhanced convert_file with better error handling and logging."""
                 import asyncio
+                import os
                 from pydngconverter import compat
 
                 log = log or self._logger
                 log.debug("starting conversion: %s", job.source.name)
                 source_path = await compat.get_compat_path(job.source)
                 log.debug("determined source path: %s", source_path)
-                dng_args = [*self.parameters.iter_args, "-d", destination, str(source_path)]
+
+                # Check if we're using DNGLab vs Adobe DNG Converter
+                # Use environment variable as primary indicator since bin_exec
+                # might not reflect the actual binary
+                env_dnglab = os.environ.get("PYDNG_DNG_CONVERTER", "")
+                is_dnglab = (
+                    "dnglab" in env_dnglab.lower() or "dnglab" in str(self.bin_exec).lower()
+                )
+                log.debug(
+                    f"Binary path: {self.bin_exec}, env var: {env_dnglab}, is_dnglab: {is_dnglab}"
+                )
+
+                if is_dnglab:
+                    # DNGLab syntax: dnglab convert [options] input output
+                    output_file = Path(destination) / f"{Path(source_path).stem}.dng"
+                    dng_args = [
+                        "convert",
+                        "--compression",
+                        "lossless",
+                        "--dng-preview",
+                        "true",
+                        str(source_path),
+                        str(output_file),
+                    ]
+                else:
+                    # Adobe DNG Converter syntax (original)
+                    dng_args = [*self.parameters.iter_args, "-d", destination, str(source_path)]
 
                 # Log the full command being executed
                 full_command = f"{self.bin_exec} {' '.join(dng_args)}"
-                log.info("Executing DNGLab command: %s", full_command)
+                log.info(
+                    "Executing %s command: %s",
+                    "DNGLab" if is_dnglab else "Adobe DNG Converter",
+                    full_command,
+                )
 
                 # Validate arguments before execution
                 log.debug("DNGLab binary: %s", self.bin_exec)
