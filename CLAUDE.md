@@ -13,6 +13,7 @@ Eir is a Python application for EXIF-based image renaming and RAW format convers
 - Install dependencies: `uv sync`
 - Run the CLI: `uv run eir` or `eir` (after installation)
 - Build the package: `uv build`
+- Build standalone executable: `uv run python .github/scripts/build_nuitka.py`
 - Run tests: `pytest` (test files need to be implemented)
 - Format/lint: `ruff check` and `ruff format`
 
@@ -56,9 +57,11 @@ Eir is a Python application for EXIF-based image renaming and RAW format convers
 - Don't run integration tests locally. The integration tests should be ran only on GitHub Action pipeline
 
 ## Build System
+- Uses Nuitka for creating standalone executables with native performance
 - DNGLab binaries are downloaded automatically during build process to `build/{platform}/tools/{arch}/`
-- Binaries are always the latest version from GitHub releases
+- Binaries are bundled into the executable and always the latest version from GitHub releases
 - No binaries are committed to the repository
+- Build artifacts are created in the `dist/` directory
 
 ## Code Structure
 - Try to use import statements on the top of the file. Only use imports inside function if there is no other way.

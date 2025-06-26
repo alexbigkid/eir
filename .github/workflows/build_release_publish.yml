@@ -107,10 +107,20 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Install dependencies
-        run: uv sync
+        run: |
+          echo "Install Python packages"
+          echo "-----------------------"
+          uv sync
+          echo "List Python packages"
+          echo "-----------------------"
+          uv pip list
+          echo "Check Nuitka version"
+          echo "-----------------------"
+          uv run python -m nuitka --version
 
-      - name: Install Nuitka
-        run: uv pip install nuitka>=2.7.10
+      - name: Setup MSVC (Windows)
+        if: matrix.os_name == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build binary
         run: uv run python .github/scripts/build_nuitka.py
@@ -151,13 +161,13 @@ jobs:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
         run: |
           uv run pytest tests/integration/ -v -s
-          
+
           echo ""
           echo "Integration test verification completed successfully!"
           echo "All integration tests passed with real directory structures shown above"
           echo "Test coverage included:"
           echo "  - Single date directories (Canon, Sony, iPhone, etc.)"
-          echo "  - Date range mixed directories" 
+          echo "  - Date range mixed directories"
           echo "  - Camera brand organization verification"
           echo "  - File type processing (RAW + compressed formats)"
           echo "DNG conversion tool: DNGLab (bundled via Nuitka)"
@@ -171,7 +181,7 @@ jobs:
         shell: pwsh
         run: |
           uv run pytest tests/integration/ -v -s
-          
+
           Write-Host ""
           Write-Host "Integration test verification completed successfully!" -ForegroundColor Green
           Write-Host "All integration tests passed with real directory structures shown above" -ForegroundColor Green

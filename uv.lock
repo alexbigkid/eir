@@ -180,7 +180,6 @@ dependencies = [
 [package.dev-dependencies]
 debug = [
     { name = "build" },
-    { name = "nuitka" },
     { name = "pip-check" },
     { name = "pip-chill" },
     { name = "pip-date" },
@@ -192,6 +191,7 @@ debug = [
 ]
 dev = [
     { name = "coverage" },
+    { name = "nuitka" },
     { name = "parameterized" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -211,7 +211,6 @@ requires-dist = [
 [package.metadata.requires-dev]
 debug = [
     { name = "build" },
-    { name = "nuitka", specifier = ">=2.7.10" },
     { name = "pip-check" },
     { name = "pip-chill" },
     { name = "pip-date" },
@@ -223,6 +222,7 @@ debug = [
 ]
 dev = [
     { name = "coverage" },
+    { name = "nuitka", specifier = ">=2.7.10" },
     { name = "parameterized" },
     { name = "pytest" },
     { name = "pytest-asyncio" },

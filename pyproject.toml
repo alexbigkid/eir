@@ -28,7 +28,8 @@ dev = [
     "ruff",
     "pytest",
     "pytest-asyncio",
-    "pytest-cov"
+    "pytest-cov",
+    "nuitka>=2.7.10",
 ]
 debug = [
     "build",
@@ -40,7 +41,6 @@ debug = [
     "pipdeptree",
     "pre-commit",
     "wheel",
-    "nuitka>=2.7.10",
 ]
 
 
