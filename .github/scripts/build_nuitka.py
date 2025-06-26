@@ -48,6 +48,23 @@ def clean_build_dirs():
             shutil.rmtree(dir_name)
 
 
+def download_dnglab():
+    """Download DNGLab binary for DNG conversion."""
+    match platform.system().lower():
+        case "windows":
+            print("Downloading DNG lab for windows")
+            download_dnglab_for_windows()
+        case "linux":
+            print("Downloading DNG lab for linux")
+            download_dnglab_for_linux()
+        case "darwin":
+            print("Downloading DNG lab for macos")
+            download_dnglab_for_macos()
+        case _:
+            print(f"Skipping DNGLab download - not supported on {platform.system()}")
+            return  # Skip download on unsupported pla
+
+
 def download_dnglab_for_windows():
     """Download DNGLab binary for Windows DNG conversion."""
     if platform.system().lower() != "windows":
@@ -237,10 +254,7 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
 
     output_name = f"{app_name}-{version}-{platform_name}"
 
-    # Download DNGLab for platform-specific builds
-    download_dnglab_for_linux()
-    download_dnglab_for_windows()
-    download_dnglab_for_macos()
+    download_dnglab()
 
     # Set up data files and DNGLab bundling
     data_dir = setup_data_files()
