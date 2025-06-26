@@ -194,10 +194,24 @@ class LoggerManager:
                 if (parent / "pyproject.toml").exists():
                     return parent
 
-        # If we're frozen (compiled) and still can't find pyproject.toml,
-        # create a minimal fallback structure to avoid crashes
-        if getattr(sys, "frozen", False):
-            print("Debug: Creating fallback for frozen executable")
+        # If we can't find pyproject.toml, check if we're in a compiled environment
+        # and create fallback configuration to avoid crashes
+
+        # Detect if we're in a compiled/bundled environment (Nuitka, PyInstaller, etc.)
+        is_compiled = (
+            getattr(sys, "frozen", False)  # PyInstaller/Nuitka frozen
+            or hasattr(sys, "_MEIPASS")  # PyInstaller bundle
+            or "onefile" in str(Path(__file__).parent)  # Nuitka onefile pattern
+        )
+
+        if is_compiled:
+            frozen_state = getattr(sys, 'frozen', False)
+            has_meipass = hasattr(sys, '_MEIPASS')
+            current_path = Path(__file__).parent
+            print(
+                f"Debug: Detected compiled executable "
+                f"(frozen={frozen_state}, _MEIPASS={has_meipass}, path={current_path})"
+            )
             # Create a temporary config in the current directory
             fallback_dir = Path.cwd()
 

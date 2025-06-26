@@ -77,10 +77,24 @@ class _Const:
             if (parent / "pyproject.toml").exists():
                 return parent
 
-        # If we're frozen (compiled) and still can't find pyproject.toml,
-        # return current directory as fallback to avoid crashes
-        if getattr(sys, "frozen", False):
-            print("Debug (constants): Using fallback for frozen executable")
+        # If we can't find pyproject.toml, check if we're in a compiled environment
+        # and return current directory as fallback to avoid crashes
+
+        # Detect if we're in a compiled/bundled environment (Nuitka, PyInstaller, etc.)
+        is_compiled = (
+            getattr(sys, "frozen", False)  # PyInstaller/Nuitka frozen
+            or hasattr(sys, "_MEIPASS")  # PyInstaller bundle
+            or "onefile" in str(Path(__file__).parent)  # Nuitka onefile pattern
+        )
+
+        if is_compiled:
+            frozen_state = getattr(sys, 'frozen', False)
+            has_meipass = hasattr(sys, '_MEIPASS')
+            current_path = Path(__file__).parent
+            print(
+                f"Debug (constants): Detected compiled executable "
+                f"(frozen={frozen_state}, _MEIPASS={has_meipass}, path={current_path})"
+            )
             return Path.cwd()
 
         raise FileNotFoundError("pyproject.toml not found")
