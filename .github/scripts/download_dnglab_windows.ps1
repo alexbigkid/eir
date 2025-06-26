@@ -7,16 +7,29 @@ $ErrorActionPreference = "Stop"
 
 # Function to auto-detect latest DNGLab version from GitHub API
 function Get-LatestDNGLabVersion {
-    Write-Host "Detecting latest DNGLab version..." -ForegroundColor Cyan
+    Write-Host "🔍 Detecting latest DNGLab version..." -ForegroundColor Cyan
     
     try {
-        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/dnglab/dnglab/releases/latest"
+        # Use GitHub token if available to avoid rate limiting
+        $headers = @{
+            'User-Agent' = 'eir-build-script'
+        }
+        
+        if ($env:GITHUB_TOKEN) {
+            Write-Host "🔍 Using authenticated API request..." -ForegroundColor Cyan
+            $headers['Authorization'] = "Bearer $env:GITHUB_TOKEN"
+        } else {
+            Write-Host "🔍 Using unauthenticated API request..." -ForegroundColor Cyan
+        }
+        
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/dnglab/dnglab/releases/latest" -Headers $headers -TimeoutSec 30
         $version = $response.tag_name
-        Write-Host "Latest DNGLab version: $version" -ForegroundColor Green
+        Write-Host "✅ Latest DNGLab version: $version" -ForegroundColor Green
         return $version
     }
     catch {
-        Write-Host "Failed to detect latest DNGLab version. Falling back to v0.7.0" -ForegroundColor Red
+        Write-Host "❌ Failed to detect latest DNGLab version. Error: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "❌ Falling back to v0.7.0" -ForegroundColor Red
         return "v0.7.0"
     }
 }

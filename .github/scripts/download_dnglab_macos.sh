@@ -22,21 +22,10 @@ get_latest_dnglab_version() {
             API_RESPONSE=$(curl -s --connect-timeout 10 --max-time 30 -H "User-Agent: eir-build-script" https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
         fi
         API_EXIT_CODE=$?
-        echo "🔍 API response length: ${#API_RESPONSE}" >&2
-        
-        # Debug: Show first 500 chars of response to see what we got
-        if [ ${#API_RESPONSE} -gt 0 ]; then
-            echo "🔍 API response preview: ${API_RESPONSE:0:500}" >&2
-        fi
-        
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
             LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
-            if [ -z "$LCL_VERSION" ]; then
-                echo "❌ No tag_name found in API response" >&2
-            fi
         else
             echo "❌ curl failed with exit code $API_EXIT_CODE" >&2
-            echo "❌ curl output: $API_RESPONSE" >&2
             LCL_VERSION=""
         fi
     elif command -v wget >/dev/null 2>&1; then

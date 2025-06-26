@@ -88,8 +88,8 @@ class _Const:
         )
 
         if is_compiled:
-            frozen_state = getattr(sys, 'frozen', False)
-            has_meipass = hasattr(sys, '_MEIPASS')
+            frozen_state = getattr(sys, "frozen", False)
+            has_meipass = hasattr(sys, "_MEIPASS")
             current_path = Path(__file__).parent
             print(
                 f"Debug (constants): Detected compiled executable "
