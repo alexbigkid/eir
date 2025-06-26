@@ -109,11 +109,11 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Install PyInstaller
-        run: uv pip install pyinstaller>=6.0
+      - name: Install Nuitka
+        run: uv pip install nuitka>=2.7.10
 
       - name: Build binary
-        run: uv run python .github/scripts/build.py
+        run: uv run python .github/scripts/build_nuitka.py
 
       - name: Test binary (Unix)
         if: matrix.os_name != 'windows'
@@ -142,10 +142,10 @@ jobs:
         shell: pwsh
         run: |
           choco install exiftool tree -y
-          # DNGLab will be downloaded and bundled during build process
+          # DNGLab will be downloaded and bundled during Nuitka build process
 
       - name: Run integration tests (Unix)
-        # Run integration tests on macOS (Adobe DNG Converter) and Linux (DNGLab)
+        # Run integration tests on macOS (DNGLab bundled) and Linux (DNGLab bundled)
         if: matrix.os_name == 'macos' || matrix.os_name == 'linux'
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
@@ -160,11 +160,11 @@ jobs:
           echo "  - Date range mixed directories" 
           echo "  - Camera brand organization verification"
           echo "  - File type processing (RAW + compressed formats)"
-          echo "DNG conversion tool: DNGLab (bundled)"
+          echo "DNG conversion tool: DNGLab (bundled via Nuitka)"
           echo "Test workspace: Temporary directories (auto-cleanup enabled)"
 
       - name: Run integration tests (Windows)
-        # Run integration tests on Windows with DNGLab
+        # Run integration tests on Windows with DNGLab bundled
         if: matrix.os_name == 'windows'
         env:
           EIR_BINARY_PATH: ./dist/eir-${{ needs.prepare-release.outputs.new_version }}-${{ matrix.arch_bin_ext }}
@@ -180,7 +180,7 @@ jobs:
           Write-Host "  - Date range mixed directories" -ForegroundColor White
           Write-Host "  - Camera brand organization verification" -ForegroundColor White
           Write-Host "  - File type processing (RAW + compressed formats)" -ForegroundColor White
-          Write-Host "DNG conversion tool: DNGLab (bundled)" -ForegroundColor Yellow
+          Write-Host "DNG conversion tool: DNGLab (bundled via Nuitka)" -ForegroundColor Yellow
           Write-Host "Test workspace: Temporary directories (auto-cleanup enabled)" -ForegroundColor Yellow
 
       - name: Install APT tools

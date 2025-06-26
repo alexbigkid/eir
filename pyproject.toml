@@ -40,7 +40,7 @@ debug = [
     "pipdeptree",
     "pre-commit",
     "wheel",
-    "pyinstaller>=6.14.1",
+    "nuitka>=2.7.10",
 ]
 
 

@@ -50,14 +50,35 @@ class DNGLabBinaryStrategy(ABC):
             return None
 
     def _check_bundled_binary(self, system_name: str, arch: str, binary_name: str) -> str | None:
-        """Check for bundled binary in PyInstaller bundle."""
+        """Check for bundled binary in Nuitka or PyInstaller bundle."""
         if not getattr(sys, "frozen", False):
             return None
 
+        # Try PyInstaller first for backward compatibility (_MEIPASS)
         bundle_dir = getattr(sys, "_MEIPASS", "")
-        self.logger.debug(f"Running as compiled binary, bundle_dir: {bundle_dir}")
+        if bundle_dir:
+            self.logger.debug(f"Running as PyInstaller binary, bundle_dir: {bundle_dir}")
+            dnglab_bundled = Path(bundle_dir) / "tools" / system_name / arch / binary_name
+        else:
+            # Try Nuitka (primary build system) - bundled files are in the extraction directory
+            self.logger.debug("Running as Nuitka binary, checking extraction directory")
 
-        dnglab_bundled = Path(bundle_dir) / "tools" / system_name / arch / binary_name
+            # For Nuitka onefile, bundled files are in the directory where __file__ is located
+            if hasattr(Path(__file__), "parent"):
+                nuitka_bundle_dir = Path(__file__).parent.parent
+                dnglab_bundled = nuitka_bundle_dir / "tools" / system_name / arch / binary_name
+                self.logger.debug(f"Trying Nuitka bundle path: {dnglab_bundled}")
+
+                if dnglab_bundled.exists():
+                    self.logger.debug("Found in Nuitka bundle directory")
+                else:
+                    # Fallback: check current working directory
+                    self.logger.debug("Not found in bundle directory, trying current directory")
+                    dnglab_bundled = Path.cwd() / "tools" / system_name / arch / binary_name
+            else:
+                # Fallback: check current working directory
+                dnglab_bundled = Path.cwd() / "tools" / system_name / arch / binary_name
+
         self.logger.debug(f"Checking bundled location: {dnglab_bundled}")
 
         if dnglab_bundled.exists():

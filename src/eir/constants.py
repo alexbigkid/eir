@@ -38,7 +38,7 @@ class _Const:
         self._load_from_build_constants()
 
     def _find_project_root(self, start: Path | None = None) -> Path:
-        # First, check if we're in a PyInstaller bundle
+        # First, check if we're in a PyInstaller bundle (backward compatibility)
         if hasattr(sys, "_MEIPASS"):
             bundle_dir = Path(sys._MEIPASS)
             if (bundle_dir / "pyproject.toml").exists():
@@ -83,6 +83,7 @@ class _Const:
             object.__setattr__(self, "_maintainers", build_constants.MAINTAINERS)
         except ImportError:
             # build_constants.py not found - use hardcoded fallback for bundled executable
+            # (PyInstaller compatibility)
             if hasattr(sys, "_MEIPASS"):
                 object.__setattr__(self, "_version", "XX.XX.XX")
                 object.__setattr__(self, "_name", "eir")

@@ -80,7 +80,7 @@ strategy:
 ### 2. Cross-Compilation Setup
 - Use Docker with ARM64 emulation
 - Install ARM64 Python and dependencies
-- Cross-compile PyInstaller binaries
+- Cross-compile Nuitka binaries
 
 ### 3. Package Updates
 - Create separate `.deb` packages for each architecture

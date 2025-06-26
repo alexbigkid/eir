@@ -144,11 +144,27 @@ class LoggerManager:
         return self._logger
 
     def _find_project_root(self) -> Path:
-        # First, check if we're in a PyInstaller bundle
+        # First, check if we're in a PyInstaller bundle (backward compatibility)
         if hasattr(sys, "_MEIPASS"):
             bundle_dir = Path(sys._MEIPASS)
             if (bundle_dir / "pyproject.toml").exists():
                 return bundle_dir
+
+        # Check if we're in a Nuitka bundle (primary build system - frozen but no _MEIPASS)
+        if getattr(sys, "frozen", False):
+            # For Nuitka onefile, bundled files are in the directory where __file__ is located
+            if hasattr(Path(__file__), "parent"):
+                nuitka_bundle_dir = Path(__file__).parent.parent
+                if (nuitka_bundle_dir / "pyproject.toml").exists():
+                    return nuitka_bundle_dir
+
+            # Alternative: check the directory where the current module is extracted
+            import eir
+
+            if hasattr(eir, "__file__"):
+                eir_dir = Path(eir.__file__).parent.parent
+                if (eir_dir / "pyproject.toml").exists():
+                    return eir_dir
 
         # Try multiple starting points to find project root
         search_paths = [
@@ -160,5 +176,10 @@ class LoggerManager:
             for parent in [start, *start.parents]:
                 if (parent / "pyproject.toml").exists():
                     return parent
+
+        # If we're frozen (compiled) and still can't find pyproject.toml,
+        # return current directory as fallback to avoid crashes
+        if getattr(sys, "frozen", False):
+            return Path.cwd()
 
         raise FileNotFoundError("pyproject.toml not found")
