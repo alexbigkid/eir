@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Build script for creating standalone executables with Nuitka."""
 
-# Ensure all subprocess.run calls use argument lists, not shell=True or str cmd
-import subprocess  # noqa: S404
 import os
 import platform
 import shutil
+
+# Ensure all subprocess.run calls use argument lists, not shell=True or str cmd
+import subprocess  # noqa: S404
 import sys
 from pathlib import Path
 
@@ -62,7 +63,7 @@ def download_dnglab():
             download_dnglab_for_macos()
         case _:
             print(f"Skipping DNGLab download - not supported on {platform.system()}")
-            return  # Skip download on unsupported pla
+            return  # Skip download on unsupported platform
 
 
 def download_dnglab_for_windows():
@@ -75,7 +76,7 @@ def download_dnglab_for_windows():
     print(f"Current working directory: {Path.cwd()}")
 
     # Run the PowerShell download script
-    script_path = Path(".github/scripts/download_dnglab.ps1")
+    script_path = Path(".github/scripts/download_dnglab_windows.ps1")
     print(f"Looking for download script: {script_path}")
     if script_path.exists():
         print(f"Found download script: {script_path}")
@@ -103,7 +104,7 @@ def download_dnglab_for_linux():
     print(f"Current working directory: {Path.cwd()}")
 
     # Run the download script
-    script_path = Path(".github/scripts/download_dnglab.sh")
+    script_path = Path(".github/scripts/download_dnglab_linux.sh")
     print(f"Looking for download script: {script_path}")
     if script_path.exists():
         print(f"Found download script: {script_path}")
