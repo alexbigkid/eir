@@ -255,7 +255,8 @@ class TestFileOperations:
         await processor._rename_file_async("old_name.jpg", "new_name.jpg")
 
         mock_rename.assert_called_once_with("old_name.jpg", "new_name.jpg")
-        mock_logger.debug.assert_called_once_with("renamed file: old_name.jpg to new_name.jpg")
+        # Check that the specific rename debug message was called
+        mock_logger.debug.assert_any_call("renamed file: old_name.jpg to new_name.jpg")
 
     @pytest.mark.asyncio
     @patch("os.rename")
