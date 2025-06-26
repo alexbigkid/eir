@@ -76,6 +76,13 @@ class _Const:
         for parent in [start, *start.parents]:
             if (parent / "pyproject.toml").exists():
                 return parent
+
+        # If we're frozen (compiled) and still can't find pyproject.toml,
+        # return current directory as fallback to avoid crashes
+        if getattr(sys, "frozen", False):
+            print("Debug (constants): Using fallback for frozen executable")
+            return Path.cwd()
+
         raise FileNotFoundError("pyproject.toml not found")
 
     def _load_from_pyproject(self):

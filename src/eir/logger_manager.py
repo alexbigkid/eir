@@ -195,8 +195,46 @@ class LoggerManager:
                     return parent
 
         # If we're frozen (compiled) and still can't find pyproject.toml,
-        # return current directory as fallback to avoid crashes
+        # create a minimal fallback structure to avoid crashes
         if getattr(sys, "frozen", False):
-            return Path.cwd()
+            print("Debug: Creating fallback for frozen executable")
+            # Create a temporary config in the current directory
+            fallback_dir = Path.cwd()
+
+            # Create minimal logging.yaml if it doesn't exist
+            if not (fallback_dir / "logging.yaml").exists():
+                minimal_logging = """
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  default:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: default
+    stream: ext://sys.stdout
+
+loggers:
+  consoleLogger:
+    level: INFO
+    handlers: [console]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console]
+"""
+                try:
+                    with open(fallback_dir / "logging.yaml", "w") as f:
+                        f.write(minimal_logging.strip())
+                    print("Debug: Created fallback logging.yaml")
+                except Exception as e:
+                    print(f"Debug: Failed to create fallback logging.yaml: {e}")
+
+            return fallback_dir
 
         raise FileNotFoundError("pyproject.toml not found")
