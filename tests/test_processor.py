@@ -96,14 +96,18 @@ class TestProjectNameProperty:
         assert result == "test_project"
         mock_logger.info.assert_any_call("self._project_name = 'test_project'")
 
+    @patch("pathlib.Path.cwd")
     @patch("os.getcwd")
     @patch("os.path.basename")
     @patch("os.path.normpath")
-    def test_project_name_caching(self, mock_normpath, mock_basename, mock_getcwd, mock_logger):
+    def test_project_name_caching(
+        self, mock_normpath, mock_basename, mock_getcwd, mock_path_cwd, mock_logger
+    ):
         """Test that project name is cached after first access."""
         mock_getcwd.return_value = "/path/to/20241210_test_project"
         mock_normpath.return_value = "/path/to/20241210_test_project"
         mock_basename.return_value = "20241210_test_project"
+        mock_path_cwd.return_value = Path("/path/to/20241210_test_project")
 
         processor = ImageProcessor(logger=mock_logger, op_dir="/test/dir")
 

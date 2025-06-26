@@ -332,8 +332,8 @@ class ImageProcessor:
         system_name = platform.system().lower()
         self._logger.info(f"Configuring DNG converter for platform: {system_name}")
 
-        if system_name in ["linux", "windows"]:
-            # On Linux and Windows, try to use bundled DNGLab
+        if system_name in ["linux", "windows", "darwin"]:
+            # On Linux, Windows, and macOS, try to use bundled DNGLab
             self._logger.info(
                 f"Attempting DNGLab configuration for {system_name}, "
                 f"machine: {platform.machine()}"
@@ -351,9 +351,11 @@ class ImageProcessor:
                     file_size = dnglab_file.stat().st_size
                     self._logger.debug(f"DNGLab binary verification - size: {file_size} bytes")
 
-                    if system_name == "linux":
+                    if system_name in ["linux", "darwin"]:
                         is_executable = os.access(dnglab_path, os.X_OK)
-                        self._logger.info(f"DNGLab executable check (Linux): {is_executable}")
+                        self._logger.info(
+                            f"DNGLab executable check ({system_name}): {is_executable}"
+                        )
                         if not is_executable:
                             self._logger.warning(
                                 f"DNGLab binary is not executable: {dnglab_path}"
@@ -414,6 +416,22 @@ class ImageProcessor:
         except Exception as e:
             self._logger.warning(f"DNGLab binary test failed with exception: {e}")
 
+    def _find_project_root(self) -> Path:
+        """Find project root by looking for pyproject.toml."""
+        # Try multiple starting points to find project root
+        search_paths = [
+            Path.cwd(),  # Current working directory
+            Path(__file__).parent.parent.parent,  # Relative to this source file (src/eir/../..)
+        ]
+
+        for start in search_paths:
+            for parent in [start, *start.parents]:
+                if (parent / "pyproject.toml").exists():
+                    return parent
+
+        # Default fallback to current directory if no pyproject.toml found
+        return Path.cwd()
+
     def _find_dnglab_binary(self) -> str | None:
         """Find DNGLab binary in bundled resources or system PATH."""
         machine = platform.machine().lower()
@@ -423,6 +441,9 @@ class ImageProcessor:
         if system_name == "windows":
             dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
             binary_name = "dnglab.exe"
+        elif system_name == "darwin":  # macOS
+            dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x86_64"
+            binary_name = "dnglab"
         else:  # Linux
             dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
             binary_name = "dnglab"
@@ -495,7 +516,11 @@ class ImageProcessor:
 
         # Try local build directory (development) if still not found
         if not found_binary:
-            dnglab_local = Path("build") / system_name / "tools" / dnglab_arch / binary_name
+            # Find project root by looking for pyproject.toml
+            project_root = self._find_project_root()
+            dnglab_local = (
+                project_root / "build" / system_name / "tools" / dnglab_arch / binary_name
+            )
             search_locations.append(("local_build", str(dnglab_local)))
             self._logger.info(f"Checking local build directory: {dnglab_local}")
             if dnglab_local.exists():
@@ -504,7 +529,7 @@ class ImageProcessor:
             else:
                 self._logger.info(f"Local DNGLab not found: {dnglab_local}")
                 # Check if build directory structure exists
-                build_dir = Path("build")
+                build_dir = project_root / "build"
                 if build_dir.exists():
                     platform_dir = build_dir / system_name
                     if platform_dir.exists():
