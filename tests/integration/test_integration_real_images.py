@@ -107,9 +107,9 @@ class TestRealImageIntegration:
                     ["tree", str(directory), "/F"], capture_output=True, text=True, check=False
                 )
             else:
-                # Unix tree command
+                # Unix tree command with file sizes
                 result = subprocess.run(
-                    ["tree", str(directory)], capture_output=True, text=True, check=False
+                    ["tree", "-s", str(directory)], capture_output=True, text=True, check=False
                 )
 
             if result.returncode == 0:
@@ -120,7 +120,14 @@ class TestRealImageIntegration:
                 for item in sorted(directory.rglob("*")):
                     if item.is_file():
                         rel_path = item.relative_to(directory)
-                        print(f"  {rel_path}")
+                        size_bytes = item.stat().st_size
+                        if size_bytes > 1024 * 1024:
+                            size_mb = size_bytes / (1024 * 1024)
+                            size_unit = "MB"
+                        else:
+                            size_mb = size_bytes / 1024
+                            size_unit = "KB"
+                        print(f"  {rel_path} ({size_mb:.1f} {size_unit})")
         except Exception as e:
             print(f"Could not display tree structure: {e}")
             # Simple fallback listing
@@ -130,7 +137,14 @@ class TestRealImageIntegration:
                     file_count = len([f for f in item.rglob("*") if f.is_file()])
                     print(f"  {item.name}/ ({file_count} files)")
                 else:
-                    print(f"  {item.name}")
+                    size_bytes = item.stat().st_size
+                    if size_bytes > 1024 * 1024:
+                        size_mb = size_bytes / (1024 * 1024)
+                        size_unit = "MB"
+                    else:
+                        size_mb = size_bytes / 1024
+                        size_unit = "KB"
+                    print(f"  {item.name} ({size_mb:.1f} {size_unit})")
 
     def setup_mixed_directory(self, test_images_dir: Path, temp_workspace: Path) -> Path:
         """Set up the mixed date range directory with files from all other directories."""
