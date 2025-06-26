@@ -152,19 +152,23 @@ class LoggerManager:
 
         # Check if we're in a Nuitka bundle (primary build system - frozen but no _MEIPASS)
         if getattr(sys, "frozen", False):
-            # For Nuitka onefile, bundled files are in the directory where __file__ is located
-            if hasattr(Path(__file__), "parent"):
-                nuitka_bundle_dir = Path(__file__).parent.parent
-                if (nuitka_bundle_dir / "pyproject.toml").exists():
-                    return nuitka_bundle_dir
+            # For Nuitka onefile, bundled files are in the same directory as __file__
+            # The directory structure in Nuitka onefile is: /tmp/onefile_xxx/.../
+            current_file_dir = Path(__file__).parent
 
-            # Alternative: check the directory where the current module is extracted
-            import eir
+            # Check current directory and parent directories for bundled files
+            search_dirs = [
+                current_file_dir,
+                current_file_dir.parent,
+                current_file_dir.parent.parent,
+            ]
 
-            if hasattr(eir, "__file__"):
-                eir_dir = Path(eir.__file__).parent.parent
-                if (eir_dir / "pyproject.toml").exists():
-                    return eir_dir
+            for bundle_dir in search_dirs:
+                if (bundle_dir / "pyproject.toml").exists():
+                    return bundle_dir
+                # Also check if logging.yaml exists directly (might be in same dir)
+                if (bundle_dir / "logging.yaml").exists():
+                    return bundle_dir
 
         # Try multiple starting points to find project root
         search_paths = [

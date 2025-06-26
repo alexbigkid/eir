@@ -44,6 +44,22 @@ class _Const:
             if (bundle_dir / "pyproject.toml").exists():
                 return bundle_dir
 
+        # Check if we're in a Nuitka bundle (primary build system - frozen but no _MEIPASS)
+        if getattr(sys, "frozen", False):
+            # For Nuitka onefile, bundled files are in the same directory as __file__
+            current_file_dir = Path(__file__).parent
+
+            # Check current directory and parent directories for bundled files
+            search_dirs = [
+                current_file_dir,
+                current_file_dir.parent,
+                current_file_dir.parent.parent,
+            ]
+
+            for bundle_dir in search_dirs:
+                if (bundle_dir / "pyproject.toml").exists():
+                    return bundle_dir
+
         # Fall back to normal project root search
         if start is None:
             start = Path.cwd()
