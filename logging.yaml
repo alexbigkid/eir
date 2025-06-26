@@ -12,7 +12,7 @@ formatters:
 handlers:
     consoleHandler:
         class: logging.StreamHandler
-        level: INFO
+        level: WARNING
         formatter: abkFormatterShort
         stream: ext://sys.stdout
     fileHandler:
@@ -24,15 +24,15 @@ handlers:
         backupCount: 10
     queueHandler:
         class: logging.handlers.QueueHandler
-        level: INFO
+        level: WARNING
         queue: ext://queue.Queue
 
 loggers:
     root:
-        level: INFO
+        level: WARNING
         handlers: [consoleHandler]
     consoleLogger:
-        level: INFO
+        level: WARNING
         handlers: [consoleHandler]
         qualname: consoleLogger
         propagate: no
@@ -42,7 +42,7 @@ loggers:
         qualname: fileLogger
         propagate: no
     threadedConsoleLogger:
-        level: INFO
+        level: WARNING
         handlers: [queueHandler]
         qualname: threadedConsoleLogger
         propagate: no
@@ -53,5 +53,5 @@ loggers:
         propagate: no
 
 root:
-    level: INFO
+    level: WARNING
     handlers: [consoleHandler]
