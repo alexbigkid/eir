@@ -4,53 +4,6 @@
 set -e
 
 # Function to auto-detect latest DNGLab version from GitHub API
-# get_latest_dnglab_version() {
-#     local LCL_VERSION_VAR=$1
-#     local LCL_VERSION=""
-#     local LCL_EXIT_CODE=0
-
-#     echo "🔍 Detecting latest DNGLab version..." >&2
-
-#     if command -v curl >/dev/null 2>&1; then
-#         echo "🔍 Using curl to fetch latest version..." >&2
-#         API_RESPONSE=$(curl -s --connect-timeout 10 --max-time 30 -H "User-Agent: eir-build-script" https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
-#         API_EXIT_CODE=$?
-#         echo "🔍 API response length: ${#API_RESPONSE}" >&2
-#         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
-#             LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
-#         else
-#             echo "❌ curl failed with exit code $API_EXIT_CODE" >&2
-#             echo "❌ curl output: $API_RESPONSE" >&2
-#             LCL_VERSION=""
-#         fi
-#     elif command -v wget >/dev/null 2>&1; then
-#         echo "🔍 Using wget to fetch latest version..." >&2
-#         API_RESPONSE=$(wget --timeout=30 --user-agent="eir-build-script" -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
-#         API_EXIT_CODE=$?
-#         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
-#             LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
-#         else
-#             echo "❌ wget failed with exit code $API_EXIT_CODE" >&2
-#             LCL_VERSION=""
-#         fi
-#     else
-#         echo "❌ Neither curl nor wget found. Cannot detect latest version." >&2
-#         LCL_EXIT_CODE=1
-#         return $LCL_EXIT_CODE
-#     fi
-
-#     if [ -z "$LCL_VERSION" ]; then
-#         echo "❌ Failed to detect latest DNGLab version. Falling back to v0.7.0" >&2
-#         eval "$LCL_VERSION_VAR"="v0.7.0"
-#     else
-#         echo "✅ Latest DNGLab version: $LCL_VERSION" >&2
-#         eval "$LCL_VERSION_VAR"="$LCL_VERSION"
-#     fi
-
-#     return $LCL_EXIT_CODE
-# }
-
-
 get_latest_dnglab_version() {
     local LCL_VERSION_VAR=$1
     local LCL_VERSION=""
@@ -59,9 +12,27 @@ get_latest_dnglab_version() {
     echo "🔍 Detecting latest DNGLab version..." >&2
 
     if command -v curl >/dev/null 2>&1; then
-        LCL_VERSION=$(curl -s https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        echo "🔍 Using curl to fetch latest version..." >&2
+        API_RESPONSE=$(curl -s --connect-timeout 10 --max-time 30 -H "User-Agent: eir-build-script" https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        API_EXIT_CODE=$?
+        echo "🔍 API response length: ${#API_RESPONSE}" >&2
+        if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
+            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+        else
+            echo "❌ curl failed with exit code $API_EXIT_CODE" >&2
+            echo "❌ curl output: $API_RESPONSE" >&2
+            LCL_VERSION=""
+        fi
     elif command -v wget >/dev/null 2>&1; then
-        LCL_VERSION=$(wget -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        echo "🔍 Using wget to fetch latest version..." >&2
+        API_RESPONSE=$(wget --timeout=30 --user-agent="eir-build-script" -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        API_EXIT_CODE=$?
+        if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
+            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+        else
+            echo "❌ wget failed with exit code $API_EXIT_CODE" >&2
+            LCL_VERSION=""
+        fi
     else
         echo "❌ Neither curl nor wget found. Cannot detect latest version." >&2
         LCL_EXIT_CODE=1
