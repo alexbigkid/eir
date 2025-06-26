@@ -51,57 +51,115 @@ class DNGLabBinaryStrategy(ABC):
 
     def _check_bundled_binary(self, system_name: str, arch: str, binary_name: str) -> str | None:
         """Check for bundled binary in Nuitka or PyInstaller bundle."""
-        if not getattr(sys, "frozen", False):
+        # Check if we're running as a bundled executable
+        bundled_detection = self._detect_bundled_execution()
+        if not bundled_detection["is_bundled"]:
+            self.logger.info("Not running as bundled executable - skipping bundled binary search")
             return None
 
-        # Try PyInstaller first for backward compatibility (_MEIPASS)
-        bundle_dir = getattr(sys, "_MEIPASS", "")
-        if bundle_dir:
-            self.logger.debug(f"Running as PyInstaller binary, bundle_dir: {bundle_dir}")
-            dnglab_bundled = Path(bundle_dir) / "tools" / system_name / arch / binary_name
-        else:
-            # Try Nuitka (primary build system) - bundled files are in the extraction directory
-            self.logger.debug("Running as Nuitka binary, checking extraction directory")
+        # Get the bundled binary path based on the bundle type
+        dnglab_bundled = self._get_bundled_binary_path(
+            bundled_detection, system_name, arch, binary_name
+        )
 
-            # For Nuitka onefile, bundled files are extracted to a temporary directory
-            # The bundled data is accessible relative to where the code is running
-            # Since we used --include-data-dir=nuitka_data=., the structure is:
-            # <extraction_dir>/tools/system/arch/binary
-
-            # Get the directory where this Python file is running from
-            current_file_dir = Path(__file__).parent
-
-            # Try multiple possible locations for bundled data
-            possible_locations = [
-                # Direct from extraction root (most likely for Nuitka onefile)
-                current_file_dir / "tools" / system_name / arch / binary_name,
-                # One level up from current module
-                current_file_dir.parent / "tools" / system_name / arch / binary_name,
-                # Two levels up (in case we're in src/eir/)
-                current_file_dir.parent.parent / "tools" / system_name / arch / binary_name,
-                # From current working directory as fallback
-                Path.cwd() / "tools" / system_name / arch / binary_name,
-            ]
-
-            for location in possible_locations:
-                self.logger.debug(f"Trying Nuitka bundle path: {location}")
-                if location.exists():
-                    self.logger.debug(f"Found in Nuitka bundle at: {location}")
-                    dnglab_bundled = location
-                    break
-            else:
-                # None of the locations worked
-                self.logger.debug("Not found in any Nuitka bundle location")
-                dnglab_bundled = possible_locations[0]  # Use first for error reporting
-
-        self.logger.debug(f"Checking bundled location: {dnglab_bundled}")
-
+        # Verify the bundled binary exists
         if dnglab_bundled.exists():
             self.logger.info(f"Found bundled DNGLab: {dnglab_bundled}")
             return str(dnglab_bundled)
-        else:
-            self.logger.warning(f"Bundled DNGLab not found: {dnglab_bundled}")
-            return None
+
+        self.logger.warning(f"Bundled DNGLab not found at: {dnglab_bundled}")
+        self._debug_extraction_directory()
+        return None
+
+    def _detect_bundled_execution(self) -> dict[str, bool | str]:
+        """Detect if we're running as a bundled executable and what type."""
+        current_file_path = Path(__file__).absolute()
+        is_nuitka_onefile = "/tmp/onefile_" in str(current_file_path)
+        is_frozen = getattr(sys, "frozen", False)
+        is_pyinstaller = hasattr(sys, "_MEIPASS")
+
+        # Log detection info
+        self.logger.info(
+            f"Bundled detection: frozen={is_frozen}, "
+            f"pyinstaller={is_pyinstaller}, nuitka_onefile={is_nuitka_onefile}"
+        )
+        self.logger.info(f"Current file path: {current_file_path}")
+
+        return {
+            "is_bundled": is_frozen or is_pyinstaller or is_nuitka_onefile,
+            "is_pyinstaller": is_pyinstaller,
+            "is_nuitka_onefile": is_nuitka_onefile,
+            "current_path": str(current_file_path),
+        }
+
+    def _get_bundled_binary_path(
+        self, detection: dict[str, bool | str], system_name: str, arch: str, binary_name: str
+    ) -> Path:
+        """Get the path to the bundled binary based on bundle type."""
+        # Try PyInstaller first for backward compatibility (_MEIPASS)
+        bundle_dir = getattr(sys, "_MEIPASS", "")
+        if bundle_dir and detection["is_pyinstaller"]:
+            self.logger.info(f"Using PyInstaller bundle directory: {bundle_dir}")
+            return Path(bundle_dir) / "tools" / system_name / arch / binary_name
+
+        # Handle Nuitka onefile extraction
+        return self._get_nuitka_bundled_path(system_name, arch, binary_name)
+
+    def _get_nuitka_bundled_path(self, system_name: str, arch: str, binary_name: str) -> Path:
+        """Get the bundled binary path for Nuitka onefile."""
+        # For Nuitka onefile, bundled files are extracted to the same temp directory
+        # Since we used --include-data-dir=nuitka_data=., the structure should be:
+        # <extraction_dir>/tools/system/arch/binary
+        current_file_dir = Path(__file__).parent
+        self.logger.info(f"Searching from extraction directory: {current_file_dir}")
+
+        # Find the extraction root that contains the tools directory
+        extraction_root = self._find_extraction_root(current_file_dir)
+        dnglab_path = extraction_root / "tools" / system_name / arch / binary_name
+        self.logger.info(f"Computed bundled path: {dnglab_path}")
+        return dnglab_path
+
+    def _find_extraction_root(self, start_dir: Path) -> Path:
+        """Find the extraction root directory containing bundled data."""
+        extraction_root = start_dir
+        while extraction_root.parent != extraction_root:
+            # Check if this directory contains the tools directory
+            if (extraction_root / "tools").exists():
+                break
+            # Check if we're in a Nuitka extraction directory
+            if any(name.startswith("onefile_") for name in extraction_root.parts):
+                # Look for tools in this directory or parent directories
+                for check_dir in [
+                    extraction_root,
+                    extraction_root.parent,
+                    extraction_root.parent.parent,
+                ]:
+                    if (check_dir / "tools").exists():
+                        extraction_root = check_dir
+                        break
+                break
+            extraction_root = extraction_root.parent
+        return extraction_root
+
+    def _debug_extraction_directory(self) -> None:
+        """Debug helper to list extraction directory contents."""
+        extraction_dir = Path(__file__).parent
+        while extraction_dir.parent != extraction_dir:
+            if any(name.startswith("onefile_") for name in extraction_dir.parts):
+                break
+            extraction_dir = extraction_dir.parent
+
+        self.logger.info(f"Extraction directory contents (for debugging): {extraction_dir}")
+        try:
+            for item in extraction_dir.rglob("*"):
+                if item.is_file() and "dnglab" in item.name:
+                    self.logger.info(f"Found dnglab-related file: {item}")
+                elif item.is_dir() and item.name == "tools":
+                    self.logger.info(f"Found tools directory: {item}")
+                    for tool_item in item.rglob("*"):
+                        self.logger.info(f"  Tools content: {tool_item}")
+        except (OSError, PermissionError) as e:
+            self.logger.warning(f"Could not list extraction directory for debugging: {e}")
 
     def _check_local_build(self, system_name: str, arch: str, binary_name: str) -> str | None:
         """Check for binary in local build directory (development)."""
@@ -113,9 +171,9 @@ class DNGLabBinaryStrategy(ABC):
         if dnglab_local.exists():
             self.logger.info(f"Found local DNGLab: {dnglab_local}")
             return str(dnglab_local.absolute())
-        else:
-            self.logger.info(f"Local DNGLab not found: {dnglab_local}")
-            return None
+
+        self.logger.info(f"Local DNGLab not found: {dnglab_local}")
+        return None
 
     def _make_executable(self, binary_path: str) -> bool:
         """Make binary executable on Unix-like systems."""
@@ -126,7 +184,7 @@ class DNGLabBinaryStrategy(ABC):
                 os.chmod(binary_path, 0o755)  # noqa: S103
                 self.logger.info("Successfully made DNGLab executable")
             return True
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             self.logger.error(f"Failed to make DNGLab executable: {e}")
             return False
 
@@ -219,7 +277,7 @@ class WindowsDNGLabStrategy(DNGLabBinaryStrategy):
         return None
 
 
-class MacOSDNGLabStrategy(DNGLabBinaryStrategy):
+class MacOSDNGStrategy(DNGLabBinaryStrategy):
     """DNGLab binary strategy for macOS platforms."""
 
     def get_architecture_mapping(self) -> str:
@@ -274,11 +332,11 @@ class DNGLabStrategyFactory:
 
         if system_name == "linux":
             return LinuxDNGLabStrategy(logger)
-        elif system_name == "windows":
+        if system_name == "windows":
             return WindowsDNGLabStrategy(logger)
-        elif system_name == "darwin":
-            return MacOSDNGLabStrategy(logger)
-        else:
-            # Default to Linux strategy for unknown platforms
-            logger.warning(f"Unknown platform: {system_name}, using Linux strategy")
-            return LinuxDNGLabStrategy(logger)
+        if system_name == "darwin":
+            return MacOSDNGStrategy(logger)
+
+        # Default to Linux strategy for unknown platforms
+        logger.warning(f"Unknown platform: {system_name}, using Linux strategy")
+        return LinuxDNGLabStrategy(logger)

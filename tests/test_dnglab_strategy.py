@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from eir.dnglab_strategy import (
     DNGLabStrategyFactory,
     LinuxDNGLabStrategy,
-    MacOSDNGLabStrategy,
+    MacOSDNGStrategy,
     WindowsDNGLabStrategy,
 )
 
@@ -44,7 +44,7 @@ class TestDNGLabStrategyFactory:
 
         strategy = DNGLabStrategyFactory.create_strategy(mock_logger)
 
-        assert isinstance(strategy, MacOSDNGLabStrategy)
+        assert isinstance(strategy, MacOSDNGStrategy)
         assert strategy.logger is mock_logger
 
     @patch("platform.system")
@@ -127,13 +127,13 @@ class TestWindowsDNGLabStrategy:
         assert filename == "dnglab.exe"
 
 
-class TestMacOSDNGLabStrategy:
-    """Test cases for MacOSDNGLabStrategy."""
+class TestMacOSDNGStrategy:
+    """Test cases for MacOSDNGStrategy."""
 
     def test_architecture_mapping_x86_64(self):
         """Test x86_64 architecture mapping for macOS."""
         mock_logger = Mock()
-        strategy = MacOSDNGLabStrategy(mock_logger)
+        strategy = MacOSDNGStrategy(mock_logger)
 
         with patch("platform.machine", return_value="x86_64"):
             arch = strategy.get_architecture_mapping()
@@ -143,7 +143,7 @@ class TestMacOSDNGLabStrategy:
     def test_architecture_mapping_arm64(self):
         """Test ARM64 architecture mapping for macOS."""
         mock_logger = Mock()
-        strategy = MacOSDNGLabStrategy(mock_logger)
+        strategy = MacOSDNGStrategy(mock_logger)
 
         with patch("platform.machine", return_value="arm64"):
             arch = strategy.get_architecture_mapping()
@@ -153,7 +153,7 @@ class TestMacOSDNGLabStrategy:
     def test_binary_filename(self):
         """Test macOS binary filename."""
         mock_logger = Mock()
-        strategy = MacOSDNGLabStrategy(mock_logger)
+        strategy = MacOSDNGStrategy(mock_logger)
 
         filename = strategy.get_binary_filename()
 
