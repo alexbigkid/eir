@@ -268,18 +268,15 @@ jobs:
       - name: Organize packages
         run: ./.github/scripts/organize_packages.sh
 
-      # TEMPORARILY DISABLED: Publishing steps disabled during Nuitka conversion
-      # Re-enable these steps after successfully converting from PyInstaller to Nuitka
+      - name: Publish to Homebrew
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN || secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/publish_homebrew.sh ${{ needs.prepare-release.outputs.new_version }}
 
-      # - name: Publish to Homebrew
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN || secrets.GITHUB_TOKEN }}
-      #   run: ./.github/scripts/publish_homebrew.sh ${{ needs.prepare-release.outputs.new_version }}
+      - name: Publish to APT
+        run: ./.github/scripts/publish_apt.sh ${{ needs.prepare-release.outputs.new_version }}
 
-      # - name: Publish to APT
-      #   run: ./.github/scripts/publish_apt.sh ${{ needs.prepare-release.outputs.new_version }}
-
-      # - name: Publish to Chocolatey
-      #   env:
-      #     CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
-      #   run: ./.github/scripts/publish_chocolatey.sh ${{ needs.prepare-release.outputs.new_version }}
+      - name: Publish to Chocolatey
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: ./.github/scripts/publish_chocolatey.sh ${{ needs.prepare-release.outputs.new_version }}
