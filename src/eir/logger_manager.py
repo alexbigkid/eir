@@ -157,17 +157,30 @@ class LoggerManager:
             current_file_dir = Path(__file__).parent
 
             # Check current directory and parent directories for bundled files
+            # Also check the extraction root directory (where bundled data goes)
             search_dirs = [
                 current_file_dir,
                 current_file_dir.parent,
                 current_file_dir.parent.parent,
+                current_file_dir.parent.parent.parent,  # Sometimes deeper
             ]
 
+            # Debug: Print search directories and what files exist
+            print(f"Debug: Nuitka bundle detection in {current_file_dir}")
+            print(f"Debug: sys.frozen = {getattr(sys, 'frozen', False)}")
+
             for bundle_dir in search_dirs:
+                print(f"Debug: Checking {bundle_dir}")
+                if bundle_dir.exists():
+                    files = list(bundle_dir.glob("*"))[:10]  # Limit output
+                    print(f"Debug: Files in {bundle_dir}: {[f.name for f in files]}")
+
                 if (bundle_dir / "pyproject.toml").exists():
+                    print(f"Debug: Found pyproject.toml in {bundle_dir}")
                     return bundle_dir
                 # Also check if logging.yaml exists directly (might be in same dir)
                 if (bundle_dir / "logging.yaml").exists():
+                    print(f"Debug: Found logging.yaml in {bundle_dir}")
                     return bundle_dir
 
         # Try multiple starting points to find project root

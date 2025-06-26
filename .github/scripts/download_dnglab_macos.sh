@@ -12,9 +12,9 @@ get_latest_dnglab_version() {
     echo "🔍 Detecting latest DNGLab version..." >&2
 
     if command -v curl >/dev/null 2>&1; then
-        LCL_VERSION=$(curl -s https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        LCL_VERSION=$(curl -s --connect-timeout 10 --max-time 30 https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null || echo "")
     elif command -v wget >/dev/null 2>&1; then
-        LCL_VERSION=$(wget -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        LCL_VERSION=$(wget --timeout=30 -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null || echo "")
     else
         echo "❌ Neither curl nor wget found. Cannot detect latest version." >&2
         LCL_EXIT_CODE=1
@@ -106,8 +106,8 @@ download_and_setup_dnglab() {
         fi
         cd - >/dev/null
 
-        # Find and rename the extracted binary to 'dnglab'
-        EXTRACTED_BINARY=$(find "./build/${LCL_PLATFORM}/tools/${LCL_ARCH}" -name "dnglab*" -type f -executable | head -1)
+        # Find and rename the extracted binary to 'dnglab' (macOS compatible)
+        EXTRACTED_BINARY=$(find "./build/${LCL_PLATFORM}/tools/${LCL_ARCH}" -name "dnglab*" -type f | head -1)
         if [ -n "$EXTRACTED_BINARY" ] && [ "$EXTRACTED_BINARY" != "$LCL_PATH" ]; then
             echo "📋 Renaming extracted binary: $EXTRACTED_BINARY -> $LCL_PATH"
             mv "$EXTRACTED_BINARY" "$LCL_PATH"

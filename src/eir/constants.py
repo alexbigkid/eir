@@ -54,10 +54,20 @@ class _Const:
                 current_file_dir,
                 current_file_dir.parent,
                 current_file_dir.parent.parent,
+                current_file_dir.parent.parent.parent,  # Sometimes deeper
             ]
 
+            # Debug output for constants.py
+            print(f"Debug (constants): Nuitka bundle detection in {current_file_dir}")
+
             for bundle_dir in search_dirs:
+                print(f"Debug (constants): Checking {bundle_dir}")
+                if bundle_dir.exists():
+                    files = list(bundle_dir.glob("*"))[:10]  # Limit output
+                    print(f"Debug (constants): Files in {bundle_dir}: {[f.name for f in files]}")
+
                 if (bundle_dir / "pyproject.toml").exists():
+                    print(f"Debug (constants): Found pyproject.toml in {bundle_dir}")
                     return bundle_dir
 
         # Fall back to normal project root search
