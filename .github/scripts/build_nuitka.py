@@ -253,8 +253,10 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     if platform.system().lower() == "windows":
         output_name += ".exe"
 
-    # Nuitka command
+    # Nuitka command (use uv run to ensure Nuitka is available)
     cmd = [
+        "uv",
+        "run",
         "python",
         "-m",
         "nuitka",
