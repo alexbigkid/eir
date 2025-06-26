@@ -165,22 +165,11 @@ class LoggerManager:
                 current_file_dir.parent.parent.parent,  # Sometimes deeper
             ]
 
-            # Debug: Print search directories and what files exist
-            print(f"Debug: Nuitka bundle detection in {current_file_dir}")
-            print(f"Debug: sys.frozen = {getattr(sys, 'frozen', False)}")
-
             for bundle_dir in search_dirs:
-                print(f"Debug: Checking {bundle_dir}")
-                if bundle_dir.exists():
-                    files = list(bundle_dir.glob("*"))[:10]  # Limit output
-                    print(f"Debug: Files in {bundle_dir}: {[f.name for f in files]}")
-
                 if (bundle_dir / "pyproject.toml").exists():
-                    print(f"Debug: Found pyproject.toml in {bundle_dir}")
                     return bundle_dir
                 # Also check if logging.yaml exists directly (might be in same dir)
                 if (bundle_dir / "logging.yaml").exists():
-                    print(f"Debug: Found logging.yaml in {bundle_dir}")
                     return bundle_dir
 
         # Try multiple starting points to find project root
@@ -205,13 +194,6 @@ class LoggerManager:
         )
 
         if is_compiled:
-            frozen_state = getattr(sys, "frozen", False)
-            has_meipass = hasattr(sys, "_MEIPASS")
-            current_path = Path(__file__).parent
-            print(
-                f"Debug: Detected compiled executable "
-                f"(frozen={frozen_state}, _MEIPASS={has_meipass}, path={current_path})"
-            )
             # Create a temporary config in the current directory
             fallback_dir = Path.cwd()
 
@@ -226,28 +208,51 @@ formatters:
     format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 handlers:
-  console:
+  consoleHandler:
     class: logging.StreamHandler
     level: INFO
     formatter: default
     stream: ext://sys.stdout
+  queueHandler:
+    class: logging.handlers.QueueHandler
+    level: INFO
+    queue: '!!python/object/apply:queue.Queue []'
+  fileHandler:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: default
+    filename: logs/eir.log
+    maxBytes: 10485760
+    backupCount: 5
 
 loggers:
   consoleLogger:
     level: INFO
-    handlers: [console]
+    handlers: [consoleHandler]
+    propagate: false
+  threadedConsoleLogger:
+    level: INFO
+    handlers: [queueHandler]
+    propagate: false
+  fileLogger:
+    level: INFO
+    handlers: [fileHandler]
+    propagate: false
+  threadedFileLogger:
+    level: INFO
+    handlers: [queueHandler]
     propagate: false
 
 root:
   level: INFO
-  handlers: [console]
+  handlers: [consoleHandler]
 """
                 try:
                     with open(fallback_dir / "logging.yaml", "w") as f:
                         f.write(minimal_logging.strip())
-                    print("Debug: Created fallback logging.yaml")
-                except Exception as e:
-                    print(f"Debug: Failed to create fallback logging.yaml: {e}")
+                except OSError:
+                    # Silently ignore file write failures in compiled environment
+                    pass
 
             return fallback_dir
 
