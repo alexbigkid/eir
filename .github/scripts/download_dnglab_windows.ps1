@@ -69,10 +69,10 @@ function Download-AndSetupDNGLab {
         [string]$Platform
     )
     
-    $url = "https://github.com/dnglab/dnglab/releases/download/{0}/{1}_{0}{2}" -f $Version, $BinaryInfo.Binary, $BinaryInfo.Extension
-    $buildPath = "./build/{0}/tools/{1}" -f $Platform, $BinaryInfo.Arch
-    $zipPath = "{0}/dnglab.zip" -f $buildPath
-    $exePath = "{0}/dnglab.exe" -f $buildPath
+    $url = "https://github.com/dnglab/dnglab/releases/download/$Version/$($BinaryInfo.Binary)_$Version$($BinaryInfo.Extension)"
+    $buildPath = "./build/$Platform/tools/$($BinaryInfo.Arch)"
+    $zipPath = "$buildPath/dnglab.zip"
+    $exePath = "$buildPath/dnglab.exe"
     
     Write-Host "Downloading DNGLab $Version for $($BinaryInfo.Arch)..." -ForegroundColor Cyan
     Write-Host "URL: $url" -ForegroundColor Yellow
@@ -126,7 +126,7 @@ function Test-DNGLabBinary {
         [string]$Arch
     )
     
-    $exePath = "./build/{0}/tools/{1}/dnglab.exe" -f $Platform, $Arch
+    $exePath = "./build/$Platform/tools/$Arch/dnglab.exe"
     
     # Verify download
     if (Test-Path $exePath) {
