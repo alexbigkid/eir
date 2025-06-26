@@ -63,21 +63,36 @@ class DNGLabBinaryStrategy(ABC):
             # Try Nuitka (primary build system) - bundled files are in the extraction directory
             self.logger.debug("Running as Nuitka binary, checking extraction directory")
 
-            # For Nuitka onefile, bundled files are in the directory where __file__ is located
-            if hasattr(Path(__file__), "parent"):
-                nuitka_bundle_dir = Path(__file__).parent.parent
-                dnglab_bundled = nuitka_bundle_dir / "tools" / system_name / arch / binary_name
-                self.logger.debug(f"Trying Nuitka bundle path: {dnglab_bundled}")
+            # For Nuitka onefile, bundled files are extracted to a temporary directory
+            # The bundled data is accessible relative to where the code is running
+            # Since we used --include-data-dir=nuitka_data=., the structure is:
+            # <extraction_dir>/tools/system/arch/binary
 
-                if dnglab_bundled.exists():
-                    self.logger.debug("Found in Nuitka bundle directory")
-                else:
-                    # Fallback: check current working directory
-                    self.logger.debug("Not found in bundle directory, trying current directory")
-                    dnglab_bundled = Path.cwd() / "tools" / system_name / arch / binary_name
+            # Get the directory where this Python file is running from
+            current_file_dir = Path(__file__).parent
+
+            # Try multiple possible locations for bundled data
+            possible_locations = [
+                # Direct from extraction root (most likely for Nuitka onefile)
+                current_file_dir / "tools" / system_name / arch / binary_name,
+                # One level up from current module
+                current_file_dir.parent / "tools" / system_name / arch / binary_name,
+                # Two levels up (in case we're in src/eir/)
+                current_file_dir.parent.parent / "tools" / system_name / arch / binary_name,
+                # From current working directory as fallback
+                Path.cwd() / "tools" / system_name / arch / binary_name,
+            ]
+
+            for location in possible_locations:
+                self.logger.debug(f"Trying Nuitka bundle path: {location}")
+                if location.exists():
+                    self.logger.debug(f"Found in Nuitka bundle at: {location}")
+                    dnglab_bundled = location
+                    break
             else:
-                # Fallback: check current working directory
-                dnglab_bundled = Path.cwd() / "tools" / system_name / arch / binary_name
+                # None of the locations worked
+                self.logger.debug("Not found in any Nuitka bundle location")
+                dnglab_bundled = possible_locations[0]  # Use first for error reporting
 
         self.logger.debug(f"Checking bundled location: {dnglab_bundled}")
 
