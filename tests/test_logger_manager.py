@@ -214,7 +214,9 @@ class TestLoggerManager:
 
             mock_get_logger.side_effect = logger_side_effect
 
-            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False)
+            manager._setup_yaml_threaded_logging(
+                project_root_dir, log_into_file=False, verbose=False
+            )
 
         assert isinstance(manager._log_queue, queue.Queue)
         assert manager._logger is mock_threaded_logger
@@ -265,7 +267,9 @@ class TestLoggerManager:
 
             mock_get_logger.side_effect = logger_side_effect
 
-            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=True)
+            manager._setup_yaml_threaded_logging(
+                project_root_dir, log_into_file=True, verbose=False
+            )
 
         assert isinstance(manager._log_queue, queue.Queue)
         assert manager._logger is mock_threaded_logger
@@ -342,7 +346,9 @@ class TestLoggerManager:
                 return Mock()
 
             mock_get_logger.side_effect = logger_side_effect
-            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False)
+            manager._setup_yaml_threaded_logging(
+                project_root_dir, log_into_file=False, verbose=False
+            )
 
         mock_atexit.assert_called_once_with(manager._cleanup_logging)
 
@@ -355,7 +361,9 @@ class TestLoggerManager:
         logging_yaml.write_text("invalid: yaml: content: [")
 
         with pytest.raises(yaml.YAMLError):
-            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False)
+            manager._setup_yaml_threaded_logging(
+                project_root_dir, log_into_file=False, verbose=False
+            )
 
     def test_queue_injection_into_config(
         self, project_root_dir, reset_logger_manager, clean_logging
@@ -405,7 +413,9 @@ class TestLoggerManager:
                 return Mock()
 
             mock_get_logger.side_effect = logger_side_effect
-            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False)
+            manager._setup_yaml_threaded_logging(
+                project_root_dir, log_into_file=False, verbose=False
+            )
 
         # Verify that the queue was injected
         assert captured_config["handlers"]["queueHandler"]["queue"] is manager._log_queue

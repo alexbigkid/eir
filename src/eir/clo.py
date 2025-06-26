@@ -59,6 +59,11 @@ class CommandLineOptions:
         )
         parser.add_argument("-q", "--quiet", action="store_true", help="Suppresses all logs")
         parser.add_argument(
+            "--verbose",
+            action="store_true",
+            help="Enable verbose debug logging (shows DEBUG level messages)",
+        )
+        parser.add_argument(
             "-v", "--version", action="store_true", help="Show version info and exit"
         )
         self.options = parser.parse_args()
@@ -81,7 +86,9 @@ class CommandLineOptions:
             sys.exit(0)
 
         LoggerManager().configure(
-            log_into_file=self.options.log_into_file, quiet=self.options.quiet
+            log_into_file=self.options.log_into_file,
+            quiet=self.options.quiet,
+            verbose=self.options.verbose,
         )
         self.logger = LoggerManager().get_logger()
         self.logger.info(f"{self.options=}")

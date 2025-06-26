@@ -121,7 +121,9 @@ class TestCommandLineOptions:
             clo.handle_options()
 
         assert clo.options.log_into_file is True
-        mock_manager.configure.assert_called_once_with(log_into_file=True, quiet=False)
+        mock_manager.configure.assert_called_once_with(
+            log_into_file=True, quiet=False, verbose=False
+        )
 
     def test_handle_options_quiet_flag(self, reset_logger_manager, clean_logging):
         """Test handle_options with quiet flag."""
@@ -140,7 +142,9 @@ class TestCommandLineOptions:
             clo.handle_options()
 
         assert clo.options.quiet is True
-        mock_manager.configure.assert_called_once_with(log_into_file=False, quiet=True)
+        mock_manager.configure.assert_called_once_with(
+            log_into_file=False, quiet=True, verbose=False
+        )
 
     def test_handle_options_version_flag_exits(self):
         """Test handle_options with version flag exits program."""
@@ -283,7 +287,9 @@ class TestCommandLineOptions:
         assert clo.options.dir == "/test/path"
         assert clo.options.log_into_file is True
         assert clo.options.quiet is True
-        mock_manager.configure.assert_called_once_with(log_into_file=True, quiet=True)
+        mock_manager.configure.assert_called_once_with(
+            log_into_file=True, quiet=True, verbose=False
+        )
 
     def test_handle_options_logger_configuration(self, reset_logger_manager, clean_logging):
         """Test that LoggerManager is configured correctly."""
@@ -304,7 +310,9 @@ class TestCommandLineOptions:
 
         # Verify LoggerManager was instantiated and configured
         mock_manager_class.assert_called()
-        mock_manager.configure.assert_called_once_with(log_into_file=True, quiet=False)
+        mock_manager.configure.assert_called_once_with(
+            log_into_file=True, quiet=False, verbose=False
+        )
         mock_manager.get_logger.assert_called_once()
 
     def test_handle_options_logger_logging_calls(self, reset_logger_manager, clean_logging):

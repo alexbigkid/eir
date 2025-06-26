@@ -40,7 +40,7 @@ class LoggerManager:
             self._queue_listener = None
             self._log_queue = None
 
-    def configure(self, log_into_file=False, quiet=False):
+    def configure(self, log_into_file=False, quiet=False, verbose=False):
         """Configure logging once based on flags with simplified YAML-based threaded logging."""
         if self._configured:
             return  # Prevent reconfiguration
@@ -61,7 +61,7 @@ class LoggerManager:
                 logs_dir.mkdir(parents=True, exist_ok=True)
 
             # Setup threaded logging using YAML configuration
-            self._setup_yaml_threaded_logging(root_dir, log_into_file)
+            self._setup_yaml_threaded_logging(root_dir, log_into_file, verbose)
             self._configured = True
 
         except FileNotFoundError as e:
@@ -72,7 +72,7 @@ class LoggerManager:
             self._logger.disabled = True
             self._configured = True
 
-    def _setup_yaml_threaded_logging(self, root_dir: Path, log_into_file: bool):
+    def _setup_yaml_threaded_logging(self, root_dir: Path, log_into_file: bool, verbose: bool):
         """Setup threaded logging using YAML configuration with QueueHandler."""
         # Create a queue for log records
         self._log_queue = queue.Queue(-1)  # Unlimited size
@@ -92,6 +92,19 @@ class LoggerManager:
 
         # Inject the queue instance into the configuration
         config_yaml["handlers"]["queueHandler"]["queue"] = self._log_queue
+
+        # Override levels for verbose mode
+        if verbose:
+            # Set all console handlers and loggers to DEBUG level for verbose output
+            for handler_name in ["consoleHandler", "queueHandler"]:
+                if handler_name in config_yaml.get("handlers", {}):
+                    config_yaml["handlers"][handler_name]["level"] = "DEBUG"
+
+            for logger_name in ["root", "consoleLogger", "threadedConsoleLogger"]:
+                if logger_name in config_yaml.get("loggers", {}):
+                    config_yaml["loggers"][logger_name]["level"] = "DEBUG"
+                elif logger_name == "root":
+                    config_yaml["root"]["level"] = "DEBUG"
 
         # Apply the logging configuration
         logging.config.dictConfig(config_yaml)

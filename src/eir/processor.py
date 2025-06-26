@@ -139,10 +139,10 @@ class ImageProcessor:
 
         if env_var:
             env_path = Path(env_var)
-            self._logger.info(f"DNGLab binary exists: {env_path.exists()}")
+            self._logger.debug(f"DNGLab binary exists: {env_path.exists()}")
             if env_path.exists():
-                self._logger.info(f"DNGLab binary is executable: {os.access(env_var, os.X_OK)}")
-                self._logger.info(f"DNGLab binary size: {env_path.stat().st_size} bytes")
+                self._logger.debug(f"DNGLab binary is executable: {os.access(env_var, os.X_OK)}")
+                self._logger.debug(f"DNGLab binary size: {env_path.stat().st_size} bytes")
         else:
             self._logger.warning(
                 "No DNGLab binary configured - will use default Adobe DNG Converter"
@@ -204,9 +204,7 @@ class ImageProcessor:
                 is_dnglab = (
                     "dnglab" in env_dnglab.lower() or "dnglab" in str(self.bin_exec).lower()
                 )
-                log.debug(
-                    f"Binary path: {self.bin_exec}, env var: {env_dnglab}, is_dnglab: {is_dnglab}"
-                )
+                log.debug(f"DNGLab detection: is_dnglab={is_dnglab}")
 
                 if is_dnglab:
                     # DNGLab syntax: dnglab convert [options] input output
@@ -233,8 +231,7 @@ class ImageProcessor:
                 )
 
                 # Validate arguments before execution
-                log.debug("DNGLab binary: %s", self.bin_exec)
-                log.debug("DNGLab arguments: %s", dng_args)
+                log.debug("Arguments: %s", dng_args)
                 log.debug("Source file exists: %s", Path(source_path).exists())
                 log.debug("Destination directory exists: %s", Path(destination).exists())
                 log.debug("Current working directory: %s", Path.cwd())
@@ -352,7 +349,7 @@ class ImageProcessor:
                 dnglab_file = Path(dnglab_path)
                 if dnglab_file.exists():
                     file_size = dnglab_file.stat().st_size
-                    self._logger.info(f"DNGLab binary verification - size: {file_size} bytes")
+                    self._logger.debug(f"DNGLab binary verification - size: {file_size} bytes")
 
                     if system_name == "linux":
                         is_executable = os.access(dnglab_path, os.X_OK)
@@ -391,7 +388,7 @@ class ImageProcessor:
         try:
             import subprocess  # noqa: S404
 
-            self._logger.info(f"Testing DNGLab binary functionality: {dnglab_path}")
+            self._logger.debug(f"Testing DNGLab binary functionality: {dnglab_path}")
 
             # Test with --help flag to verify binary works
             result = subprocess.run(  # noqa: S603
@@ -399,7 +396,7 @@ class ImageProcessor:
             )
 
             if result.returncode == 0:
-                self._logger.info("✅ DNGLab binary test successful (--help worked)")
+                self._logger.info("DNGLab binary test successful (--help worked)")
                 # Log first few lines of help output for verification
                 help_lines = result.stdout.split("\n")[:3]
                 for line in help_lines:
@@ -407,7 +404,7 @@ class ImageProcessor:
                         self._logger.info(f"DNGLab help: {line.strip()}")
             else:
                 self._logger.warning(
-                    f"⚠️  DNGLab binary test failed with exit code {result.returncode}"
+                    f"DNGLab binary test failed with exit code {result.returncode}"
                 )
                 if result.stderr:
                     self._logger.warning(f"DNGLab stderr: {result.stderr[:200]}")
@@ -430,7 +427,7 @@ class ImageProcessor:
             dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
             binary_name = "dnglab"
 
-        self._logger.info(
+        self._logger.debug(
             f"Searching for DNGLab binary - system: {system_name}, "
             f"machine: {machine}, mapped_arch: {dnglab_arch}, binary_name: {binary_name}"
         )
@@ -442,16 +439,16 @@ class ImageProcessor:
         if getattr(sys, "frozen", False):
             # Running as compiled binary
             bundle_dir = getattr(sys, "_MEIPASS", "")  # PyInstaller temp directory
-            self._logger.info(f"Running as compiled binary, bundle_dir: {bundle_dir}")
+            self._logger.debug(f"Running as compiled binary, bundle_dir: {bundle_dir}")
             dnglab_bundled = Path(bundle_dir) / "tools" / system_name / dnglab_arch / binary_name
             search_locations.append(("bundled", str(dnglab_bundled)))
 
-            self._logger.info(f"Checking bundled location: {dnglab_bundled}")
+            self._logger.debug(f"Checking bundled location: {dnglab_bundled}")
             if dnglab_bundled.exists():
-                self._logger.info(f"✅ Found bundled DNGLab: {dnglab_bundled}")
+                self._logger.info(f"Found bundled DNGLab: {dnglab_bundled}")
                 found_binary = str(dnglab_bundled)
             else:
-                self._logger.warning(f"❌ Bundled DNGLab not found: {dnglab_bundled}")
+                self._logger.warning(f"Bundled DNGLab not found: {dnglab_bundled}")
                 # List available files in bundle tools directory for debugging
                 tools_dir = Path(bundle_dir) / "tools" / system_name / dnglab_arch
                 if tools_dir.exists():
@@ -465,7 +462,7 @@ class ImageProcessor:
                             f"Available platform directories: {[d.name for d in subdirs]}"
                         )
                 else:
-                    self._logger.warning(f"❌ Tools directory not found: {tools_dir}")
+                    self._logger.warning(f"Tools directory not found: {tools_dir}")
                     # Check if tools directory exists at all
                     bundle_tools = Path(bundle_dir) / "tools"
                     if bundle_tools.exists():
@@ -491,10 +488,10 @@ class ImageProcessor:
             dnglab_system = shutil.which(binary_name)
             search_locations.append(("system_path", dnglab_system or "not found"))
             if dnglab_system:
-                self._logger.info(f"✅ Found DNGLab in system PATH: {dnglab_system}")
+                self._logger.info(f"Found DNGLab in system PATH: {dnglab_system}")
                 found_binary = dnglab_system
             else:
-                self._logger.info("❌ DNGLab not found in system PATH")
+                self._logger.info("DNGLab not found in system PATH")
 
         # Try local build directory (development) if still not found
         if not found_binary:
@@ -502,10 +499,10 @@ class ImageProcessor:
             search_locations.append(("local_build", str(dnglab_local)))
             self._logger.info(f"Checking local build directory: {dnglab_local}")
             if dnglab_local.exists():
-                self._logger.info(f"✅ Found local DNGLab: {dnglab_local}")
+                self._logger.info(f"Found local DNGLab: {dnglab_local}")
                 found_binary = str(dnglab_local.absolute())
             else:
-                self._logger.info(f"❌ Local DNGLab not found: {dnglab_local}")
+                self._logger.info(f"Local DNGLab not found: {dnglab_local}")
                 # Check if build directory structure exists
                 build_dir = Path("build")
                 if build_dir.exists():
@@ -529,13 +526,13 @@ class ImageProcessor:
                     )
 
         # Log search summary
-        self._logger.info("DNGLab binary search summary:")
+        self._logger.debug("DNGLab binary search summary:")
         for location_type, path in search_locations:
-            status = "✅ FOUND" if found_binary and path == found_binary else "❌ not found"
+            status = "FOUND" if found_binary and path == found_binary else "not found"
             self._logger.info(f"  {location_type}: {path} - {status}")
 
         if not found_binary:
-            self._logger.warning("❌ No DNGLab binary found in any search location")
+            self._logger.warning("No DNGLab binary found in any search location")
         return found_binary
 
     @function_trace
@@ -641,7 +638,7 @@ class ImageProcessor:
         # Process EXIF date with fallback to directory date
         exif_date = metadata.get(ExifTag.CREATE_DATE.value)
         if exif_date and exif_date != self.EXIF_UNKNOWN:
-            # EXIF success: "2024:12:10 14:30:05" → "20241210-143005"
+            # EXIF success: "2024:12:10 14:30:05" -> "20241210-143005"
             try:
                 # Validate and format EXIF date
                 datetime.strptime(exif_date, "%Y:%m:%d %H:%M:%S")
@@ -785,11 +782,11 @@ class ImageProcessor:
                 completion_future = asyncio.Future()
 
                 def on_completed():
-                    self._logger.info(f"✅ Completed processing {processed_count} files")
+                    self._logger.info(f"Completed processing {processed_count} files")
                     completion_future.set_result(None)
 
                 def on_error(error):
-                    self._logger.error(f"❌ Error in processing pipeline: {error}")
+                    self._logger.error(f"Error in processing pipeline: {error}")
                     completion_future.set_exception(error)
 
                 rx.from_iterable(metadata_list).pipe(
@@ -848,7 +845,7 @@ class ImageProcessor:
                     ).lower()
 
                 old_file_name = obj[ExifTag.SOURCE_FILE.value]
-                self._logger.debug(f"Renaming: {old_file_name} → {new_file_name}")
+                self._logger.debug(f"Renaming: {old_file_name} -> {new_file_name}")
                 rename_tasks.append(self._rename_file_async(old_file_name, new_file_name))
 
         if rename_tasks:
