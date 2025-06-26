@@ -13,7 +13,14 @@ get_latest_dnglab_version() {
 
     if command -v curl >/dev/null 2>&1; then
         echo "🔍 Using curl to fetch latest version..." >&2
-        API_RESPONSE=$(curl -s --connect-timeout 10 --max-time 30 -H "User-Agent: eir-build-script" https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        # Use GitHub token if available to avoid rate limiting
+        if [ -n "$GITHUB_TOKEN" ]; then
+            echo "🔍 Using authenticated API request..." >&2
+            API_RESPONSE=$(curl -s --connect-timeout 10 --max-time 30 -H "User-Agent: eir-build-script" -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        else
+            echo "🔍 Using unauthenticated API request..." >&2
+            API_RESPONSE=$(curl -s --connect-timeout 10 --max-time 30 -H "User-Agent: eir-build-script" https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        fi
         API_EXIT_CODE=$?
         echo "🔍 API response length: ${#API_RESPONSE}" >&2
         
@@ -34,7 +41,14 @@ get_latest_dnglab_version() {
         fi
     elif command -v wget >/dev/null 2>&1; then
         echo "🔍 Using wget to fetch latest version..." >&2
-        API_RESPONSE=$(wget --timeout=30 --user-agent="eir-build-script" -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        # Use GitHub token if available to avoid rate limiting
+        if [ -n "$GITHUB_TOKEN" ]; then
+            echo "🔍 Using authenticated API request..." >&2
+            API_RESPONSE=$(wget --timeout=30 --user-agent="eir-build-script" --header="Authorization: Bearer $GITHUB_TOKEN" -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        else
+            echo "🔍 Using unauthenticated API request..." >&2
+            API_RESPONSE=$(wget --timeout=30 --user-agent="eir-build-script" -qO- https://api.github.com/repos/dnglab/dnglab/releases/latest 2>&1)
+        fi
         API_EXIT_CODE=$?
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
             LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
