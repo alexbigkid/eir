@@ -167,7 +167,7 @@ wheels = [
 
 [[package]]
 name = "eir"
-version = "0.2.13"
+version = "0.2.16"
 source = { editable = "." }
 dependencies = [
     { name = "colorama" },

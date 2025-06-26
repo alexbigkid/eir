@@ -5,39 +5,35 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Function to auto-detect latest DNGLab version from GitHub API
 function Get-LatestDNGLabVersion {
-    Write-Host "🔍 Detecting latest DNGLab version..." -ForegroundColor Cyan
+    Write-Host "Detecting latest DNGLab version..." -ForegroundColor Cyan
     
     try {
-        # Use GitHub token if available to avoid rate limiting
-        $headers = @{
-            'User-Agent' = 'eir-build-script'
-        }
+        $headers = @{}
+        $headers["User-Agent"] = "eir-build-script"
         
         if ($env:GITHUB_TOKEN) {
-            Write-Host "🔍 Using authenticated API request..." -ForegroundColor Cyan
-            $headers['Authorization'] = "Bearer " + $env:GITHUB_TOKEN
+            Write-Host "Using authenticated API request..." -ForegroundColor Cyan
+            $headers["Authorization"] = "Bearer $($env:GITHUB_TOKEN)"
         } else {
-            Write-Host "🔍 Using unauthenticated API request..." -ForegroundColor Cyan
+            Write-Host "Using unauthenticated API request..." -ForegroundColor Cyan
         }
         
         $response = Invoke-RestMethod -Uri "https://api.github.com/repos/dnglab/dnglab/releases/latest" -Headers $headers -TimeoutSec 30
         $version = $response.tag_name
-        Write-Host ("✅ Latest DNGLab version: " + $version) -ForegroundColor Green
+        Write-Host "Latest DNGLab version: $version" -ForegroundColor Green
         return $version
     }
     catch {
-        Write-Host ("❌ Failed to detect latest DNGLab version. Error: " + $_.Exception.Message) -ForegroundColor Red
-        Write-Host "❌ Falling back to v0.7.0" -ForegroundColor Red
+        Write-Host "Failed to detect latest DNGLab version. Error: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Falling back to v0.7.0" -ForegroundColor Red
         return "v0.7.0"
     }
 }
 
-# Function to detect architecture and map to DNGLab release naming
 function Get-DNGLabBinaryInfo {
     $arch = $env:PROCESSOR_ARCHITECTURE
-    Write-Host ("Detecting architecture: " + $arch) -ForegroundColor Cyan
+    Write-Host "Detecting architecture: $arch" -ForegroundColor Cyan
     
     switch ($arch) {
         "AMD64" {
@@ -55,13 +51,12 @@ function Get-DNGLabBinaryInfo {
             }
         }
         default {
-            Write-Host ("Unsupported architecture: " + $arch) -ForegroundColor Red
-            throw ("Unsupported architecture: " + $arch)
+            Write-Host "Unsupported architecture: $arch" -ForegroundColor Red
+            throw "Unsupported architecture: $arch"
         }
     }
 }
 
-# Function to download and setup DNGLab binary
 function Download-AndSetupDNGLab {
     param(
         [string]$Version,
@@ -69,16 +64,20 @@ function Download-AndSetupDNGLab {
         [string]$Platform
     )
     
-    $url = "https://github.com/dnglab/dnglab/releases/download/" + $Version + "/" + $BinaryInfo.Binary + "_" + $Version + $BinaryInfo.Extension
-    $buildPath = Join-Path ".\build" $Platform | Join-Path -ChildPath "tools" | Join-Path -ChildPath $BinaryInfo.Arch
-    $zipPath = Join-Path $buildPath "dnglab.zip"
-    $exePath = Join-Path $buildPath "dnglab.exe"
+    $binaryName = $BinaryInfo.Binary
+    $extension = $BinaryInfo.Extension
+    $archName = $BinaryInfo.Arch
     
-    Write-Host ("Downloading DNGLab " + $Version + " for " + $BinaryInfo.Arch + "...") -ForegroundColor Cyan
-    Write-Host ("URL: " + $url) -ForegroundColor Yellow
+    $url = "https://github.com/dnglab/dnglab/releases/download/$Version/$binaryName" + "_$Version" + "$extension"
+    $buildPath = ".\build\$Platform\tools\$archName"
+    $zipPath = "$buildPath\dnglab.zip"
+    $exePath = "$buildPath\dnglab.exe"
     
-    # Create build directory structure if it doesn't exist
-    if (-not (Test-Path $buildPath)) {
+    Write-Host "Downloading DNGLab $Version for $archName..." -ForegroundColor Cyan
+    Write-Host "URL: $url" -ForegroundColor Yellow
+    
+    # Create build directory structure
+    if (!(Test-Path $buildPath)) {
         New-Item -ItemType Directory -Path $buildPath -Force | Out-Null
     }
     
@@ -88,7 +87,7 @@ function Download-AndSetupDNGLab {
         Write-Host "Download completed" -ForegroundColor Green
     }
     catch {
-        Write-Host ("Download failed: " + $_.Exception.Message) -ForegroundColor Red
+        Write-Host "Download failed: $($_.Exception.Message)" -ForegroundColor Red
         throw
     }
     
@@ -100,7 +99,7 @@ function Download-AndSetupDNGLab {
         # Find the extracted dnglab.exe file
         $extractedExe = Get-ChildItem -Path $buildPath -Name "dnglab.exe" -Recurse | Select-Object -First 1
         if ($extractedExe) {
-            $sourcePath = Join-Path $buildPath $extractedExe
+            $sourcePath = "$buildPath\$extractedExe"
             if ($sourcePath -ne $exePath) {
                 Move-Item -Path $sourcePath -Destination $exePath -Force
             }
@@ -114,26 +113,25 @@ function Download-AndSetupDNGLab {
         Write-Host "Extraction completed" -ForegroundColor Green
     }
     catch {
-        Write-Host ("Extraction failed: " + $_.Exception.Message) -ForegroundColor Red
+        Write-Host "Extraction failed: $($_.Exception.Message)" -ForegroundColor Red
         throw
     }
 }
 
-# Function to verify and test DNGLab binary
 function Test-DNGLabBinary {
     param(
         [string]$Platform,
         [string]$Arch
     )
     
-    $exePath = Join-Path ".\build" $Platform | Join-Path -ChildPath "tools" | Join-Path -ChildPath $Arch | Join-Path -ChildPath "dnglab.exe"
+    $exePath = ".\build\$Platform\tools\$Arch\dnglab.exe"
     
     # Verify download
     if (Test-Path $exePath) {
         $fileSize = (Get-Item $exePath).Length
         Write-Host "DNGLab downloaded successfully" -ForegroundColor Green
-        Write-Host ("Path: " + $exePath) -ForegroundColor Yellow
-        Write-Host ("Size: " + $fileSize + " bytes") -ForegroundColor Yellow
+        Write-Host "Path: $exePath" -ForegroundColor Yellow
+        Write-Host "Size: $fileSize bytes" -ForegroundColor Yellow
         
         # Test the binary
         Write-Host "Testing DNGLab binary..." -ForegroundColor Cyan
@@ -152,15 +150,13 @@ function Test-DNGLabBinary {
     }
     else {
         Write-Host "Download failed - DNGLab binary not found" -ForegroundColor Red
-        throw "DNGLab binary not found: $exePath"
+        throw "DNGLab binary not found at path: $exePath"
     }
 }
 
-# =============================================================================
 # Main execution
-# =============================================================================
 Write-Host ""
-Write-Host ("Start: " + $PSCommandPath + " (" + $args + ")") -ForegroundColor Magenta
+Write-Host "Start: $PSCommandPath" -ForegroundColor Magenta
 
 try {
     $version = Get-LatestDNGLabVersion
@@ -168,12 +164,12 @@ try {
     Download-AndSetupDNGLab -Version $version -BinaryInfo $binaryInfo -Platform $Platform
     Test-DNGLabBinary -Platform $Platform -Arch $binaryInfo.Arch
     
-    Write-Host "🎉 DNGLab setup complete!" -ForegroundColor Green
-    Write-Host ("Exit: " + $PSCommandPath + " (0)") -ForegroundColor Magenta
+    Write-Host "DNGLab setup complete!" -ForegroundColor Green
+    Write-Host "Exit: $PSCommandPath (0)" -ForegroundColor Magenta
     exit 0
 }
 catch {
-    Write-Host ("DNGLab setup failed: " + $_.Exception.Message) -ForegroundColor Red
-    Write-Host ("Exit: " + $PSCommandPath + " (1)") -ForegroundColor Magenta
+    Write-Host "DNGLab setup failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Exit: $PSCommandPath (1)" -ForegroundColor Magenta
     exit 1
 }
