@@ -145,7 +145,7 @@ class LoggerManager:
 
     def _find_project_root(self) -> Path:
         # Skip bundled detection entirely during tests to prevent hanging
-        if "pytest" in sys.modules or "test" in sys.argv[0].lower():
+        if "pytest" in sys.modules:
             return self._find_normal_project_root()
 
         # First, check if we're in a PyInstaller bundle (backward compatibility)
@@ -154,45 +154,22 @@ class LoggerManager:
             if (bundle_dir / "pyproject.toml").exists():
                 return bundle_dir
 
-        # Check if we're in a Nuitka bundle - improved detection
+        # Simple Nuitka onefile detection - only check if we're clearly in a bundled environment
         current_file_path = Path(__file__).absolute()
-        current_path_str = str(current_file_path).lower()
-        is_nuitka_onefile = (
-            "onefile" in current_path_str
-            or "onefil" in current_path_str  # Windows short names like ONEFIL~1
-        )
-        is_frozen = getattr(sys, "frozen", False)
-
-        if is_frozen or is_nuitka_onefile:
-            # For bundled executables, try to find bundled files
-            current_file_dir = Path(__file__).parent
-
-            # For Nuitka onefile, bundled files are at the extraction root
-            # The extraction directory typically has a pattern like onefile_*
-            # Start from current file directory and search up to find extraction root
-            search_dir = current_file_dir
-            max_levels = 10  # Reasonable limit to prevent infinite loops
-
-            for _ in range(max_levels):
-                # Check if this directory contains bundled files
-                if (search_dir / "logging.yaml").exists():
-                    return search_dir
-                if (search_dir / "pyproject.toml").exists():
-                    return search_dir
-
-                # Check if this looks like a Nuitka extraction directory and has bundled files
-                if any(part.startswith("onefile") for part in search_dir.parts) and (
-                    (search_dir / "logging.yaml").exists()
-                    or (search_dir / "pyproject.toml").exists()
-                ):
-                    return search_dir
-
-                # Move up one level
-                parent = search_dir.parent
-                if parent == search_dir:  # Reached filesystem root
+        if "onefile" in str(current_file_path).lower() or getattr(sys, "frozen", False):
+            # For Nuitka bundles, try just the parent directories - simple and fast
+            current_dir = Path(__file__).parent
+            for _level in range(4):  # Check up to 4 levels up
+                if (current_dir / "logging.yaml").exists():
+                    return current_dir
+                if (current_dir / "pyproject.toml").exists():
+                    return current_dir
+                parent = current_dir.parent
+                if parent == current_dir:  # Reached root
                     break
-                search_dir = parent
+                current_dir = parent
 
+        # Fall back to normal search (like original PyInstaller version)
         return self._find_normal_project_root()
 
     def _find_normal_project_root(self) -> Path:
