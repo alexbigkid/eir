@@ -137,13 +137,16 @@ class DNGLabBinaryStrategy(ABC):
     def _find_extraction_root(self, start_dir: Path) -> Path:
         """Find the extraction root directory containing bundled data."""
         extraction_root = start_dir
-        while extraction_root.parent != extraction_root:
+        levels_checked = 0
+        max_levels = 5  # Limit how far up we search to prevent issues
+
+        while extraction_root.parent != extraction_root and levels_checked < max_levels:
             # Check if this directory contains the tools directory
             if (extraction_root / "tools").exists():
                 break
             # Check if we're in a Nuitka extraction directory
             if any(name.startswith("onefile_") for name in extraction_root.parts):
-                # Look for tools in this directory or parent directories
+                # Look for tools in this directory or parent directories (limited search)
                 for check_dir in [
                     extraction_root,
                     extraction_root.parent,
@@ -154,25 +157,61 @@ class DNGLabBinaryStrategy(ABC):
                         break
                 break
             extraction_root = extraction_root.parent
+            levels_checked += 1
+
+        # If we couldn't find a tools directory, just return the start directory
+        if levels_checked >= max_levels:
+            self.logger.warning(
+                f"Could not find tools directory after searching {max_levels} levels up from "
+                f"{start_dir}"
+            )
+            return start_dir
+
         return extraction_root
 
     def _debug_extraction_directory(self) -> None:
         """Debug helper to list extraction directory contents."""
         extraction_dir = Path(__file__).parent
-        while extraction_dir.parent != extraction_dir:
+        levels_checked = 0
+        max_debug_levels = 3  # Limit debug search to prevent massive output
+
+        while extraction_dir.parent != extraction_dir and levels_checked < max_debug_levels:
             if any(name.startswith("onefile_") for name in extraction_dir.parts):
                 break
             extraction_dir = extraction_dir.parent
+            levels_checked += 1
+
+        # Skip debug if we're at filesystem root or in a suspicious location
+        if str(extraction_dir) in ["/", "C:\\", "C:"]:
+            self.logger.warning("Skipping debug listing - at filesystem root")
+            return
 
         self.logger.info(f"Extraction directory contents (for debugging): {extraction_dir}")
         try:
-            for item in extraction_dir.rglob("*"):
+            # Only check immediate children, limit the number shown
+            items_shown = 0
+            max_items = 20  # Limit to prevent spam
+
+            for item in extraction_dir.iterdir():
+                if items_shown >= max_items:
+                    self.logger.info(f"  ... (showing only first {max_items} items)")
+                    break
+
                 if item.is_file() and "dnglab" in item.name:
                     self.logger.info(f"Found dnglab-related file: {item}")
                 elif item.is_dir() and item.name == "tools":
                     self.logger.info(f"Found tools directory: {item}")
-                    for tool_item in item.rglob("*"):
+                    # Only show top-level structure of tools directory
+                    tool_items_shown = 0
+                    for tool_item in item.iterdir():
+                        if tool_items_shown >= 5:  # Limit tools listing
+                            self.logger.info("    ... (showing only first 5 tools items)")
+                            break
                         self.logger.info(f"  Tools content: {tool_item}")
+                        tool_items_shown += 1
+                elif item.is_dir():
+                    self.logger.info(f"Found directory: {item}")
+                items_shown += 1
         except (OSError, PermissionError) as e:
             self.logger.warning(f"Could not list extraction directory for debugging: {e}")
 
