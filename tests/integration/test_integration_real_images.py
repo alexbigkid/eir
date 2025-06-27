@@ -50,9 +50,28 @@ class TestRealImageIntegration:
             # Use uv run for local development with default logging
             cmd = ["uv", "run", "eir", "-d", str(target_dir)]
 
-        result = subprocess.run(  # noqa: S603
-            cmd, capture_output=True, text=True, cwd=target_dir.parent, check=False
-        )
+        try:
+            result = subprocess.run(  # noqa: S603
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=target_dir.parent,
+                check=False,
+                timeout=300,
+            )
+        except subprocess.TimeoutExpired as e:
+            error_msg = "Binary timed out after 300 seconds"
+            if e.stdout:
+                stdout_text = e.stdout.decode() if isinstance(e.stdout, bytes) else e.stdout
+                error_msg += f"\nSTDOUT: {stdout_text}"
+            if e.stderr:
+                stderr_text = e.stderr.decode() if isinstance(e.stderr, bytes) else e.stderr
+                error_msg += f"\nSTDERR: {stderr_text}"
+            print(f"\n=== EIR BINARY TIMEOUT FOR {target_dir.name} ===")
+            print(error_msg)
+            print("=== END EIR BINARY TIMEOUT ===\n")
+            self._last_error = error_msg
+            return -1  # Return non-zero exit code for timeout
 
         # Always show stdout/stderr for DNG conversion debugging
         if result.stdout:
