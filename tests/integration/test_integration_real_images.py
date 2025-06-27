@@ -167,12 +167,12 @@ class TestRealImageIntegration:
 
     def setup_mixed_directory(self, test_images_dir: Path, temp_workspace: Path) -> Path:
         """Set up the mixed date range directory with files from all other directories."""
-        mixed_dir = temp_workspace / "20110709-20230809_mixed_images"
+        mixed_dir = temp_workspace / "20081209-20230809_mixed_images"
         mixed_dir.mkdir(parents=True, exist_ok=True)
 
         # Copy files from all individual date directories
         source_dirs = [
-            "20110709_canon",
+            "20081209_canon",
             "20211218_sony",
             "20221231_iPhone_raw",
             "20230808_sony",
@@ -241,7 +241,7 @@ class TestRealImageIntegration:
     def test_single_date_directories(self, eir_binary, test_images_dir, temp_workspace):
         """Test processing of single-date format directories."""
         single_date_dirs = [
-            "20110709_canon",
+            "20081209_canon",
             "20211218_sony",
             "20221231_iPhone_raw",
             "20230808_sony",
@@ -326,11 +326,11 @@ class TestRealImageIntegration:
                 )
 
                 # Check for empty DNG directories and report
-                self.check_dng_conversion_results(mixed_dir, "20110709-20230809_mixed_images")
+                self.check_dng_conversion_results(mixed_dir, "20081209-20230809_mixed_images")
 
                 # Analyze results
                 results = self.analyze_processing_results(
-                    mixed_dir, "20110709-20230809_mixed_images"
+                    mixed_dir, "20081209-20230809_mixed_images"
                 )
                 results["original_count"] = original_count
                 results["success"] = True
@@ -444,7 +444,7 @@ class TestRealImageIntegration:
         """Test that different camera brands are organized correctly."""
         # Test a few specific directories to verify camera brand detection
         test_cases = [
-            ("20110709_canon", ["canon"]),
+            ("20081209_canon", ["canon"]),
             ("20211218_sony", ["sony"]),
             ("20230809_Canon_R8", ["canon"]),
             ("20230809_Fujifilm_X-S20", ["fujifilm"]),
