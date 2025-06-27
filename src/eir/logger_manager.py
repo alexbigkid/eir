@@ -53,15 +53,28 @@ class LoggerManager:
                 self._configured = True
                 return
 
-            root_dir = self._find_project_root()
+            # Check if we're in a bundled environment
+            is_bundled = (
+                getattr(sys, "frozen", False)
+                or hasattr(sys, "_MEIPASS")
+                or "onefile" in str(Path(__file__).absolute()).lower()
+                or "onefil" in str(Path(__file__).absolute()).lower()
+            )
 
-            # Create logs directory if needed for file logging
-            if log_into_file:
-                logs_dir = root_dir / "logs"
-                logs_dir.mkdir(parents=True, exist_ok=True)
+            if is_bundled:
+                # For bundled executables, use simple default logging
+                self._setup_default_logging(log_into_file, verbose)
+            else:
+                # For development, use YAML configuration
+                root_dir = self._find_project_root()
 
-            # Setup threaded logging using YAML configuration
-            self._setup_yaml_threaded_logging(root_dir, log_into_file, verbose)
+                # Create logs directory if needed for file logging
+                if log_into_file:
+                    logs_dir = root_dir / "logs"
+                    logs_dir.mkdir(parents=True, exist_ok=True)
+
+                # Setup threaded logging using YAML configuration
+                self._setup_yaml_threaded_logging(root_dir, log_into_file, verbose)
             self._configured = True
 
         except FileNotFoundError as e:
