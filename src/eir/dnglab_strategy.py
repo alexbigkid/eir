@@ -189,10 +189,9 @@ class DNGLabBinaryStrategy(ABC):
         self.logger.info(f"Extraction directory contents (for debugging): {extraction_dir}")
         try:
             # Only check immediate children, limit the number shown
-            items_shown = 0
             max_items = 20  # Limit to prevent spam
 
-            for item in extraction_dir.iterdir():
+            for items_shown, item in enumerate(extraction_dir.iterdir()):
                 if items_shown >= max_items:
                     self.logger.info(f"  ... (showing only first {max_items} items)")
                     break
@@ -202,16 +201,13 @@ class DNGLabBinaryStrategy(ABC):
                 elif item.is_dir() and item.name == "tools":
                     self.logger.info(f"Found tools directory: {item}")
                     # Only show top-level structure of tools directory
-                    tool_items_shown = 0
-                    for tool_item in item.iterdir():
+                    for tool_items_shown, tool_item in enumerate(item.iterdir()):
                         if tool_items_shown >= 5:  # Limit tools listing
                             self.logger.info("    ... (showing only first 5 tools items)")
                             break
                         self.logger.info(f"  Tools content: {tool_item}")
-                        tool_items_shown += 1
                 elif item.is_dir():
                     self.logger.info(f"Found directory: {item}")
-                items_shown += 1
         except (OSError, PermissionError) as e:
             self.logger.warning(f"Could not list extraction directory for debugging: {e}")
 
