@@ -169,16 +169,17 @@ class TestRealImageIntegration:
         """Discover all mixed date range directories (YYYYMMDD-YYYYMMDD pattern)."""
         mixed_dirs = []
         for item in test_images_dir.iterdir():
-            if item.is_dir() and "-" in item.name:
-                # Check if it looks like a date range (YYYYMMDD-YYYYMMDD pattern)
-                # Must start with 8 digits followed by hyphen and more digits
-                if (
-                    len(item.name) >= 17
-                    and item.name[:8].isdigit()
-                    and item.name[8] == "-"
-                    and item.name[9:17].isdigit()
-                ):
-                    mixed_dirs.append(item.name)
+            # Check if it looks like a date range (YYYYMMDD-YYYYMMDD pattern)
+            # Must start with 8 digits followed by hyphen and more digits
+            if (
+                item.is_dir()
+                and "-" in item.name
+                and len(item.name) >= 17
+                and item.name[:8].isdigit()
+                and item.name[8] == "-"
+                and item.name[9:17].isdigit()
+            ):
+                mixed_dirs.append(item.name)
         return sorted(mixed_dirs)
 
     def setup_mixed_directory(self, test_images_dir: Path, temp_workspace: Path) -> Path:
@@ -206,7 +207,8 @@ class TestRealImageIntegration:
                         copied_count += 1
 
         print(
-            f"Created mixed directory '{mixed_dir_name}' with {copied_count} files from {len(single_date_dirs)} source directories"
+            f"Created mixed directory '{mixed_dir_name}' with {copied_count} files "
+            f"from {len(single_date_dirs)} source directories"
         )
         return mixed_dir
 
@@ -261,11 +263,15 @@ class TestRealImageIntegration:
         """Discover all single-date format directories (YYYYMMDD_* pattern)."""
         single_date_dirs = []
         for item in test_images_dir.iterdir():
-            if item.is_dir():
-                # Look for directories that match single date pattern (YYYYMMDD_*)
-                # Must start with 8 digits followed by underscore
-                if len(item.name) >= 9 and item.name[8] == "_" and item.name[:8].isdigit():
-                    single_date_dirs.append(item.name)
+            # Look for directories that match single date pattern (YYYYMMDD_*)
+            # Must start with 8 digits followed by underscore
+            if (
+                item.is_dir()
+                and len(item.name) >= 9
+                and item.name[8] == "_"
+                and item.name[:8].isdigit()
+            ):
+                single_date_dirs.append(item.name)
         return sorted(single_date_dirs)
 
     def test_single_date_directories(self, eir_binary, test_images_dir, temp_workspace):
