@@ -74,7 +74,22 @@ class DNGLabBinaryStrategy(ABC):
     def _detect_bundled_execution(self) -> dict[str, bool | str]:
         """Detect if we're running as a bundled executable and what type."""
         current_file_path = Path(__file__).absolute()
-        is_nuitka_onefile = "/tmp/onefile_" in str(current_file_path)
+        current_path_str = str(current_file_path).lower()
+
+        # Check for various Nuitka onefile patterns (including Windows short names)
+        is_nuitka_temp = (
+            ("temp" in current_path_str and "onefil" in current_path_str)  # Windows: ONEFIL~1
+            or ("temp" in current_path_str and "onefile" in current_path_str)  # Full name
+            or "/tmp/onefile_" in str(current_file_path)  # Linux pattern
+        )
+
+        is_nuitka_onefile = (
+            "/tmp/onefile_" in str(current_file_path)  # Linux pattern
+            or "onefile" in current_path_str  # General onefile pattern
+            or "onefil" in current_path_str  # Windows short name pattern
+            or is_nuitka_temp  # Temp extraction patterns
+        )
+
         is_frozen = getattr(sys, "frozen", False)
         is_pyinstaller = hasattr(sys, "_MEIPASS")
 
