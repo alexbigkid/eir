@@ -36,7 +36,7 @@ jobs:
 
       - name: Get current version and bump
         id: bump
-        run: ./.github/scripts/version_bump.sh ${{ github.ref_name }}
+        run: python ./.github/scripts/version_bump.py ${{ github.ref_name }}
 
       - name: Commit version bump and create release tag
         run: |
