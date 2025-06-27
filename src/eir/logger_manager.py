@@ -149,24 +149,40 @@ class LoggerManager:
         if "pytest" in sys.modules:
             return self._find_normal_project_root()
 
-        # Check if we're in a CI environment running integration tests
-        # Skip complex bundled detection to prevent hanging
-        if (
-            os.environ.get("GITHUB_ACTIONS") == "true"
-            or os.environ.get("CI") == "true"
-            or os.environ.get("EIR_BINARY_PATH")  # Integration test marker
-        ):
-            # For CI environments, use simplified detection that just looks at current location
+        # Check if we're in a CI environment or integration test
+        # Use multiple detection methods to catch all CI scenarios
+        cwd_str = str(Path.cwd()).lower()
+        ci_indicators = [
+            os.environ.get("GITHUB_ACTIONS") == "true",
+            os.environ.get("CI") == "true",
+            os.environ.get("EIR_BINARY_PATH") is not None,
+            os.environ.get("RUNNER_OS") is not None,  # GitHub Actions runner
+            "runner" in cwd_str,  # Common CI path pattern
+            "actions-runner" in cwd_str,  # GitHub Actions Windows runner
+            "d:\\a\\" in cwd_str,  # Windows GitHub Actions path
+            "/home/runner/" in cwd_str,  # Linux GitHub Actions path
+            "/users/runner/" in cwd_str,  # macOS GitHub Actions path
+            os.environ.get("BUILD_BUILDURI") is not None,  # Azure DevOps
+            os.environ.get("CIRCLECI") == "true",  # CircleCI
+        ]
+
+        if any(ci_indicators):
+            # For CI environments, use very simple and fast detection
+            # Don't do any complex bundled detection that might hang
             current_dir = Path(__file__).parent
-            for _level in range(3):  # Only check 3 levels up - very conservative
+
+            # Try to find logging.yaml in immediate vicinity only
+            for _level in range(2):  # Only check 2 levels up - very conservative
                 if (current_dir / "logging.yaml").exists():
                     return current_dir
                 parent = current_dir.parent
-                if parent == current_dir:  # Reached root
+                if parent == current_dir:  # Reached filesystem root
                     break
                 current_dir = parent
-            # If not found, fall back to normal search
-            return self._find_normal_project_root()
+
+            # If logging.yaml not found, just return current working directory
+            # This avoids any potential hanging in bundled detection
+            return Path.cwd()
 
         # First, check if we're in a PyInstaller bundle (backward compatibility)
         if hasattr(sys, "_MEIPASS"):
