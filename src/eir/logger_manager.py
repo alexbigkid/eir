@@ -53,7 +53,7 @@ class LoggerManager:
                 self._configured = True
                 return
 
-            root_dir = self._find_project_root()
+            root_dir = self._find_normal_project_root()
 
             # Create logs directory if needed for file logging
             if log_into_file:

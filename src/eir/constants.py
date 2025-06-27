@@ -88,7 +88,7 @@ class _Const:
 
     def _load_from_pyproject(self):
         try:
-            root = self._find_project_root()
+            root = self._find_normal_project_root()
             pyproject_path = root / "pyproject.toml"
 
             with pyproject_path.open("rb") as f:

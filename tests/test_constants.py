@@ -87,7 +87,7 @@ class TestConst:
     def test_load_from_pyproject_success(self, project_root_dir):
         """Test loading from pyproject.toml successfully."""
         with (
-            patch.object(_Const, "_find_project_root", return_value=project_root_dir),
+            patch.object(_Const, "_find_normal_project_root", return_value=project_root_dir),
             patch.object(_Const, "_load_from_build_constants", return_value=None),
         ):
             const = _Const()
@@ -104,7 +104,7 @@ class TestConst:
     def test_load_from_pyproject_file_not_found(self, temp_dir):
         """Test loading when pyproject.toml doesn't exist."""
         with (
-            patch.object(_Const, "_find_project_root", return_value=temp_dir),
+            patch.object(_Const, "_find_normal_project_root", return_value=temp_dir),
             patch("builtins.print") as mock_print,
         ):
             _Const()
@@ -123,7 +123,7 @@ class TestConst:
         )  # Missing closing bracket and quote
 
         with (
-            patch.object(_Const, "_find_project_root", return_value=project_root_dir),
+            patch.object(_Const, "_find_normal_project_root", return_value=project_root_dir),
             patch("builtins.print") as mock_print,
         ):
             _Const()
