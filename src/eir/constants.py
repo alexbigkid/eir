@@ -50,7 +50,12 @@ class _Const:
 
         # Simple Nuitka onefile detection - only check if we're clearly in a bundled environment
         current_file_path = Path(__file__).absolute()
-        if "onefile" in str(current_file_path).lower() or getattr(sys, "frozen", False):
+        current_path_str = str(current_file_path).lower()
+        is_onefile = (
+            "onefile" in current_path_str
+            or "onefil" in current_path_str  # Windows short names like ONEFIL~1
+        )
+        if is_onefile or getattr(sys, "frozen", False):
             # For Nuitka bundles, try just the parent directories - simple and fast
             current_dir = Path(__file__).parent
             for _level in range(4):  # Check up to 4 levels up
