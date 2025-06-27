@@ -108,14 +108,17 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "======================="
           echo "Install Python packages"
-          echo "-----------------------"
+          echo "======================="
           uv sync
+          echo "======================="
           echo "List Python packages"
-          echo "-----------------------"
+          echo "======================="
           uv pip list
+          echo "======================="
           echo "Check Nuitka version"
-          echo "-----------------------"
+          echo "======================="
           uv run python -m nuitka --version
 
       - name: Setup MSVC (Windows)

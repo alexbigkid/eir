@@ -200,13 +200,18 @@ class LoggerManager:
         # and create fallback configuration to avoid crashes
 
         # Detect if we're in a compiled/bundled environment (Nuitka, PyInstaller, etc.)
-        current_path = str(Path(__file__).absolute())
-        is_temp_onefile = "temp" in current_path.lower() and "onefile" in current_path.lower()
+        current_path = str(Path(__file__).absolute()).lower()
+        # Check for various Nuitka onefile patterns (including Windows short names)
+        is_nuitka_temp = (
+            ("temp" in current_path and "onefil" in current_path)  # Windows: ONEFIL~1
+            or ("temp" in current_path and "onefile" in current_path)  # Full name
+        )
         is_compiled = (
             getattr(sys, "frozen", False)  # PyInstaller/Nuitka frozen
             or hasattr(sys, "_MEIPASS")  # PyInstaller bundle
-            or "onefile" in current_path.lower()  # Nuitka onefile pattern
-            or is_temp_onefile  # Nuitka temp + onefile
+            or "onefile" in current_path  # Nuitka onefile pattern
+            or "onefil" in current_path  # Windows short name pattern
+            or is_nuitka_temp  # Nuitka temp extraction
         )
 
         if is_compiled:
