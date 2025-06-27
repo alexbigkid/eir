@@ -43,66 +43,22 @@ class _Const:
         if "pytest" in sys.modules:
             return self._find_normal_project_root(start)
 
-        # Check if we're in a CI environment or integration test
-        # Use multiple detection methods to catch all CI scenarios
-        cwd_str = str(Path.cwd()).lower()
-        ci_indicators = [
-            os.environ.get("GITHUB_ACTIONS") == "true",
-            os.environ.get("CI") == "true",
-            os.environ.get("EIR_BINARY_PATH") is not None,
-            os.environ.get("RUNNER_OS") is not None,  # GitHub Actions runner
-            "runner" in cwd_str,  # Common CI path pattern
-            "actions-runner" in cwd_str,  # GitHub Actions Windows runner
-            "d:\\a\\" in cwd_str,  # Windows GitHub Actions path
-            "/home/runner/" in cwd_str,  # Linux GitHub Actions path
-            "/users/runner/" in cwd_str,  # macOS GitHub Actions path
-            os.environ.get("BUILD_BUILDURI") is not None,  # Azure DevOps
-            os.environ.get("CIRCLECI") == "true",  # CircleCI
-        ]
-
-        if any(ci_indicators):
-            # For CI environments, use very simple and fast detection
-            # Don't do any complex bundled detection that might hang
-            current_dir = Path(__file__).parent
-
-            # Try to find pyproject.toml in immediate vicinity only
-            for _level in range(2):  # Only check 2 levels up - very conservative
-                if (current_dir / "pyproject.toml").exists():
-                    return current_dir
-                parent = current_dir.parent
-                if parent == current_dir:  # Reached filesystem root
-                    break
-                current_dir = parent
-
-            # If pyproject.toml not found, just return current working directory
-            # This avoids any potential hanging in bundled detection
+        # For bundled executables, just return current working directory
+        # A compiled binary shouldn't need to search for pyproject.toml
+        if getattr(sys, "frozen", False) or hasattr(sys, "_MEIPASS"):
             return Path.cwd()
 
-        # First, check if we're in a PyInstaller bundle (backward compatibility)
-        if hasattr(sys, "_MEIPASS"):
-            bundle_dir = Path(sys._MEIPASS)
-            if (bundle_dir / "pyproject.toml").exists():
-                return bundle_dir
-
-        # Simple Nuitka onefile detection - only check if we're clearly in a bundled environment
+        # Check if we're clearly in a Nuitka onefile environment
         current_file_path = Path(__file__).absolute()
         current_path_str = str(current_file_path).lower()
         is_onefile = (
             "onefile" in current_path_str
             or "onefil" in current_path_str  # Windows short names like ONEFIL~1
         )
-        if is_onefile or getattr(sys, "frozen", False):
-            # For Nuitka bundles, try just the parent directories - simple and fast
-            current_dir = Path(__file__).parent
-            for _level in range(4):  # Check up to 4 levels up
-                if (current_dir / "pyproject.toml").exists():
-                    return current_dir
-                parent = current_dir.parent
-                if parent == current_dir:  # Reached root
-                    break
-                current_dir = parent
+        if is_onefile:
+            return Path.cwd()
 
-        # Fall back to normal search (like original PyInstaller version)
+        # Only do normal project root search for development/source environments
         return self._find_normal_project_root(start)
 
     def _find_normal_project_root(self, start: Path | None = None) -> Path:
