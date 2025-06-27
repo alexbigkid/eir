@@ -169,9 +169,10 @@ class TestLoggerManager:
         with (
             patch("eir.logger_manager.Path.cwd", return_value=temp_dir),
             patch("eir.logger_manager.__file__", str(fake_file_path)),
-            pytest.raises(FileNotFoundError, match="pyproject.toml not found"),
         ):
-            manager._find_project_root()
+            # Should return the fallback directory (current working directory)
+            result = manager._find_project_root()
+            assert result == temp_dir
 
     def test_setup_yaml_threaded_logging_console_mode(
         self, project_root_dir, reset_logger_manager, clean_logging

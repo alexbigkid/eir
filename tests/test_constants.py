@@ -64,20 +64,25 @@ class TestConst:
         assert (root / "pyproject.toml").exists()
 
     def test_find_project_root_not_found(self, temp_dir):
-        """Test finding project root when pyproject.toml doesn't exist."""
+        """Test finding project root when pyproject.toml doesn't exist - returns fallback."""
         const = _Const()
 
-        with pytest.raises(FileNotFoundError, match="pyproject.toml not found"):
-            const._find_project_root(temp_dir)
+        # Should return the fallback directory (current working directory)
+        result = const._find_project_root(temp_dir)
+        assert isinstance(result, Path)
+        # Should return the current working directory as fallback
+        assert result == Path.cwd()
 
     def test_find_project_root_none_start(self):
-        """Test finding project root with None start parameter."""
+        """Test finding project root with None start parameter - returns fallback."""
         const = _Const()
 
         with patch("eir.constants.Path.cwd") as mock_cwd:
             mock_cwd.return_value = Path("/nonexistent")
-            with pytest.raises(FileNotFoundError):
-                const._find_project_root(None)
+            # Should return the current working directory as fallback
+            result = const._find_project_root(None)
+            assert result == Path("/nonexistent")
+            mock_cwd.assert_called()
 
     def test_load_from_pyproject_success(self, project_root_dir):
         """Test loading from pyproject.toml successfully."""
