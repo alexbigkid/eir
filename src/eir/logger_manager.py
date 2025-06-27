@@ -148,6 +148,42 @@ class LoggerManager:
         # Register cleanup on exit
         atexit.register(self._cleanup_logging)
 
+    def _setup_default_logging(self, log_into_file: bool, verbose: bool):
+        """Setup simple logging for bundled executables without YAML."""
+        # Create basic logging configuration
+        log_level = logging.DEBUG if verbose else logging.INFO
+
+        # Setup formatter
+        formatter = logging.Formatter(
+            "[%(asctime)s]:[%(name)s]:[%(levelname)s]: %(message)s", datefmt="%Y%m%d %H:%M:%S"
+        )
+
+        if log_into_file:
+            # Create logs directory in current working directory
+            logs_dir = Path.cwd() / "logs"
+            logs_dir.mkdir(parents=True, exist_ok=True)
+
+            # Setup file handler
+            handler = logging.FileHandler(logs_dir / "eir.log")
+            handler.setLevel(log_level)
+            handler.setFormatter(formatter)
+
+            logger_name = LoggerType.FILE_LOGGER.value
+        else:
+            # Setup console handler
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setLevel(log_level)
+            handler.setFormatter(formatter)
+
+            logger_name = LoggerType.CONSOLE_LOGGER.value
+
+        # Get logger and configure
+        self._logger = logging.getLogger(logger_name)
+        self._logger.setLevel(log_level)
+        self._logger.handlers.clear()
+        self._logger.addHandler(handler)
+        self._logger.propagate = False
+
     def _get_default_logging_config(self) -> dict:
         """Get default logging configuration when logging.yaml is not found."""
         return {
