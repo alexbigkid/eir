@@ -24,7 +24,7 @@ get_latest_dnglab_version() {
         API_EXIT_CODE=$?
         
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
-            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || echo "")
         else
             echo "❌ curl failed with exit code $API_EXIT_CODE" >&2
             LCL_VERSION=""
@@ -41,7 +41,7 @@ get_latest_dnglab_version() {
         fi
         API_EXIT_CODE=$?
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
-            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || echo "")
         else
             echo "❌ wget failed with exit code $API_EXIT_CODE" >&2
             LCL_VERSION=""

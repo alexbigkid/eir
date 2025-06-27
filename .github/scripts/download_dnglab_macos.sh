@@ -30,7 +30,7 @@ get_latest_dnglab_version() {
         fi
         API_EXIT_CODE=$?
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
-            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || echo "")
             if [ -z "$LCL_VERSION" ]; then
                 echo "❌ Failed to parse version from API response. Response preview:" >&2
                 echo "$API_RESPONSE" | head -c 200 >&2
@@ -57,7 +57,7 @@ get_latest_dnglab_version() {
         fi
         API_EXIT_CODE=$?
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
-            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+            LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || echo "")
             if [ -z "$LCL_VERSION" ]; then
                 echo "❌ Failed to parse version from API response. Response preview:" >&2
                 echo "$API_RESPONSE" | head -c 200 >&2
