@@ -102,6 +102,17 @@ class _Const:
         return Path.cwd()
 
     def _load_from_pyproject(self):
+        # Skip pyproject.toml loading if we're in a bundled environment
+        # Bundled binaries should use build_constants.py instead
+        if (
+            hasattr(sys, "_MEIPASS")  # PyInstaller
+            or getattr(sys, "frozen", False)  # General frozen indicator
+            or "onefile" in str(Path(__file__).absolute()).lower()  # Nuitka onefile
+            or "onefil" in str(Path(__file__).absolute()).lower()  # Windows short names
+            or os.environ.get("EIR_BINARY_PATH")  # Integration test with binary
+        ):
+            return  # Skip pyproject.toml loading for bundled executables
+
         try:
             root = self._find_normal_project_root()
             pyproject_path = root / "pyproject.toml"
