@@ -85,11 +85,12 @@ class _Const:
 
         # Detect if we're in a compiled/bundled environment (Nuitka, PyInstaller, etc.)
         current_path = str(Path(__file__).absolute())
+        is_temp_onefile = "temp" in current_path.lower() and "onefile" in current_path.lower()
         is_compiled = (
             getattr(sys, "frozen", False)  # PyInstaller/Nuitka frozen
             or hasattr(sys, "_MEIPASS")  # PyInstaller bundle
             or "onefile" in current_path.lower()  # Nuitka onefile pattern
-            or "temp" in current_path.lower()  # Often in temp dirs when bundled
+            or is_temp_onefile  # Nuitka temp + onefile
         )
 
         if is_compiled:
