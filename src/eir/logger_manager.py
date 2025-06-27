@@ -53,7 +53,7 @@ class LoggerManager:
                 self._configured = True
                 return
 
-            root_dir = self._find_normal_project_root()
+            root_dir = self._find_project_root()
 
             # Create logs directory if needed for file logging
             if log_into_file:
@@ -167,18 +167,31 @@ class LoggerManager:
             # For bundled executables, try to find bundled files
             current_file_dir = Path(__file__).parent
 
-            # Simple check - look in current directory and up to 3 parent levels
-            for level in range(4):
-                check_dir = current_file_dir
-                for _ in range(level):
-                    check_dir = check_dir.parent
-                    if check_dir.parent == check_dir:  # Reached filesystem root
-                        break
+            # For Nuitka onefile, bundled files are at the extraction root
+            # The extraction directory typically has a pattern like onefile_*
+            # Start from current file directory and search up to find extraction root
+            search_dir = current_file_dir
+            max_levels = 10  # Reasonable limit to prevent infinite loops
 
-                if (check_dir / "pyproject.toml").exists():
-                    return check_dir
-                if (check_dir / "logging.yaml").exists():
-                    return check_dir
+            for _ in range(max_levels):
+                # Check if this directory contains bundled files
+                if (search_dir / "logging.yaml").exists():
+                    return search_dir
+                if (search_dir / "pyproject.toml").exists():
+                    return search_dir
+
+                # Check if this looks like a Nuitka extraction directory and has bundled files
+                if any(part.startswith("onefile") for part in search_dir.parts) and (
+                    (search_dir / "logging.yaml").exists()
+                    or (search_dir / "pyproject.toml").exists()
+                ):
+                    return search_dir
+
+                # Move up one level
+                parent = search_dir.parent
+                if parent == search_dir:  # Reached filesystem root
+                    break
+                search_dir = parent
 
         return self._find_normal_project_root()
 

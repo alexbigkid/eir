@@ -108,7 +108,7 @@ class TestLoggerManager:
         manager = LoggerManager()
 
         with (
-            patch.object(manager, "_find_normal_project_root", return_value=project_root_dir),
+            patch.object(manager, "_find_project_root", return_value=project_root_dir),
             patch.object(manager, "_setup_yaml_threaded_logging"),
         ):
             manager.configure(log_into_file=True)
@@ -123,7 +123,7 @@ class TestLoggerManager:
 
         with (
             patch.object(
-                manager, "_find_normal_project_root", side_effect=FileNotFoundError("test error")
+                manager, "_find_project_root", side_effect=FileNotFoundError("test error")
             ),
             pytest.raises(FileNotFoundError, match="logging.yaml not found: test error"),
         ):
