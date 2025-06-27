@@ -50,41 +50,18 @@ def clean_build_dirs():
 
 
 def download_dnglab():
-    """Download DNGLab binary for DNG conversion."""
-    match platform.system().lower():
-        case "windows":
-            print("Downloading DNG lab for windows")
-            download_dnglab_for_windows()
-        case "linux":
-            print("Downloading DNG lab for linux")
-            download_dnglab_for_linux()
-        case "darwin":
-            print("Downloading DNG lab for macos")
-            download_dnglab_for_macos()
-        case _:
-            print(f"Skipping DNGLab download - not supported on {platform.system()}")
-            return  # Skip download on unsupported platform
-
-
-def download_dnglab_for_windows():
-    """Download DNGLab binary for Windows DNG conversion."""
-    if platform.system().lower() != "windows":
-        print(f"Skipping DNGLab download - not Windows (current: {platform.system()})")
-        return  # Only download on Windows
-
-    print("Downloading DNGLab for Windows DNG conversion...")
+    """Download DNGLab binary for DNG conversion using unified cross-platform script."""
+    print(f"Downloading DNGLab for {platform.system()}...")
     print(f"Current working directory: {Path.cwd()}")
 
-    # Run the PowerShell download script
-    script_path = Path(".github/scripts/download_dnglab_windows.ps1")
+    # Run the unified Python download script
+    script_path = Path(".github/scripts/download_dnglab.py")
     print(f"Looking for download script: {script_path}")
+
     if script_path.exists():
         print(f"Found download script: {script_path}")
         print("Running DNGLab download script...")
-        result = subprocess.run(  # noqa: S603
-            ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script_path)],  # noqa: S607
-            check=False,
-        )
+        result = subprocess.run([sys.executable, str(script_path)], check=False)  # noqa: S603
         if result.returncode == 0:
             print("DNGLab downloaded successfully")
         else:
@@ -92,70 +69,7 @@ def download_dnglab_for_windows():
             print("DNG conversion may not work")
     else:
         print(f"DNGLab download script not found: {script_path}")
-
-
-def download_dnglab_for_linux():
-    """Download DNGLab binary for Linux DNG conversion."""
-    if platform.system().lower() != "linux":
-        print(f"Skipping DNGLab download - not Linux (current: {platform.system()})")
-        return  # Only download on Linux
-
-    print("Downloading DNGLab for Linux DNG conversion...")
-    print(f"Current working directory: {Path.cwd()}")
-
-    # Run the download script
-    script_path = Path(".github/scripts/download_dnglab_linux.sh")
-    print(f"Looking for download script: {script_path}")
-    if script_path.exists():
-        print(f"Found download script: {script_path}")
-        print("Running DNGLab download script...")
-        result = subprocess.run([str(script_path)], check=False)  # noqa: S603
-        if result.returncode == 0:
-            print("DNGLab downloaded successfully")
-        else:
-            print(f"DNGLab download failed with exit code {result.returncode}")
-            print("DNG conversion may not work")
-    else:
-        print(f"DNGLab download script not found: {script_path}")
-        print("Available files in tools directory:")
-        tools_dir = Path("tools")
-        if tools_dir.exists():
-            for file in tools_dir.glob("*"):
-                print(f"   - {file}")
-        else:
-            print("   tools directory does not exist")
-
-
-def download_dnglab_for_macos():
-    """Download DNGLab binary for macOS DNG conversion."""
-    if platform.system().lower() != "darwin":
-        print(f"Skipping DNGLab download - not macOS (current: {platform.system()})")
-        return  # Only download on macOS
-
-    print("Downloading DNGLab for macOS DNG conversion...")
-    print(f"Current working directory: {Path.cwd()}")
-
-    # Run the download script
-    script_path = Path(".github/scripts/download_dnglab_macos.sh")
-    print(f"Looking for download script: {script_path}")
-    if script_path.exists():
-        print(f"Found download script: {script_path}")
-        print("Running DNGLab download script...")
-        result = subprocess.run([str(script_path)], check=False)  # noqa: S603
-        if result.returncode == 0:
-            print("DNGLab downloaded successfully")
-        else:
-            print(f"DNGLab download failed with exit code {result.returncode}")
-            print("DNG conversion may not work")
-    else:
-        print(f"DNGLab download script not found: {script_path}")
-        print("Available files in tools directory:")
-        tools_dir = Path("tools")
-        if tools_dir.exists():
-            for file in tools_dir.glob("*"):
-                print(f"   - {file}")
-        else:
-            print("   tools directory does not exist")
+        print(f"Skipping DNGLab download - not supported on {platform.system()}")
 
 
 def setup_data_files():
