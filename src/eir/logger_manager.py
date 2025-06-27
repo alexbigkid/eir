@@ -150,27 +150,40 @@ class LoggerManager:
             if (bundle_dir / "pyproject.toml").exists():
                 return bundle_dir
 
-        # Check if we're in a Nuitka bundle (primary build system - frozen but no _MEIPASS)
-        if getattr(sys, "frozen", False):
-            # For Nuitka onefile, bundled files are in the same directory as __file__
-            # The directory structure in Nuitka onefile is: /tmp/onefile_xxx/.../
+        # Check if we're in a Nuitka bundle - improved detection
+        current_file_path = Path(__file__).absolute()
+        is_nuitka_onefile = "onefile" in str(current_file_path).lower()
+        is_frozen = getattr(sys, "frozen", False)
+
+        if is_frozen or is_nuitka_onefile:
+            # For Nuitka onefile, bundled files are extracted to the same temp directory
+            # Since we used --include-data-dir=nuitka_data=., the files should be
+            # at the extraction root level
             current_file_dir = Path(__file__).parent
 
-            # Check current directory and parent directories for bundled files
-            # Also check the extraction root directory (where bundled data goes)
-            search_dirs = [
-                current_file_dir,
-                current_file_dir.parent,
-                current_file_dir.parent.parent,
-                current_file_dir.parent.parent.parent,  # Sometimes deeper
-            ]
+            # Find the extraction root that contains our bundled files
+            extraction_root = current_file_dir
+            while extraction_root.parent != extraction_root:
+                # Check if this directory contains the bundled files
+                if (extraction_root / "pyproject.toml").exists():
+                    return extraction_root
+                if (extraction_root / "logging.yaml").exists():
+                    return extraction_root
 
-            for bundle_dir in search_dirs:
-                if (bundle_dir / "pyproject.toml").exists():
-                    return bundle_dir
-                # Also check if logging.yaml exists directly (might be in same dir)
-                if (bundle_dir / "logging.yaml").exists():
-                    return bundle_dir
+                # Check if we're in a Nuitka extraction directory
+                if any(name.startswith("onefile") for name in extraction_root.parts):
+                    # Look for bundled files in this directory or parent directories
+                    for check_dir in [
+                        extraction_root,
+                        extraction_root.parent,
+                        extraction_root.parent.parent,
+                    ]:
+                        if (check_dir / "pyproject.toml").exists():
+                            return check_dir
+                        if (check_dir / "logging.yaml").exists():
+                            return check_dir
+                    break
+                extraction_root = extraction_root.parent
 
         # Try multiple starting points to find project root
         search_paths = [
@@ -187,10 +200,12 @@ class LoggerManager:
         # and create fallback configuration to avoid crashes
 
         # Detect if we're in a compiled/bundled environment (Nuitka, PyInstaller, etc.)
+        current_path = str(Path(__file__).absolute())
         is_compiled = (
             getattr(sys, "frozen", False)  # PyInstaller/Nuitka frozen
             or hasattr(sys, "_MEIPASS")  # PyInstaller bundle
-            or "onefile" in str(Path(__file__).parent)  # Nuitka onefile pattern
+            or "onefile" in current_path.lower()  # Nuitka onefile pattern
+            or "temp" in current_path.lower()  # Often in temp dirs when bundled
         )
 
         if is_compiled:
