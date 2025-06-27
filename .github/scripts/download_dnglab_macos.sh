@@ -10,6 +10,13 @@ get_latest_dnglab_version() {
     local LCL_EXIT_CODE=0
 
     echo "🔍 Detecting latest DNGLab version..." >&2
+    
+    # Debug: Check if GITHUB_TOKEN is available
+    if [ -n "$GITHUB_TOKEN" ]; then
+        echo "🔑 GITHUB_TOKEN is available (${#GITHUB_TOKEN} characters)" >&2
+    else
+        echo "⚠️  GITHUB_TOKEN is not set - using unauthenticated requests" >&2
+    fi
 
     if command -v curl >/dev/null 2>&1; then
         echo "🔍 Using curl to fetch latest version..." >&2
@@ -24,8 +31,18 @@ get_latest_dnglab_version() {
         API_EXIT_CODE=$?
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
             LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+            if [ -z "$LCL_VERSION" ]; then
+                echo "❌ Failed to parse version from API response. Response preview:" >&2
+                echo "$API_RESPONSE" | head -c 200 >&2
+                echo "..." >&2
+            fi
         else
             echo "❌ curl failed with exit code $API_EXIT_CODE" >&2
+            if [ -n "$API_RESPONSE" ]; then
+                echo "❌ API response preview:" >&2
+                echo "$API_RESPONSE" | head -c 200 >&2
+                echo "..." >&2
+            fi
             LCL_VERSION=""
         fi
     elif command -v wget >/dev/null 2>&1; then
@@ -41,8 +58,18 @@ get_latest_dnglab_version() {
         API_EXIT_CODE=$?
         if [ $API_EXIT_CODE -eq 0 ] && [ -n "$API_RESPONSE" ]; then
             LCL_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+            if [ -z "$LCL_VERSION" ]; then
+                echo "❌ Failed to parse version from API response. Response preview:" >&2
+                echo "$API_RESPONSE" | head -c 200 >&2
+                echo "..." >&2
+            fi
         else
             echo "❌ wget failed with exit code $API_EXIT_CODE" >&2
+            if [ -n "$API_RESPONSE" ]; then
+                echo "❌ API response preview:" >&2
+                echo "$API_RESPONSE" | head -c 200 >&2
+                echo "..." >&2
+            fi
             LCL_VERSION=""
         fi
     else

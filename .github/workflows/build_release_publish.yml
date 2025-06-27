@@ -126,6 +126,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build binary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: uv run python .github/scripts/build_nuitka.py
 
       - name: Test binary (Unix)
