@@ -152,47 +152,29 @@ class LoggerManager:
 
         # Check if we're in a Nuitka bundle - improved detection
         current_file_path = Path(__file__).absolute()
-        is_nuitka_onefile = "onefile" in str(current_file_path).lower()
+        current_path_str = str(current_file_path).lower()
+        is_nuitka_onefile = (
+            "onefile" in current_path_str
+            or "onefil" in current_path_str  # Windows short names like ONEFIL~1
+        )
         is_frozen = getattr(sys, "frozen", False)
 
         if is_frozen or is_nuitka_onefile:
-            # For Nuitka onefile, bundled files are extracted to the same temp directory
-            # Since we used --include-data-dir=nuitka_data=., the files should be
-            # at the extraction root level
+            # For bundled executables, try to find bundled files
             current_file_dir = Path(__file__).parent
 
-            # Find the extraction root that contains our bundled files
-            extraction_root = current_file_dir
-            max_levels = 10  # Prevent infinite loops
-            level_count = 0
+            # Simple check - look in current directory and up to 3 parent levels
+            for level in range(4):
+                check_dir = current_file_dir
+                for _ in range(level):
+                    check_dir = check_dir.parent
+                    if check_dir.parent == check_dir:  # Reached filesystem root
+                        break
 
-            while extraction_root.parent != extraction_root and level_count < max_levels:
-                level_count += 1
-
-                # Check if this directory contains the bundled files
-                if (extraction_root / "pyproject.toml").exists():
-                    return extraction_root
-                if (extraction_root / "logging.yaml").exists():
-                    return extraction_root
-
-                # Only check for Nuitka patterns in temp-like directories
-                current_path_str = str(extraction_root).lower()
-                is_temp_dir = "temp" in current_path_str and (
-                    "onefile" in current_path_str or "onefil" in current_path_str
-                )
-
-                if is_temp_dir:
-                    # Look for bundled files in this directory or immediate parents
-                    for check_dir in [extraction_root, extraction_root.parent]:
-                        if check_dir.exists():
-                            if (check_dir / "pyproject.toml").exists():
-                                return check_dir
-                            if (check_dir / "logging.yaml").exists():
-                                return check_dir
-                    # Exit early if we found a temp onefile directory but no bundled files
-                    break
-
-                extraction_root = extraction_root.parent
+                if (check_dir / "pyproject.toml").exists():
+                    return check_dir
+                if (check_dir / "logging.yaml").exists():
+                    return check_dir
 
         # Try multiple starting points to find project root
         search_paths = [
