@@ -10,7 +10,7 @@ get_latest_dnglab_version() {
     local LCL_EXIT_CODE=0
 
     echo "🔍 Detecting latest DNGLab version..." >&2
-    
+
     # Debug: Check if GITHUB_TOKEN is available
     if [ -n "$GITHUB_TOKEN" ]; then
         echo "🔑 GITHUB_TOKEN is available (${#GITHUB_TOKEN} characters)" >&2
@@ -135,6 +135,7 @@ download_and_setup_dnglab() {
 
     echo "📥 Downloading DNGLab ${LCL_VERSION} for ${LCL_ARCH}..."
     echo "🔗 URL: $LCL_URL"
+
 
     # Create build directory structure if it doesn't exist
     mkdir -p "./build/${LCL_PLATFORM}/tools/${LCL_ARCH}"
