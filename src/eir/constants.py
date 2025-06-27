@@ -57,22 +57,30 @@ class _Const:
 
             # Find the extraction root that contains our bundled files
             extraction_root = current_file_dir
-            while extraction_root.parent != extraction_root:
+            max_levels = 10  # Prevent infinite loops
+            level_count = 0
+
+            while extraction_root.parent != extraction_root and level_count < max_levels:
+                level_count += 1
+
                 # Check if this directory contains the bundled files
                 if (extraction_root / "pyproject.toml").exists():
                     return extraction_root
 
-                # Check if we're in a Nuitka extraction directory
-                if any(name.startswith("onefile") for name in extraction_root.parts):
-                    # Look for bundled files in this directory or parent directories
-                    for check_dir in [
-                        extraction_root,
-                        extraction_root.parent,
-                        extraction_root.parent.parent,
-                    ]:
-                        if (check_dir / "pyproject.toml").exists():
+                # Only check for Nuitka patterns in temp-like directories
+                current_path_str = str(extraction_root).lower()
+                is_temp_dir = "temp" in current_path_str and (
+                    "onefile" in current_path_str or "onefil" in current_path_str
+                )
+
+                if is_temp_dir:
+                    # Look for bundled files in this directory or immediate parents
+                    for check_dir in [extraction_root, extraction_root.parent]:
+                        if check_dir.exists() and (check_dir / "pyproject.toml").exists():
                             return check_dir
+                    # Exit early if we found a temp onefile directory but no bundled files
                     break
+
                 extraction_root = extraction_root.parent
 
         # Fall back to normal project root search
