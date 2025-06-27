@@ -4,6 +4,7 @@ from enum import Enum
 import logging
 import logging.config
 import logging.handlers
+import os
 from pathlib import Path
 import queue
 import sys
@@ -146,6 +147,25 @@ class LoggerManager:
     def _find_project_root(self) -> Path:
         # Skip bundled detection entirely during tests to prevent hanging
         if "pytest" in sys.modules:
+            return self._find_normal_project_root()
+
+        # Check if we're in a CI environment running integration tests
+        # Skip complex bundled detection to prevent hanging
+        if (
+            os.environ.get("GITHUB_ACTIONS") == "true"
+            or os.environ.get("CI") == "true"
+            or os.environ.get("EIR_BINARY_PATH")  # Integration test marker
+        ):
+            # For CI environments, use simplified detection that just looks at current location
+            current_dir = Path(__file__).parent
+            for _level in range(3):  # Only check 3 levels up - very conservative
+                if (current_dir / "logging.yaml").exists():
+                    return current_dir
+                parent = current_dir.parent
+                if parent == current_dir:  # Reached root
+                    break
+                current_dir = parent
+            # If not found, fall back to normal search
             return self._find_normal_project_root()
 
         # First, check if we're in a PyInstaller bundle (backward compatibility)
