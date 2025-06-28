@@ -188,59 +188,54 @@ class DNGLabDownloader:
         """Main method to download and setup DNGLab binary."""
         print(f"\n🚀 Starting DNGLab download for {self.platform_name}")
 
-        try:
-            # Get version and platform info
-            version = self.get_latest_version()
-            platform_key, arch = self.get_platform_info()
+        # Get version and platform info
+        version = self.get_latest_version()
+        platform_key, arch = self.get_platform_info()
 
-            # Build paths
-            url, filename, pattern = self.build_download_url(version, platform_key, arch)
-            build_dir = Path(f"./build/{platform_key}/tools/{arch}")
-            executable_name = pattern["executable_name"]
-            final_binary_path = build_dir / executable_name
+        # Build paths
+        url, filename, pattern = self.build_download_url(version, platform_key, arch)
+        build_dir = Path(f"./build/{platform_key}/tools/{arch}")
+        executable_name = pattern["executable_name"]
+        final_binary_path = build_dir / executable_name
 
-            # Download
-            if pattern["is_zip"]:
-                download_path = build_dir / filename
-                if not self.download_file(url, download_path):
-                    return False
-
-                # Extract ZIP
-                extracted_path = self.extract_zip(download_path, build_dir, executable_name)
-                if not extracted_path:
-                    return False
-
-                # Clean up ZIP
-                download_path.unlink()
-                final_binary_path = extracted_path
-            else:
-                # Direct binary download
-                if not self.download_file(url, final_binary_path):
-                    return False
-
-            # Make executable
-            self.make_executable(final_binary_path)
-
-            # Verify and test
-            if not final_binary_path.exists():
-                print("❌ Binary not found after setup")
+        # Download
+        if pattern["is_zip"]:
+            download_path = build_dir / filename
+            if not self.download_file(url, download_path):
                 return False
 
-            file_size = final_binary_path.stat().st_size
-            print("✅ DNGLab downloaded successfully")
-            print(f"📁 Path: {final_binary_path}")
-            print(f"📊 Size: {file_size} bytes")
-
-            # Test binary
-            if not self.test_binary(final_binary_path):
+            # Extract ZIP
+            extracted_path = self.extract_zip(download_path, build_dir, executable_name)
+            if not extracted_path:
                 return False
 
-            print("🎉 DNGLab setup complete!")
-            return True
+            # Clean up ZIP
+            download_path.unlink()
+            final_binary_path = extracted_path
+        else:
+            # Direct binary download
+            if not self.download_file(url, final_binary_path):
+                return False
 
-        except Exception as e:
-            print(f"❌ DNGLab setup failed: {e}")
+        # Make executable
+        self.make_executable(final_binary_path)
+
+        # Verify and test
+        if not final_binary_path.exists():
+            print("❌ Binary not found after setup")
             return False
+
+        file_size = final_binary_path.stat().st_size
+        print("✅ DNGLab downloaded successfully")
+        print(f"📁 Path: {final_binary_path}")
+        print(f"📊 Size: {file_size} bytes")
+
+        # Test binary
+        if not self.test_binary(final_binary_path):
+            return False
+
+        print("🎉 DNGLab setup complete!")
+        return True
 
 
 def main():
@@ -248,13 +243,19 @@ def main():
     if len(sys.argv) > 1:
         print(f"ℹ️  Platform override: {sys.argv[1]}")
 
-    downloader = DNGLabDownloader()
-    success = downloader.download_and_setup()
+    try:
+        downloader = DNGLabDownloader()
+        success = downloader.download_and_setup()
 
-    if success:
-        print(f"✅ Exit: {__file__} (0)")
-        sys.exit(0)
-    else:
+        if success:
+            print(f"✅ Exit: {__file__} (0)")
+            sys.exit(0)
+        else:
+            print(f"❌ Exit: {__file__} (1)")
+            sys.exit(1)
+
+    except Exception as e:
+        print(f"❌ DNGLab setup failed: {e}")
         print(f"❌ Exit: {__file__} (1)")
         sys.exit(1)
 
