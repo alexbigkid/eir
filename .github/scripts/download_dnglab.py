@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import shutil
+import subprocess  # noqa: S404
 import sys
 import zipfile
 from pathlib import Path
@@ -22,30 +23,13 @@ class DNGLabDownloader:
         self.github_token = os.environ.get("GITHUB_TOKEN")
 
         # Platform mappings
-        self.platform_mapping = {
-            "windows": "windows",
-            "darwin": "darwin",
-            "linux": "linux"
-        }
+        self.platform_mapping = {"windows": "windows", "darwin": "darwin", "linux": "linux"}
 
         # Architecture mappings per platform
         self.arch_mapping = {
-            "windows": {
-                "amd64": "x64",
-                "x86_64": "x64",
-                "arm64": "arm64",
-                "aarch64": "arm64"
-            },
-            "darwin": {
-                "x86_64": "x86_64",
-                "arm64": "arm64",
-                "aarch64": "arm64"
-            },
-            "linux": {
-                "x86_64": "x86_64",
-                "aarch64": "aarch64",
-                "arm64": "aarch64"
-            }
+            "windows": {"amd64": "x64", "x86_64": "x64", "arm64": "arm64", "aarch64": "arm64"},
+            "darwin": {"x86_64": "x86_64", "arm64": "arm64", "aarch64": "arm64"},
+            "linux": {"x86_64": "x86_64", "aarch64": "aarch64", "arm64": "aarch64"},
         }
 
         # Binary naming patterns per platform
@@ -54,20 +38,20 @@ class DNGLabDownloader:
                 "name_template": "dnglab-win-{arch}",
                 "filename_template": "dnglab-win-{arch}_{version}.zip",
                 "is_zip": True,
-                "executable_name": "dnglab.exe"
+                "executable_name": "dnglab.exe",
             },
             "darwin": {
                 "name_template": "dnglab-macos-{arch}",
                 "filename_template": "dnglab-macos-{arch}_{version}.zip",
                 "is_zip": True,
-                "executable_name": "dnglab"
+                "executable_name": "dnglab",
             },
             "linux": {
                 "name_template": "dnglab_linux_{arch}",
                 "filename_template": "dnglab_linux_{arch}",
                 "is_zip": False,
-                "executable_name": "dnglab"
-            }
+                "executable_name": "dnglab",
+            },
         }
 
     def get_latest_version(self):
@@ -150,16 +134,18 @@ class DNGLabDownloader:
         print("📂 Extracting ZIP file...")
 
         try:
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 zip_ref.extractall(extract_dir)
 
             # Find the extracted executable
             final_path = extract_dir / executable_name
             for item in extract_dir.rglob("*"):
-                if (item.is_file() and
-                    item.name != final_path.name and  # Don't move to itself
-                    (item.name == executable_name or item.name.startswith("dnglab")) and
-                    not item.name.endswith(".zip")):  # Skip zip files
+                if (
+                    item.is_file()
+                    and item.name != final_path.name  # Don't move to itself
+                    and (item.name == executable_name or item.name.startswith("dnglab"))
+                    and not item.name.endswith(".zip")
+                ):  # Skip zip files
                     if item != final_path:
                         print(f"📋 Moving {item} -> {final_path}")
                         item.rename(final_path)
@@ -185,9 +171,11 @@ class DNGLabDownloader:
         print("🧪 Testing DNGLab binary...")
 
         try:
-            import subprocess  # noqa: S404
-            result = subprocess.run([str(binary_path), "--help"],  # noqa: S603
-                                  capture_output=True, timeout=10)
+            result = subprocess.run(  # noqa: S603
+                [str(binary_path), "--help"],
+                capture_output=True,
+                timeout=10,
+            )
             if result.returncode == 0:
                 print("✅ DNGLab binary is working correctly")
                 return True
