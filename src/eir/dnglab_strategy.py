@@ -130,37 +130,56 @@ class DNGLabBinaryStrategy(ABC):
     def _get_nuitka_bundled_path(self, system_name: str, arch: str, binary_name: str) -> Path:
         """Get the bundled binary path for Nuitka onefile."""
         # Alternative approach: Use multiple detection methods for Nuitka onefile
-        self.logger.info("=== Nuitka Bundled Path Detection ===")
+        self.logger.error("=== STARTING Nuitka Bundled Path Detection ===")
+        print("=== STARTING Nuitka Bundled Path Detection ===")  # Force output to console
 
         # Method 1: Check for sys.executable's directory (Nuitka onefile extraction)
+        self.logger.error("=== STARTING Method 1 ===")
+        print("=== STARTING Method 1 ===")
         try:
             import sys
 
             executable_dir = Path(sys.executable).parent
-            self.logger.info(f"Method 1 - sys.executable dir: {executable_dir}")
+            self.logger.error(f"Method 1 - sys.executable dir: {executable_dir}")
+            print(f"Method 1 - sys.executable dir: {executable_dir}")
 
             # For Nuitka onefile, the data should be extracted alongside the executable
             tools_path_1 = executable_dir / "tools" / system_name / arch / binary_name
-            self.logger.info(f"Method 1 - checking path: {tools_path_1}")
+            self.logger.error(f"Method 1 - checking path: {tools_path_1}")
+            print(f"Method 1 - checking path: {tools_path_1}")
             if tools_path_1.exists():
-                self.logger.info(f"Method 1 SUCCESS: Found bundled DNGLab at {tools_path_1}")
+                self.logger.error(f"Method 1 SUCCESS: Found bundled DNGLab at {tools_path_1}")
+                print(f"Method 1 SUCCESS: Found bundled DNGLab at {tools_path_1}")
                 return tools_path_1
+            else:
+                self.logger.error(f"Method 1 - path does not exist: {tools_path_1}")
+                print(f"Method 1 - path does not exist: {tools_path_1}")
         except Exception as e:
-            self.logger.warning(f"Method 1 failed: {e}")
+            self.logger.error(f"Method 1 failed: {e}")
+            print(f"Method 1 failed: {e}")
 
         # Method 2: Check current working directory and its parents
+        self.logger.error("=== STARTING Method 2 ===")
+        print("=== STARTING Method 2 ===")
         try:
             cwd = Path.cwd()
-            self.logger.info(f"Method 2 - current working dir: {cwd}")
+            self.logger.error(f"Method 2 - current working dir: {cwd}")
+            print(f"Method 2 - current working dir: {cwd}")
 
             for check_dir in [cwd, cwd.parent, cwd.parent.parent]:
                 tools_path_2 = check_dir / "tools" / system_name / arch / binary_name
-                self.logger.info(f"Method 2 - checking path: {tools_path_2}")
+                self.logger.error(f"Method 2 - checking path: {tools_path_2}")
+                print(f"Method 2 - checking path: {tools_path_2}")
                 if tools_path_2.exists():
-                    self.logger.info(f"Method 2 SUCCESS: Found bundled DNGLab at {tools_path_2}")
+                    self.logger.error(f"Method 2 SUCCESS: Found bundled DNGLab at {tools_path_2}")
+                    print(f"Method 2 SUCCESS: Found bundled DNGLab at {tools_path_2}")
                     return tools_path_2
+                else:
+                    self.logger.error(f"Method 2 - path does not exist: {tools_path_2}")
+                    print(f"Method 2 - path does not exist: {tools_path_2}")
         except Exception as e:
-            self.logger.warning(f"Method 2 failed: {e}")
+            self.logger.error(f"Method 2 failed: {e}")
+            print(f"Method 2 failed: {e}")
 
         # Method 3: Check __file__ location and traverse up (original approach)
         try:
