@@ -244,12 +244,8 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "--output-dir=dist",
         # Performance optimizations
         "--enable-plugin=anti-bloat",
-        "--show-anti-bloat-changes",
         # Disable problematic features that can cause issues
         "--assume-yes-for-downloads",
-        # Enhanced debugging for build process
-        "--show-progress",
-        "--show-memory",
     ]
 
     # Handle data directory inclusion with platform-specific approach
