@@ -1,27 +1,29 @@
 """Modern async RxPY-based EXIF Pictures Renaming processor."""
 
+import asyncio
+import json
 import logging
 import os
-import re
-import asyncio
-import threading
 import platform
+import re
 import shutil
-from pathlib import Path
+import subprocess  # noqa: S404
+import threading
 from datetime import datetime
 from enum import Enum
-import json
+from pathlib import Path
 from typing import Any
 
+import exiftool
 import reactivex as rx
 from reactivex import operators as ops
 from reactivex.scheduler.eventloop import AsyncIOScheduler
 
-# Import pydngconverter lazily to avoid early executable resolution
-import exiftool
-
 from eir.abk_common import function_trace, PerformanceTimer
 from eir.dnglab_strategy import DNGLabStrategyFactory
+
+# Import pydngconverter lazily to avoid early executable resolution
+# These imports must happen AFTER _configure_dng_converter() sets PYDNG_DNG_CONVERTER
 
 
 class ListType(Enum):
@@ -196,8 +198,6 @@ class ImageProcessor:
 
             async def patched_convert_file(self, *, destination: str = None, job=None, log=None):
                 """Enhanced convert_file with better error handling and logging."""
-                import asyncio
-                import os
                 from pydngconverter import compat
 
                 log = log or self._logger
@@ -370,7 +370,6 @@ class ImageProcessor:
     def _test_dnglab_binary(self, dnglab_path: str) -> None:
         """Test DNGLab binary to verify it's working."""
         try:
-            import subprocess  # noqa: S404
 
             self._logger.debug(f"Testing DNGLab binary functionality: {dnglab_path}")
 
