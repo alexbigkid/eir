@@ -56,7 +56,6 @@ def download_dnglab():
 
     try:
         # Import and use the DNGLab downloader directly
-        sys.path.insert(0, str(Path(".github/scripts")))
         from download_dnglab import DNGLabDownloader
 
         downloader = DNGLabDownloader()
