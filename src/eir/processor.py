@@ -161,6 +161,11 @@ class ImageProcessor:
         self._logger.info("Importing pydngconverter after DNGLab configuration...")
         from pydngconverter import DNGConverter
         import pydngconverter.compat
+        
+        # Set pydngconverter logging to match our app's root logger configuration
+        root_logger = logging.getLogger()
+        pydng_logger = logging.getLogger("pydngconverter")
+        pydng_logger.setLevel(root_logger.getEffectiveLevel())
 
         self._logger.info(f"Initializing DNGConverter with source={src_dir}, dest={dst_dir}")
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
