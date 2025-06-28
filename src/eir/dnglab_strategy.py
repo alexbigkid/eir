@@ -100,6 +100,8 @@ class DNGLabBinaryStrategy(ABC):
             f"pyinstaller={is_pyinstaller}, nuitka_onefile={is_nuitka_onefile}"
         )
         self.logger.info(f"Current file path: {current_file_path}")
+        self.logger.info(f"Current path string (lowercase): {current_path_str}")
+        self.logger.info(f"Nuitka temp detection: {is_nuitka_temp}")
 
         return {
             "is_bundled": is_frozen or is_pyinstaller or is_nuitka_onefile,
@@ -133,6 +135,8 @@ class DNGLabBinaryStrategy(ABC):
         extraction_root = self._find_extraction_root(current_file_dir)
         dnglab_path = extraction_root / "tools" / system_name / arch / binary_name
         self.logger.info(f"Computed bundled path: {dnglab_path}")
+        self.logger.info(f"Extraction root used: {extraction_root}")
+        self.logger.info(f"Does tools directory exist at extraction root: {(extraction_root / 'tools').exists()}")
         return dnglab_path
 
     def _find_extraction_root(self, start_dir: Path) -> Path:
