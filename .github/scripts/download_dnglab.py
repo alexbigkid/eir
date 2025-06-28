@@ -53,27 +53,27 @@ class DNGLabDownloader:
 
     def get_latest_version(self):
         """Get the latest DNGLab version from GitHub API."""
-        print("🔍 Detecting latest DNGLab version...")
+        print("Detecting latest DNGLab version...")
 
         url = "https://api.github.com/repos/dnglab/dnglab/releases/latest"
         headers = {"User-Agent": "eir-build-script"}
 
         if self.github_token:
-            print("🔑 Using authenticated API request...")
+            print("Using authenticated API request...")
             headers["Authorization"] = f"Bearer {self.github_token}"
         else:
-            print("⚠️  Using unauthenticated API request...")
+            print("WARNING: Using unauthenticated API request...")
 
         try:
             request = Request(url, headers=headers)  # noqa: S310
             with urlopen(request, timeout=30) as response:  # noqa: S310
                 data = json.loads(response.read().decode())
                 version = data["tag_name"]
-                print(f"✅ Latest DNGLab version: {version}")
+                print(f"Latest DNGLab version: {version}")
                 return version
         except (URLError, HTTPError, json.JSONDecodeError, KeyError) as e:
-            print(f"❌ Failed to detect latest DNGLab version: {e}")
-            print("❌ Falling back to v0.7.0")
+            print(f"ERROR: Failed to detect latest DNGLab version: {e}")
+            print("ERROR: Falling back to v0.7.0")
             return "v0.7.0"
 
     def get_platform_info(self):
@@ -98,8 +98,8 @@ class DNGLabDownloader:
 
         mapped_arch = self.arch_mapping[platform_key][self.arch]
 
-        print(f"🔍 Platform: {self.platform_name}")
-        print(f"🔍 Architecture: {self.arch} -> {mapped_arch}")
+        print(f"Platform: {self.platform_name}")
+        print(f"Architecture: {self.arch} -> {mapped_arch}")
 
         return platform_key, mapped_arch
 
@@ -112,23 +112,23 @@ class DNGLabDownloader:
 
     def download_file(self, url, dest_path):
         """Download a file from URL to destination path."""
-        print(f"📥 Downloading from: {url}")
-        print(f"📁 Destination: {dest_path}")
+        print(f"Downloading from: {url}")
+        print(f"Destination: {dest_path}")
 
         try:
             with urlopen(url, timeout=60) as response:  # noqa: S310
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(dest_path, "wb") as f:
                     shutil.copyfileobj(response, f)
-            print("✅ Download completed")
+            print("Download completed")
             return True
         except (URLError, HTTPError) as e:
-            print(f"❌ Download failed: {e}")
+            print(f"ERROR: Download failed: {e}")
             return False
 
     def extract_zip(self, zip_path, extract_dir, executable_name):
         """Extract ZIP file and find the executable."""
-        print("📂 Extracting ZIP file...")
+        print("Extracting ZIP file...")
 
         try:
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
@@ -144,7 +144,7 @@ class DNGLabDownloader:
                     and not item.name.endswith(".zip")
                 ):  # Skip zip files
                     if item != final_path:
-                        print(f"📋 Moving {item} -> {final_path}")
+                        print(f"Moving {item} -> {final_path}")
                         item.rename(final_path)
                     return final_path
 
@@ -155,7 +155,7 @@ class DNGLabDownloader:
             raise FileNotFoundError(f"{executable_name} not found in extracted ZIP")
 
         except (zipfile.BadZipFile, FileNotFoundError) as e:
-            print(f"❌ Extraction failed: {e}")
+            print(f"ERROR: Extraction failed: {e}")
             return None
 
     def make_executable(self, file_path):
@@ -165,25 +165,25 @@ class DNGLabDownloader:
 
     def test_binary(self, binary_path):
         """Test that the binary works."""
-        print("🧪 Testing DNGLab binary...")
+        print("Testing DNGLab binary...")
 
         try:
             result = subprocess.run(  # noqa: S603
                 [str(binary_path), "--help"], capture_output=True, timeout=10, check=False
             )
             if result.returncode == 0:
-                print("✅ DNGLab binary is working correctly")
+                print("DNGLab binary is working correctly")
                 return True
             else:
-                print("⚠️  DNGLab binary test failed - may still work for conversion")
+                print("WARNING: DNGLab binary test failed - may still work for conversion")
                 return True  # Still consider success for now
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError) as e:
-            print(f"⚠️  DNGLab binary test failed: {e} - may still work for conversion")
+            print(f"WARNING: DNGLab binary test failed: {e} - may still work for conversion")
             return True  # Still consider success for now
 
     def download_and_setup(self):
         """Main method to download and setup DNGLab binary."""
-        print(f"\n🚀 Starting DNGLab download for {self.platform_name}")
+        print(f"\nStarting DNGLab download for {self.platform_name}")
 
         # Get version and platform info
         version = self.get_latest_version()
@@ -219,13 +219,13 @@ class DNGLabDownloader:
 
         # Verify and test
         if not final_binary_path.exists():
-            print("❌ Binary not found after setup")
+            print("ERROR: Binary not found after setup")
             return False
 
         file_size = final_binary_path.stat().st_size
-        print("✅ DNGLab downloaded successfully")
-        print(f"📁 Path: {final_binary_path}")
-        print(f"📊 Size: {file_size} bytes")
+        print("DNGLab downloaded successfully")
+        print(f"Path: {final_binary_path}")
+        print(f"Size: {file_size} bytes")
 
         # Test binary and return result
         return self.test_binary(final_binary_path)
@@ -234,23 +234,23 @@ class DNGLabDownloader:
 def main():
     """Main entry point."""
     if len(sys.argv) > 1:
-        print(f"ℹ️  Platform override: {sys.argv[1]}")
+        print(f"INFO: Platform override: {sys.argv[1]}")
 
     try:
         downloader = DNGLabDownloader()
         success = downloader.download_and_setup()
 
         if success:
-            print("🎉 DNGLab setup complete!")
-            print(f"✅ Exit: {__file__} (0)")
+            print("DNGLab setup complete!")
+            print(f"Exit: {__file__} (0)")
             sys.exit(0)
         else:
-            print(f"❌ Exit: {__file__} (1)")
+            print(f"ERROR: Exit: {__file__} (1)")
             sys.exit(1)
 
     except Exception as e:
-        print(f"❌ DNGLab setup failed: {e}")
-        print(f"❌ Exit: {__file__} (1)")
+        print(f"ERROR: DNGLab setup failed: {e}")
+        print(f"ERROR: Exit: {__file__} (1)")
         sys.exit(1)
 
 
