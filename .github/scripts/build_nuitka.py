@@ -10,6 +10,8 @@ import subprocess  # noqa: S404
 import sys
 from pathlib import Path
 
+from download_dnglab import DNGLabDownloader
+
 
 def get_platform_name():
     """Get the platform name for binary naming."""
@@ -55,9 +57,7 @@ def download_dnglab():
     print(f"Current working directory: {Path.cwd()}")
 
     try:
-        # Import and use the DNGLab downloader directly
-        from download_dnglab import DNGLabDownloader
-
+        # Use the DNGLab downloader directly
         downloader = DNGLabDownloader()
         success = downloader.download_and_setup()
 
