@@ -300,6 +300,26 @@ class DNGLabBinaryStrategy(ABC):
         """Find the extraction root directory containing bundled data."""
         self.logger.info(f"Finding extraction root starting from: {start_dir}")
 
+        # Special case: If we're running from inside an 'eir' directory within a Nuitka
+        # extraction, we need to go up to find the actual extraction root
+        if start_dir.name == "eir":
+            # Check if the parent directory has Nuitka patterns
+            parent_str = str(start_dir.parent).lower()
+            nuitka_patterns = ["onefile_", "onefil"]
+            if any(pattern in parent_str for pattern in nuitka_patterns):
+                self.logger.info(
+                    f"Detected 'eir' subdirectory in Nuitka extraction: {start_dir}"
+                )
+                candidate_root = start_dir.parent
+                if (candidate_root / "tools").exists():
+                    self.logger.info(f"Found tools directory at parent: {candidate_root}")
+                    return candidate_root
+                else:
+                    self.logger.info(
+                        f"Parent has no tools, using as extraction root: {candidate_root}"
+                    )
+                    return candidate_root
+
         extraction_root = start_dir
         levels_checked = 0
         max_levels = 8  # Increase max levels to handle deeper nesting
@@ -329,11 +349,14 @@ class DNGLabBinaryStrategy(ABC):
 
             if is_nuitka_extraction or has_nuitka_pattern:
                 self.logger.info(f"Found Nuitka extraction pattern in path: {extraction_root}")
-                # Look for tools in this directory and parent directories
+                # Look for tools in parent directories first, then current directory
+                # For Nuitka onefile, the tools are usually in the extraction root,
+                # not in the subdirectory where our code runs
                 search_dirs = [
-                    extraction_root,
-                    extraction_root.parent,
+                    extraction_root.parent,  # Most likely location for Nuitka onefile
                     extraction_root.parent.parent,
+                    extraction_root.parent.parent.parent,
+                    extraction_root,  # Check current directory last
                 ]
 
                 for check_dir in search_dirs:
@@ -342,9 +365,12 @@ class DNGLabBinaryStrategy(ABC):
                         extraction_root = check_dir
                         return extraction_root
 
-                # If we found a Nuitka pattern but no tools, this might be the right directory
-                # but tools might not be bundled correctly
-                self.logger.warning(f"Found Nuitka pattern but no tools at: {extraction_root}")
+                # If we found a Nuitka pattern but no tools, use the parent directory
+                # as that's where the extraction root should be for onefile bundles
+                self.logger.warning(
+                    f"Found Nuitka pattern but no tools. Using parent: {extraction_root.parent}"
+                )
+                extraction_root = extraction_root.parent
                 break
 
             extraction_root = extraction_root.parent
