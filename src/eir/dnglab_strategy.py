@@ -211,7 +211,8 @@ class DNGLabBinaryStrategy(ABC):
                         eir_tools_path = item / "eir" / "tools" / system_name / arch / binary_name
                         if eir_tools_path.exists():
                             self.logger.info(
-                                f"Method 4 SUCCESS: Found bundled DNGLab in eir subdir at {eir_tools_path}"
+                                f"Method 4 SUCCESS: Found bundled DNGLab in eir subdir at "
+                                f"{eir_tools_path}"
                             )
                             return eir_tools_path
 
