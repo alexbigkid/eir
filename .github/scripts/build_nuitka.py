@@ -99,6 +99,10 @@ def setup_dnglab_bundle():
     system_name = platform.system().lower()
     machine = platform.machine().lower()
 
+    print(f"=== DNGLab Bundle Setup ===")
+    print(f"System: {system_name}")
+    print(f"Machine: {machine}")
+
     match system_name:
         case "linux":
             dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x64"
@@ -113,6 +117,9 @@ def setup_dnglab_bundle():
             print(f"Unsupported platform: {system_name}")
             return False
 
+    print(f"Looking for DNGLab at: {dnglab_path.absolute()}")
+    print(f"DNGLab exists: {dnglab_path.exists()}")
+
     if dnglab_path and dnglab_path.exists():
         # Create tools directory structure in nuitka_data
         data_dir = Path("nuitka_data")
@@ -125,6 +132,15 @@ def setup_dnglab_bundle():
 
         file_size = dest_path.stat().st_size
         print(f"Bundled DNGLab binary: {dest_path} (size: {file_size} bytes)")
+        print(f"Absolute dest path: {dest_path.absolute()}")
+
+        # Verify the bundled structure
+        print(f"=== Nuitka Data Directory Structure ===")
+        try:
+            for item in data_dir.rglob("*"):
+                print(f"  {item}")
+        except Exception as e:
+            print(f"Could not list nuitka_data contents: {e}")
 
         # Make executable on Unix systems
         if system_name != "windows":
@@ -133,6 +149,23 @@ def setup_dnglab_bundle():
         return True
     else:
         print(f"DNGLab binary not found at: {dnglab_path}")
+        print(f"Absolute path checked: {dnglab_path.absolute()}")
+        
+        # Debug: Show what's in the build directory
+        build_dir = Path("build")
+        if build_dir.exists():
+            print(f"=== Build Directory Contents ===")
+            try:
+                for item in build_dir.rglob("*"):
+                    if "dnglab" in item.name.lower():
+                        print(f"  Found DNGLab file: {item}")
+                    elif item.is_dir():
+                        print(f"  Directory: {item}")
+            except Exception as e:
+                print(f"Could not list build directory: {e}")
+        else:
+            print("Build directory does not exist")
+        
         return False
 
 
@@ -184,6 +217,20 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
     if platform.system().lower() == "windows":
         output_name += ".exe"
 
+    # Enhanced debugging for data directory bundling
+    print(f"=== Nuitka Data Directory Info ===")
+    print(f"Data dir path: {data_dir}")
+    print(f"Data dir absolute: {data_dir.absolute()}")
+    print(f"Data dir exists: {data_dir.exists()}")
+    
+    if data_dir.exists():
+        print(f"Data dir contents:")
+        try:
+            for item in data_dir.rglob("*"):
+                print(f"  {item}")
+        except Exception as e:
+            print(f"Could not list data dir: {e}")
+
     # Nuitka command (use uv run to ensure Nuitka is available)
     cmd = [
         "uv",
@@ -195,14 +242,26 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "--onefile",
         f"--output-filename={output_name}",
         "--output-dir=dist",
-        # Include data files
-        f"--include-data-dir={data_dir}=.",
         # Performance optimizations
         "--enable-plugin=anti-bloat",
         "--show-anti-bloat-changes",
         # Disable problematic features that can cause issues
         "--assume-yes-for-downloads",
+        # Enhanced debugging for build process
+        "--show-progress",
+        "--show-memory",
     ]
+    
+    # Handle data directory inclusion with platform-specific approach
+    if platform.system().lower() == "windows":
+        # Windows: Use forward slashes and try alternative approach
+        data_dir_forward = str(data_dir.absolute()).replace("\\", "/")
+        cmd.append(f"--include-data-dir={data_dir_forward}=.")
+        print(f"Windows: Using forward slash path for Nuitka: {data_dir_forward}")
+    else:
+        # Linux/macOS: Use standard approach
+        cmd.append(f"--include-data-dir={data_dir.absolute()}=.")
+        print(f"Unix: Using standard path for Nuitka: {data_dir.absolute()}")
 
     # Add platform-specific options
     if platform.system().lower() == "windows":
@@ -228,6 +287,20 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
 
     print("Build completed successfully!")
     print(f"Executable location: dist/{output_name}")
+    
+    # Verify the build output exists
+    exe_path = Path(f"dist/{output_name}")
+    if exe_path.exists():
+        exe_size = exe_path.stat().st_size
+        print(f"Executable size: {exe_size} bytes")
+        
+        # Additional verification for Windows bundling
+        if platform.system().lower() == "windows":
+            print("=== Windows Build Verification ===")
+            print("Note: DNGLab bundling will be verified during runtime in integration tests")
+            print("Expected bundled path structure: <extraction>/tools/windows/x64/dnglab.exe")
+    else:
+        print(f"ERROR: Executable not found at expected location: {exe_path}")
 
     # Clean up temporary data directory
     if data_dir.exists():
