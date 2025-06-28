@@ -81,6 +81,7 @@ class DNGLabBinaryStrategy(ABC):
             ("temp" in current_path_str and "onefil" in current_path_str)  # Windows: ONEFIL~1
             or ("temp" in current_path_str and "onefile" in current_path_str)  # Full name
             or "/tmp/onefile_" in str(current_file_path)  # Linux pattern
+            or "\\onefil" in current_path_str  # Windows backslash pattern
         )
 
         is_nuitka_onefile = (
@@ -144,8 +145,9 @@ class DNGLabBinaryStrategy(ABC):
             # Check if this directory contains the tools directory
             if (extraction_root / "tools").exists():
                 break
-            # Check if we're in a Nuitka extraction directory
-            if any(name.startswith("onefile_") for name in extraction_root.parts):
+            # Check if we're in a Nuitka extraction directory (including Windows short names)
+            nuitka_patterns = ["onefile_", "onefil"]  # Include Windows short name pattern
+            if any(any(pattern in name.lower() for pattern in nuitka_patterns) for name in extraction_root.parts):
                 # Look for tools in this directory or parent directories (limited search)
                 for check_dir in [
                     extraction_root,
@@ -176,7 +178,8 @@ class DNGLabBinaryStrategy(ABC):
         max_debug_levels = 3  # Limit debug search to prevent massive output
 
         while extraction_dir.parent != extraction_dir and levels_checked < max_debug_levels:
-            if any(name.startswith("onefile_") for name in extraction_dir.parts):
+            nuitka_patterns = ["onefile_", "onefil"]  # Include Windows short name pattern
+            if any(any(pattern in name.lower() for pattern in nuitka_patterns) for name in extraction_dir.parts):
                 break
             extraction_dir = extraction_dir.parent
             levels_checked += 1
