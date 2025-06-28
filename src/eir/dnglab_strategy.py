@@ -182,36 +182,51 @@ class DNGLabBinaryStrategy(ABC):
             print(f"Method 2 failed: {e}")
 
         # Method 3: Check __file__ location and traverse up (original approach)
+        self.logger.error("=== STARTING Method 3 ===")
+        print("=== STARTING Method 3 ===")
         try:
             current_file_dir = Path(__file__).parent
-            self.logger.info(f"Method 3 - current file directory: {current_file_dir}")
+            self.logger.error(f"Method 3 - current file directory: {current_file_dir}")
+            print(f"Method 3 - current file directory: {current_file_dir}")
 
             # Find the extraction root that contains the tools directory
             extraction_root = self._find_extraction_root(current_file_dir)
-            self.logger.info(f"Method 3 - extraction root: {extraction_root}")
+            self.logger.error(f"Method 3 - extraction root: {extraction_root}")
+            print(f"Method 3 - extraction root: {extraction_root}")
 
             tools_path_3 = extraction_root / "tools" / system_name / arch / binary_name
-            self.logger.info(f"Method 3 - checking path: {tools_path_3}")
+            self.logger.error(f"Method 3 - checking path: {tools_path_3}")
+            print(f"Method 3 - checking path: {tools_path_3}")
             if tools_path_3.exists():
-                self.logger.info(f"Method 3 SUCCESS: Found bundled DNGLab at {tools_path_3}")
+                self.logger.error(f"Method 3 SUCCESS: Found bundled DNGLab at {tools_path_3}")
+                print(f"Method 3 SUCCESS: Found bundled DNGLab at {tools_path_3}")
                 return tools_path_3
+            else:
+                self.logger.error(f"Method 3 - path does not exist: {tools_path_3}")
+                print(f"Method 3 - path does not exist: {tools_path_3}")
 
             # Enhanced Windows debugging for Method 3
             if system_name == "windows":
-                self.logger.info("=== Method 3 Windows Analysis ===")
+                self.logger.error("=== Method 3 Windows Analysis ===")
+                print("=== Method 3 Windows Analysis ===")
                 self._debug_windows_extraction(extraction_root, system_name, arch, binary_name)
 
         except Exception as e:
-            self.logger.warning(f"Method 3 failed: {e}")
+            self.logger.error(f"Method 3 failed: {e}")
+            print(f"Method 3 failed: {e}")
 
         # Method 4: Brute force search in temp directories (Windows specific)
         if system_name == "windows":
+            self.logger.error("=== STARTING Method 4 ===")
+            print("=== STARTING Method 4 ===")
             try:
-                self.logger.info("Method 4 - Windows temp directory search")
+                self.logger.error("Method 4 - Windows temp directory search")
+                print("Method 4 - Windows temp directory search")
                 import tempfile
 
                 temp_dir = Path(tempfile.gettempdir())
-                self.logger.info(f"Method 4 - temp dir: {temp_dir}")
+                self.logger.error(f"Method 4 - temp dir: {temp_dir}")
+                print(f"Method 4 - temp dir: {temp_dir}")
 
                 # Look for Nuitka onefile patterns in temp
                 for item in temp_dir.iterdir():
@@ -219,24 +234,31 @@ class DNGLabBinaryStrategy(ABC):
                         "onefile" in item.name.lower() or "onefil" in item.name.lower()
                     ):
                         tools_path_4 = item / "tools" / system_name / arch / binary_name
-                        self.logger.info(f"Method 4 - checking temp path: {tools_path_4}")
+                        self.logger.error(f"Method 4 - checking temp path: {tools_path_4}")
+                        print(f"Method 4 - checking temp path: {tools_path_4}")
                         if tools_path_4.exists():
-                            self.logger.info(
+                            self.logger.error(
                                 f"Method 4 SUCCESS: Found bundled DNGLab at {tools_path_4}"
                             )
+                            print(f"Method 4 SUCCESS: Found bundled DNGLab at {tools_path_4}")
                             return tools_path_4
 
                         # Also check one level down for eir subdirectory
                         eir_tools_path = item / "eir" / "tools" / system_name / arch / binary_name
                         if eir_tools_path.exists():
-                            self.logger.info(
+                            self.logger.error(
+                                f"Method 4 SUCCESS: Found bundled DNGLab in eir subdir at "
+                                f"{eir_tools_path}"
+                            )
+                            print(
                                 f"Method 4 SUCCESS: Found bundled DNGLab in eir subdir at "
                                 f"{eir_tools_path}"
                             )
                             return eir_tools_path
 
             except Exception as e:
-                self.logger.warning(f"Method 4 failed: {e}")
+                self.logger.error(f"Method 4 failed: {e}")
+                print(f"Method 4 failed: {e}")
 
         # If all methods failed, return the best guess from Method 3
         fallback_path = (
@@ -258,10 +280,12 @@ class DNGLabBinaryStrategy(ABC):
         try:
             if extraction_root.exists():
                 items = list(extraction_root.iterdir())
-                self.logger.info(f"Windows extraction root item count: {len(items)}")
-                self.logger.info(
+                self.logger.error(f"Windows extraction root item count: {len(items)}")
+                print(f"Windows extraction root item count: {len(items)}")
+                self.logger.error(
                     f"Windows extraction root contents: {[item.name for item in items[:15]]}"
                 )
+                print(f"Windows extraction root contents: {[item.name for item in items[:15]]}")
 
                 # Check if tools directory exists with different casing or names
                 tools_found = False
@@ -270,35 +294,44 @@ class DNGLabBinaryStrategy(ABC):
                         item_name_lower = item.name.lower()
                         if item_name_lower == "tools":
                             tools_found = True
-                            self.logger.info(f"Found tools directory with casing: '{item.name}'")
+                            self.logger.error(f"Found tools directory with casing: '{item.name}'")
+                            print(f"Found tools directory with casing: '{item.name}'")
                             break
                         elif "tool" in item_name_lower:
-                            self.logger.info(f"Found tool-related directory: '{item.name}'")
+                            self.logger.error(f"Found tool-related directory: '{item.name}'")
+                            print(f"Found tool-related directory: '{item.name}'")
 
                 if not tools_found:
-                    self.logger.warning("Windows: No 'tools' directory found in extraction root")
+                    self.logger.error("Windows: No 'tools' directory found in extraction root")
+                    print("Windows: No 'tools' directory found in extraction root")
 
                     # Check if bundled files are in a different structure
-                    self.logger.info("Windows: Searching for any dnglab-related files...")
+                    self.logger.error("Windows: Searching for any dnglab-related files...")
+                    print("Windows: Searching for any dnglab-related files...")
                     for item in items:
                         if item.is_file() and "dnglab" in item.name.lower():
-                            self.logger.info(f"Found dnglab file in root: {item}")
+                            self.logger.error(f"Found dnglab file in root: {item}")
+                            print(f"Found dnglab file in root: {item}")
                         elif item.is_dir():
                             # Check one level down for dnglab files
                             try:
                                 sub_items = list(item.iterdir())
                                 for sub_item in sub_items[:5]:  # Limit search
                                     if sub_item.is_file() and "dnglab" in sub_item.name.lower():
-                                        self.logger.info(
+                                        self.logger.error(
                                             f"Found dnglab file in {item.name}: {sub_item}"
                                         )
+                                        print(f"Found dnglab file in {item.name}: {sub_item}")
                             except Exception as e:
-                                self.logger.debug(f"Could not read directory {item.name}: {e}")
+                                self.logger.error(f"Could not read directory {item.name}: {e}")
+                                print(f"Could not read directory {item.name}: {e}")
             else:
                 self.logger.error(f"Windows extraction root does not exist: {extraction_root}")
+                print(f"Windows extraction root does not exist: {extraction_root}")
 
         except Exception as e:
-            self.logger.warning(f"Could not analyze Windows extraction directory: {e}")
+            self.logger.error(f"Could not analyze Windows extraction directory: {e}")
+            print(f"Could not analyze Windows extraction directory: {e}")
 
     def _find_extraction_root(self, start_dir: Path) -> Path:
         """Find the extraction root directory containing bundled data."""
