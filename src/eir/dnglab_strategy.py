@@ -82,6 +82,8 @@ class DNGLabBinaryStrategy(ABC):
             or ("temp" in current_path_str and "onefile" in current_path_str)  # Full name
             or "/tmp/onefile_" in str(current_file_path)  # Linux pattern
             or "\\onefil" in current_path_str  # Windows backslash pattern
+            or "appdata" in current_path_str  # Windows AppData temp extractions
+            or ("windows" in current_path_str and "temp" in current_path_str)  # Windows temp
         )
 
         is_nuitka_onefile = (
@@ -102,6 +104,8 @@ class DNGLabBinaryStrategy(ABC):
         self.logger.info(f"Current file path: {current_file_path}")
         self.logger.info(f"Current path string (lowercase): {current_path_str}")
         self.logger.info(f"Nuitka temp detection: {is_nuitka_temp}")
+        self.logger.info(f"sys.frozen attribute: {getattr(sys, 'frozen', 'Not set')}")
+        self.logger.info(f"sys._MEIPASS attribute: {getattr(sys, '_MEIPASS', 'Not set')}")
 
         return {
             "is_bundled": is_frozen or is_pyinstaller or is_nuitka_onefile,
@@ -317,27 +321,39 @@ class WindowsDNGLabStrategy(DNGLabBinaryStrategy):
         binary_name = self.get_binary_filename()
         machine = platform.machine().lower()
 
-        self.logger.debug(
-            f"Searching for DNGLab binary - system: {system_name}, "
-            f"machine: {machine}, mapped_arch: {arch}, binary_name: {binary_name}"
+        self.logger.info(
+            f"Windows DNGLab search: system={system_name}, "
+            f"machine={machine}, mapped_arch={arch}, binary_name={binary_name}"
         )
 
         # Try bundled binary first
+        self.logger.info("Windows: Checking for bundled DNGLab binary...")
         binary_path = self._check_bundled_binary(system_name, arch, binary_name)
         if binary_path:
+            self.logger.info(f"Windows: Found bundled DNGLab at {binary_path}")
             return binary_path
+        else:
+            self.logger.warning("Windows: Bundled DNGLab binary not found")
 
         # Try system PATH
+        self.logger.info("Windows: Checking system PATH for DNGLab...")
         binary_path = self._check_system_path(binary_name)
         if binary_path:
+            self.logger.info(f"Windows: Found DNGLab in PATH at {binary_path}")
             return binary_path
+        else:
+            self.logger.info("Windows: DNGLab not found in system PATH")
 
         # Try local build directory
+        self.logger.info("Windows: Checking local build directory...")
         binary_path = self._check_local_build(system_name, arch, binary_name)
         if binary_path:
+            self.logger.info(f"Windows: Found local DNGLab at {binary_path}")
             return binary_path
+        else:
+            self.logger.info("Windows: DNGLab not found in local build directory")
 
-        self.logger.warning("No DNGLab binary found in any search location")
+        self.logger.error("Windows: No DNGLab binary found in any search location")
         return None
 
 

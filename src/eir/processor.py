@@ -130,7 +130,8 @@ class ImageProcessor:
             os.makedirs(dst_dir)
             self._logger.info(f"Created destination directory: {dst_dir}")
 
-        # Configure DNG converter based on platform
+        # CRITICAL: Configure DNG converter BEFORE initializing DNGConverter
+        # This ensures pydngconverter can find the bundled binary during initialization
         self._configure_dng_converter()
 
         # Debug: Check environment variable before conversion
