@@ -276,7 +276,7 @@ class TestFileOperations:
         )
 
     @pytest.mark.asyncio
-    @patch("eir.processor.DNGConverter")
+    @patch("pydngconverter.DNGConverter")
     @patch("os.makedirs")
     @patch("os.path.exists")
     async def test_convert_raw_to_dng(

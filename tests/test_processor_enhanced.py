@@ -423,7 +423,6 @@ class TestFileGroupProcessing:
             ),
             patch("os.path.exists", return_value=False),
             patch("os.makedirs") as mock_makedirs,
-            patch("asyncio.gather", new_callable=AsyncMock) as mock_gather,
         ):
             test_value = {
                 "canon_eosr5_cr2": [
@@ -435,17 +434,23 @@ class TestFileGroupProcessing:
                 ],
             }
 
-            # Mock the file operations to avoid actual file system calls
-            with patch("os.listdir", return_value=[]), patch("shutil.rmtree"), patch("os.remove"):
+            # Mock the file operations and RAW conversion to avoid actual file system calls
+            async def mock_convert_async(*args, **kwargs):
+                return None
+
+            with (
+                patch("os.listdir", return_value=[]),
+                patch("shutil.rmtree"),
+                patch("os.remove"),
+                patch.object(processor, "convert_raw_to_dng", side_effect=mock_convert_async),
+                patch.object(processor, "_delete_original_raw_files"),
+            ):
                 await processor._process_file_group(ListType.RAW_IMAGE_DICT.value, test_value)
 
             # Should create directories
             assert mock_makedirs.call_count == 2
             mock_makedirs.assert_any_call("canon_eosr5_cr2")
             mock_makedirs.assert_any_call("canon_eosr5_jpg")
-
-            # Should call gather for rename tasks
-            mock_gather.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_raw_conversion_complete(self, mock_logger):
@@ -456,14 +461,9 @@ class TestFileGroupProcessing:
         async def mock_convert_async(*args, **kwargs):
             return None
 
-        # Create proper async mock for gather
-        async def mock_gather_async(*args, **kwargs):
-            return None
-
         with (
             patch.object(processor, "convert_raw_to_dng", side_effect=mock_convert_async),
             patch.object(processor, "_delete_original_raw_files") as mock_delete,
-            patch("asyncio.gather", side_effect=mock_gather_async) as mock_gather,
         ):
             test_value = {
                 "canon_eosr5_cr2": [{"SourceFile": "photo1.cr2"}],
@@ -479,7 +479,8 @@ class TestFileGroupProcessing:
                 ("nikon_d850_nef", "nikon_d850_dng"),
             ]
 
-            mock_gather.assert_called_once()
+            # Verify convert_raw_to_dng was called for each conversion (sequential)
+            assert processor.convert_raw_to_dng.call_count == 2
             mock_delete.assert_called_once_with(expected_conversions)
 
     @patch("shutil.rmtree")
@@ -561,7 +562,7 @@ class TestErrorHandlingAndEdgeCases:
                 await processor.extract_exif_metadata(["test.jpg"])
 
     @pytest.mark.asyncio
-    @patch("eir.processor.DNGConverter")
+    @patch("pydngconverter.DNGConverter")
     async def test_convert_raw_to_dng_exception(self, mock_dng_converter, mock_logger):
         """Test RAW to DNG conversion when converter fails."""
         mock_converter = AsyncMock()

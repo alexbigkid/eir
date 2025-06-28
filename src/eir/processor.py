@@ -16,8 +16,8 @@ from typing import Any
 import reactivex as rx
 from reactivex import operators as ops
 from reactivex.scheduler.eventloop import AsyncIOScheduler
-from pydngconverter import DNGConverter
-import pydngconverter.compat
+
+# Import pydngconverter lazily to avoid early executable resolution
 import exiftool
 
 from eir.abk_common import function_trace, PerformanceTimer
@@ -98,9 +98,6 @@ class ImageProcessor:
         )
         self._project_name = None
 
-        # Configure DNG converter early
-        self._configure_dng_converter()
-
     @property
     def project_name(self) -> str:
         """Returns project name extracted from directory."""
@@ -130,7 +127,7 @@ class ImageProcessor:
             os.makedirs(dst_dir)
             self._logger.info(f"Created destination directory: {dst_dir}")
 
-        # CRITICAL: Configure DNG converter BEFORE initializing DNGConverter
+        # CRITICAL: Configure DNG converter BEFORE importing pydngconverter
         # This ensures pydngconverter can find the bundled binary during initialization
         self._configure_dng_converter()
 
@@ -159,6 +156,11 @@ class ImageProcessor:
         else:
             self._logger.warning(f"Source directory does not exist: {src_dir}")
             # Continue anyway to maintain compatibility with existing tests
+
+        # Import pydngconverter AFTER configuring DNGLab
+        self._logger.info("Importing pydngconverter after DNGLab configuration...")
+        from pydngconverter import DNGConverter
+        import pydngconverter.compat
 
         self._logger.info(f"Initializing DNGConverter with source={src_dir}, dest={dst_dir}")
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
@@ -725,10 +727,9 @@ class ImageProcessor:
 
         if convert_list:
             self._logger.info(f"{convert_list = }")
-            convert_tasks = [
-                self.convert_raw_to_dng(old_dir, new_dir) for old_dir, new_dir in convert_list
-            ]
-            await asyncio.gather(*convert_tasks)
+            # Process conversions sequentially to ensure proper configuration
+            for old_dir, new_dir in convert_list:
+                await self.convert_raw_to_dng(old_dir, new_dir)
             self._delete_original_raw_files(convert_list)
 
 
