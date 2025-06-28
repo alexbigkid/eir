@@ -26,7 +26,7 @@ class DNGLabDownloader:
         self.arch_mapping = {
             "windows": {"amd64": "x64", "x86_64": "x64", "arm64": "arm64", "aarch64": "arm64"},
             "darwin": {"x86_64": "x86_64", "arm64": "arm64", "aarch64": "arm64"},
-            "linux": {"x86_64": "x86_64", "aarch64": "aarch64", "arm64": "aarch64"},
+            "linux": {"x86_64": "x64", "aarch64": "aarch64", "arm64": "aarch64"},
         }
 
         # Binary naming patterns per platform

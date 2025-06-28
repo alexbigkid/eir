@@ -54,22 +54,26 @@ def download_dnglab():
     print(f"Downloading DNGLab for {platform.system()}...")
     print(f"Current working directory: {Path.cwd()}")
 
-    # Run the unified Python download script
-    script_path = Path(".github/scripts/download_dnglab.py")
-    print(f"Looking for download script: {script_path}")
+    try:
+        # Import and use the DNGLab downloader directly
+        sys.path.insert(0, str(Path(".github/scripts")))
+        from download_dnglab import DNGLabDownloader
 
-    if script_path.exists():
-        print(f"Found download script: {script_path}")
-        print("Running DNGLab download script...")
-        result = subprocess.run([sys.executable, str(script_path)], check=False)  # noqa: S603
-        if result.returncode == 0:
+        downloader = DNGLabDownloader()
+        success = downloader.download_and_setup()
+
+        if success:
             print("DNGLab downloaded successfully")
         else:
-            print(f"DNGLab download failed with exit code {result.returncode}")
+            print("DNGLab download failed")
             print("DNG conversion may not work")
-    else:
-        print(f"DNGLab download script not found: {script_path}")
-        print(f"Skipping DNGLab download - not supported on {platform.system()}")
+
+    except ImportError as e:
+        print(f"Could not import DNGLab downloader: {e}")
+        print("DNG conversion may not work")
+    except Exception as e:
+        print(f"DNGLab download failed: {e}")
+        print("DNG conversion may not work")
 
 
 def setup_data_files():
