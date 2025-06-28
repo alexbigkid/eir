@@ -136,7 +136,8 @@ class DNGLabBinaryStrategy(ABC):
         dnglab_path = extraction_root / "tools" / system_name / arch / binary_name
         self.logger.info(f"Computed bundled path: {dnglab_path}")
         self.logger.info(f"Extraction root used: {extraction_root}")
-        self.logger.info(f"Does tools directory exist at extraction root: {(extraction_root / 'tools').exists()}")
+        tools_exists = (extraction_root / "tools").exists()
+        self.logger.info(f"Does tools directory exist at extraction root: {tools_exists}")
         return dnglab_path
 
     def _find_extraction_root(self, start_dir: Path) -> Path:
