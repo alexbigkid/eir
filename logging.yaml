@@ -17,7 +17,7 @@ handlers:
         stream: ext://sys.stdout
     fileHandler:
         class: logging.handlers.RotatingFileHandler
-        level: DEBUG
+        level: WARNING
         formatter: abkFormatterLong
         filename: logs/eir.log
         maxBytes: 1048576  # 1MB
@@ -37,7 +37,7 @@ loggers:
         qualname: consoleLogger
         propagate: no
     fileLogger:
-        level: DEBUG
+        level: WARNING
         handlers: [fileHandler]
         qualname: fileLogger
         propagate: no
@@ -47,7 +47,7 @@ loggers:
         qualname: threadedConsoleLogger
         propagate: no
     threadedFileLogger:
-        level: DEBUG
+        level: WARNING
         handlers: [queueHandler]
         qualname: threadedFileLogger
         propagate: no
