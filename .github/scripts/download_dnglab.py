@@ -230,12 +230,12 @@ class DNGLabDownloader:
         print(f"📁 Path: {final_binary_path}")
         print(f"📊 Size: {file_size} bytes")
 
-        # Test binary
-        if not self.test_binary(final_binary_path):
-            return False
-
-        print("🎉 DNGLab setup complete!")
-        return True
+        # Test binary and return result
+        success = self.test_binary(final_binary_path)
+        if success:
+            print("🎉 DNGLab setup complete!")
+        
+        return success
 
 
 def main():
