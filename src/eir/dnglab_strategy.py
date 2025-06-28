@@ -307,9 +307,7 @@ class DNGLabBinaryStrategy(ABC):
             parent_str = str(start_dir.parent).lower()
             nuitka_patterns = ["onefile_", "onefil"]
             if any(pattern in parent_str for pattern in nuitka_patterns):
-                self.logger.info(
-                    f"Detected 'eir' subdirectory in Nuitka extraction: {start_dir}"
-                )
+                self.logger.info(f"Detected 'eir' subdirectory in Nuitka extraction: {start_dir}")
                 candidate_root = start_dir.parent
                 if (candidate_root / "tools").exists():
                     self.logger.info(f"Found tools directory at parent: {candidate_root}")
