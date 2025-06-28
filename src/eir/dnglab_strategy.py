@@ -96,16 +96,11 @@ class DNGLabBinaryStrategy(ABC):
         is_frozen = getattr(sys, "frozen", False)
         is_pyinstaller = hasattr(sys, "_MEIPASS")
 
-        # Log detection info
-        self.logger.info(
+        # Log detection info at debug level
+        self.logger.debug(
             f"Bundled detection: frozen={is_frozen}, "
             f"pyinstaller={is_pyinstaller}, nuitka_onefile={is_nuitka_onefile}"
         )
-        self.logger.info(f"Current file path: {current_file_path}")
-        self.logger.info(f"Current path string (lowercase): {current_path_str}")
-        self.logger.info(f"Nuitka temp detection: {is_nuitka_temp}")
-        self.logger.info(f"sys.frozen attribute: {getattr(sys, 'frozen', 'Not set')}")
-        self.logger.info(f"sys._MEIPASS attribute: {getattr(sys, '_MEIPASS', 'Not set')}")
 
         return {
             "is_bundled": is_frozen or is_pyinstaller or is_nuitka_onefile,
@@ -129,136 +124,67 @@ class DNGLabBinaryStrategy(ABC):
 
     def _get_nuitka_bundled_path(self, system_name: str, arch: str, binary_name: str) -> Path:
         """Get the bundled binary path for Nuitka onefile."""
-        # Alternative approach: Use multiple detection methods for Nuitka onefile
-        self.logger.error("=== STARTING Nuitka Bundled Path Detection ===")
-        print("=== STARTING Nuitka Bundled Path Detection ===")  # Force output to console
-
         # Method 1: Check for sys.executable's directory (Nuitka onefile extraction)
-        self.logger.error("=== STARTING Method 1 ===")
-        print("=== STARTING Method 1 ===")
         try:
             import sys
 
             executable_dir = Path(sys.executable).parent
-            self.logger.error(f"Method 1 - sys.executable dir: {executable_dir}")
-            print(f"Method 1 - sys.executable dir: {executable_dir}")
-
-            # For Nuitka onefile, the data should be extracted alongside the executable
             tools_path_1 = executable_dir / "tools" / system_name / arch / binary_name
-            self.logger.error(f"Method 1 - checking path: {tools_path_1}")
-            print(f"Method 1 - checking path: {tools_path_1}")
             if tools_path_1.exists():
-                self.logger.error(f"Method 1 SUCCESS: Found bundled DNGLab at {tools_path_1}")
-                print(f"Method 1 SUCCESS: Found bundled DNGLab at {tools_path_1}")
+                self.logger.info(f"Found bundled DNGLab via executable dir: {tools_path_1}")
                 return tools_path_1
-            else:
-                self.logger.error(f"Method 1 - path does not exist: {tools_path_1}")
-                print(f"Method 1 - path does not exist: {tools_path_1}")
         except Exception as e:
-            self.logger.error(f"Method 1 failed: {e}")
-            print(f"Method 1 failed: {e}")
+            self.logger.debug(f"Method 1 failed: {e}")
 
         # Method 2: Check current working directory and its parents
-        self.logger.error("=== STARTING Method 2 ===")
-        print("=== STARTING Method 2 ===")
         try:
             cwd = Path.cwd()
-            self.logger.error(f"Method 2 - current working dir: {cwd}")
-            print(f"Method 2 - current working dir: {cwd}")
-
             for check_dir in [cwd, cwd.parent, cwd.parent.parent]:
                 tools_path_2 = check_dir / "tools" / system_name / arch / binary_name
-                self.logger.error(f"Method 2 - checking path: {tools_path_2}")
-                print(f"Method 2 - checking path: {tools_path_2}")
                 if tools_path_2.exists():
-                    self.logger.error(f"Method 2 SUCCESS: Found bundled DNGLab at {tools_path_2}")
-                    print(f"Method 2 SUCCESS: Found bundled DNGLab at {tools_path_2}")
+                    self.logger.info(f"Found bundled DNGLab via working dir: {tools_path_2}")
                     return tools_path_2
-                else:
-                    self.logger.error(f"Method 2 - path does not exist: {tools_path_2}")
-                    print(f"Method 2 - path does not exist: {tools_path_2}")
         except Exception as e:
-            self.logger.error(f"Method 2 failed: {e}")
-            print(f"Method 2 failed: {e}")
+            self.logger.debug(f"Method 2 failed: {e}")
 
-        # Method 3: Check __file__ location and traverse up (original approach)
-        self.logger.error("=== STARTING Method 3 ===")
-        print("=== STARTING Method 3 ===")
+        # Method 3: Check __file__ location and traverse up (main approach)
         try:
             current_file_dir = Path(__file__).parent
-            self.logger.error(f"Method 3 - current file directory: {current_file_dir}")
-            print(f"Method 3 - current file directory: {current_file_dir}")
-
-            # Find the extraction root that contains the tools directory
             extraction_root = self._find_extraction_root(current_file_dir)
-            self.logger.error(f"Method 3 - extraction root: {extraction_root}")
-            print(f"Method 3 - extraction root: {extraction_root}")
-
             tools_path_3 = extraction_root / "tools" / system_name / arch / binary_name
-            self.logger.error(f"Method 3 - checking path: {tools_path_3}")
-            print(f"Method 3 - checking path: {tools_path_3}")
             if tools_path_3.exists():
-                self.logger.error(f"Method 3 SUCCESS: Found bundled DNGLab at {tools_path_3}")
-                print(f"Method 3 SUCCESS: Found bundled DNGLab at {tools_path_3}")
+                self.logger.info(f"Found bundled DNGLab via extraction root: {tools_path_3}")
                 return tools_path_3
-            else:
-                self.logger.error(f"Method 3 - path does not exist: {tools_path_3}")
-                print(f"Method 3 - path does not exist: {tools_path_3}")
-
-            # Enhanced Windows debugging for Method 3
-            if system_name == "windows":
-                self.logger.error("=== Method 3 Windows Analysis ===")
-                print("=== Method 3 Windows Analysis ===")
-                self._debug_windows_extraction(extraction_root, system_name, arch, binary_name)
-
         except Exception as e:
-            self.logger.error(f"Method 3 failed: {e}")
-            print(f"Method 3 failed: {e}")
+            self.logger.debug(f"Method 3 failed: {e}")
 
         # Method 4: Brute force search in temp directories (Windows specific)
         if system_name == "windows":
-            self.logger.error("=== STARTING Method 4 ===")
-            print("=== STARTING Method 4 ===")
             try:
-                self.logger.error("Method 4 - Windows temp directory search")
-                print("Method 4 - Windows temp directory search")
                 import tempfile
 
                 temp_dir = Path(tempfile.gettempdir())
-                self.logger.error(f"Method 4 - temp dir: {temp_dir}")
-                print(f"Method 4 - temp dir: {temp_dir}")
-
                 # Look for Nuitka onefile patterns in temp
                 for item in temp_dir.iterdir():
                     if item.is_dir() and (
                         "onefile" in item.name.lower() or "onefil" in item.name.lower()
                     ):
                         tools_path_4 = item / "tools" / system_name / arch / binary_name
-                        self.logger.error(f"Method 4 - checking temp path: {tools_path_4}")
-                        print(f"Method 4 - checking temp path: {tools_path_4}")
                         if tools_path_4.exists():
-                            self.logger.error(
-                                f"Method 4 SUCCESS: Found bundled DNGLab at {tools_path_4}"
+                            self.logger.info(
+                                f"Found bundled DNGLab via temp search: {tools_path_4}"
                             )
-                            print(f"Method 4 SUCCESS: Found bundled DNGLab at {tools_path_4}")
                             return tools_path_4
 
                         # Also check one level down for eir subdirectory
                         eir_tools_path = item / "eir" / "tools" / system_name / arch / binary_name
                         if eir_tools_path.exists():
-                            self.logger.error(
-                                f"Method 4 SUCCESS: Found bundled DNGLab in eir subdir at "
-                                f"{eir_tools_path}"
-                            )
-                            print(
-                                f"Method 4 SUCCESS: Found bundled DNGLab in eir subdir at "
-                                f"{eir_tools_path}"
+                            self.logger.info(
+                                f"Found bundled DNGLab in eir subdir: {eir_tools_path}"
                             )
                             return eir_tools_path
-
             except Exception as e:
-                self.logger.error(f"Method 4 failed: {e}")
-                print(f"Method 4 failed: {e}")
+                self.logger.debug(f"Method 4 failed: {e}")
 
         # If all methods failed, return the best guess from Method 3
         fallback_path = (
@@ -268,9 +194,7 @@ class DNGLabBinaryStrategy(ABC):
             / arch
             / binary_name
         )
-        self.logger.error(
-            f"All detection methods failed. Returning fallback path: {fallback_path}"
-        )
+        self.logger.warning(f"All detection methods failed. Using fallback: {fallback_path}")
         return fallback_path
 
     def _debug_windows_extraction(
@@ -280,58 +204,18 @@ class DNGLabBinaryStrategy(ABC):
         try:
             if extraction_root.exists():
                 items = list(extraction_root.iterdir())
-                self.logger.error(f"Windows extraction root item count: {len(items)}")
-                print(f"Windows extraction root item count: {len(items)}")
-                self.logger.error(
-                    f"Windows extraction root contents: {[item.name for item in items[:15]]}"
+                self.logger.debug(f"Extraction root contains {len(items)} items")
+
+                # Check if tools directory exists
+                tools_found = any(
+                    item.is_dir() and item.name.lower() == "tools" for item in items
                 )
-                print(f"Windows extraction root contents: {[item.name for item in items[:15]]}")
-
-                # Check if tools directory exists with different casing or names
-                tools_found = False
-                for item in items:
-                    if item.is_dir():
-                        item_name_lower = item.name.lower()
-                        if item_name_lower == "tools":
-                            tools_found = True
-                            self.logger.error(f"Found tools directory with casing: '{item.name}'")
-                            print(f"Found tools directory with casing: '{item.name}'")
-                            break
-                        elif "tool" in item_name_lower:
-                            self.logger.error(f"Found tool-related directory: '{item.name}'")
-                            print(f"Found tool-related directory: '{item.name}'")
-
                 if not tools_found:
-                    self.logger.error("Windows: No 'tools' directory found in extraction root")
-                    print("Windows: No 'tools' directory found in extraction root")
-
-                    # Check if bundled files are in a different structure
-                    self.logger.error("Windows: Searching for any dnglab-related files...")
-                    print("Windows: Searching for any dnglab-related files...")
-                    for item in items:
-                        if item.is_file() and "dnglab" in item.name.lower():
-                            self.logger.error(f"Found dnglab file in root: {item}")
-                            print(f"Found dnglab file in root: {item}")
-                        elif item.is_dir():
-                            # Check one level down for dnglab files
-                            try:
-                                sub_items = list(item.iterdir())
-                                for sub_item in sub_items[:5]:  # Limit search
-                                    if sub_item.is_file() and "dnglab" in sub_item.name.lower():
-                                        self.logger.error(
-                                            f"Found dnglab file in {item.name}: {sub_item}"
-                                        )
-                                        print(f"Found dnglab file in {item.name}: {sub_item}")
-                            except Exception as e:
-                                self.logger.error(f"Could not read directory {item.name}: {e}")
-                                print(f"Could not read directory {item.name}: {e}")
+                    self.logger.warning("No 'tools' directory found in extraction root")
             else:
-                self.logger.error(f"Windows extraction root does not exist: {extraction_root}")
-                print(f"Windows extraction root does not exist: {extraction_root}")
-
+                self.logger.warning(f"Extraction root does not exist: {extraction_root}")
         except Exception as e:
-            self.logger.error(f"Could not analyze Windows extraction directory: {e}")
-            print(f"Could not analyze Windows extraction directory: {e}")
+            self.logger.debug(f"Could not analyze extraction directory: {e}")
 
     def _find_extraction_root(self, start_dir: Path) -> Path:
         """Find the extraction root directory containing bundled data."""
@@ -422,50 +306,30 @@ class DNGLabBinaryStrategy(ABC):
         return extraction_root
 
     def _debug_extraction_directory(self) -> None:
-        """Debug helper to list extraction directory contents."""
-        extraction_dir = Path(__file__).parent
-        levels_checked = 0
-        max_debug_levels = 3  # Limit debug search to prevent massive output
-
-        while extraction_dir.parent != extraction_dir and levels_checked < max_debug_levels:
-            nuitka_patterns = ["onefile_", "onefil"]  # Include Windows short name pattern
-            if any(
-                any(pattern in name.lower() for pattern in nuitka_patterns)
-                for name in extraction_dir.parts
-            ):
-                break
-            extraction_dir = extraction_dir.parent
-            levels_checked += 1
-
-        # Skip debug if we're at filesystem root or in a suspicious location
-        if str(extraction_dir) in ["/", "C:\\", "C:"]:
-            self.logger.warning("Skipping debug listing - at filesystem root")
-            return
-
-        self.logger.info(f"Extraction directory contents (for debugging): {extraction_dir}")
+        """Debug helper to check extraction directory for tools."""
         try:
-            # Only check immediate children, limit the number shown
-            max_items = 20  # Limit to prevent spam
+            extraction_dir = Path(__file__).parent
+            levels_checked = 0
+            max_debug_levels = 3
 
-            for items_shown, item in enumerate(extraction_dir.iterdir()):
-                if items_shown >= max_items:
-                    self.logger.info(f"  ... (showing only first {max_items} items)")
+            while extraction_dir.parent != extraction_dir and levels_checked < max_debug_levels:
+                nuitka_patterns = ["onefile_", "onefil"]
+                if any(
+                    any(pattern in name.lower() for pattern in nuitka_patterns)
+                    for name in extraction_dir.parts
+                ):
                     break
+                extraction_dir = extraction_dir.parent
+                levels_checked += 1
 
-                if item.is_file() and "dnglab" in item.name:
-                    self.logger.info(f"Found dnglab-related file: {item}")
-                elif item.is_dir() and item.name == "tools":
-                    self.logger.info(f"Found tools directory: {item}")
-                    # Only show top-level structure of tools directory
-                    for tool_items_shown, tool_item in enumerate(item.iterdir()):
-                        if tool_items_shown >= 5:  # Limit tools listing
-                            self.logger.info("    ... (showing only first 5 tools items)")
-                            break
-                        self.logger.info(f"  Tools content: {tool_item}")
-                elif item.is_dir():
-                    self.logger.info(f"Found directory: {item}")
-        except (OSError, PermissionError) as e:
-            self.logger.warning(f"Could not list extraction directory for debugging: {e}")
+            # Check for tools directory
+            tools_dir = extraction_dir / "tools"
+            if tools_dir.exists():
+                self.logger.debug(f"Found tools directory at: {tools_dir}")
+            else:
+                self.logger.debug(f"No tools directory found in: {extraction_dir}")
+        except Exception as e:
+            self.logger.debug(f"Could not check extraction directory: {e}")
 
     def _check_local_build(self, system_name: str, arch: str, binary_name: str) -> str | None:
         """Check for binary in local build directory (development)."""
@@ -559,39 +423,28 @@ class WindowsDNGLabStrategy(DNGLabBinaryStrategy):
         binary_name = self.get_binary_filename()
         machine = platform.machine().lower()
 
-        self.logger.info(
+        self.logger.debug(
             f"Windows DNGLab search: system={system_name}, "
             f"machine={machine}, mapped_arch={arch}, binary_name={binary_name}"
         )
 
         # Try bundled binary first
-        self.logger.info("Windows: Checking for bundled DNGLab binary...")
         binary_path = self._check_bundled_binary(system_name, arch, binary_name)
         if binary_path:
-            self.logger.info(f"Windows: Found bundled DNGLab at {binary_path}")
+            self.logger.info(f"Found bundled DNGLab at {binary_path}")
             return binary_path
-        else:
-            self.logger.warning("Windows: Bundled DNGLab binary not found")
 
         # Try system PATH
-        self.logger.info("Windows: Checking system PATH for DNGLab...")
         binary_path = self._check_system_path(binary_name)
         if binary_path:
-            self.logger.info(f"Windows: Found DNGLab in PATH at {binary_path}")
             return binary_path
-        else:
-            self.logger.info("Windows: DNGLab not found in system PATH")
 
         # Try local build directory
-        self.logger.info("Windows: Checking local build directory...")
         binary_path = self._check_local_build(system_name, arch, binary_name)
         if binary_path:
-            self.logger.info(f"Windows: Found local DNGLab at {binary_path}")
             return binary_path
-        else:
-            self.logger.info("Windows: DNGLab not found in local build directory")
 
-        self.logger.warning("Windows: No DNGLab binary found in any search location")
+        self.logger.warning("No DNGLab binary found in any search location")
         return None
 
 
