@@ -353,7 +353,7 @@ class WindowsDNGLabStrategy(DNGLabBinaryStrategy):
         else:
             self.logger.info("Windows: DNGLab not found in local build directory")
 
-        self.logger.error("Windows: No DNGLab binary found in any search location")
+        self.logger.warning("Windows: No DNGLab binary found in any search location")
         return None
 
 
