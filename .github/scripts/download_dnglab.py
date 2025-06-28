@@ -175,6 +175,7 @@ class DNGLabDownloader:
                 [str(binary_path), "--help"],
                 capture_output=True,
                 timeout=10,
+                check=False,
             )
             if result.returncode == 0:
                 print("✅ DNGLab binary is working correctly")
