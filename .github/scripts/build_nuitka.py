@@ -99,20 +99,21 @@ def setup_data_files():
 def setup_dnglab_bundle():
     """Set up DNGLab binary for bundling."""
     system_name = platform.system().lower()
-    dnglab_path = None
+    machine = platform.machine().lower()
 
-    if system_name == "linux":
-        machine = platform.machine().lower()
-        dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
-        dnglab_path = Path(f"build/linux/tools/{dnglab_arch}/dnglab")
-    elif system_name == "windows":
-        machine = platform.machine().lower()
-        dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
-        dnglab_path = Path(f"build/windows/tools/{dnglab_arch}/dnglab.exe")
-    elif system_name == "darwin":
-        machine = platform.machine().lower()
-        dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x86_64"
-        dnglab_path = Path(f"build/darwin/tools/{dnglab_arch}/dnglab")
+    match system_name:
+        case "linux":
+            dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+            dnglab_path = Path(f"build/linux/tools/{dnglab_arch}/dnglab")
+        case "windows":
+            dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
+            dnglab_path = Path(f"build/windows/tools/{dnglab_arch}/dnglab.exe")
+        case "darwin":
+            dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x86_64"
+            dnglab_path = Path(f"build/darwin/tools/{dnglab_arch}/dnglab")
+        case _:
+            print(f"Unsupported platform: {system_name}")
+            return False
 
     if dnglab_path and dnglab_path.exists():
         # Create tools directory structure in nuitka_data
