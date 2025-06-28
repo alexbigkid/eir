@@ -22,9 +22,6 @@ class DNGLabDownloader:
         self.arch = platform.machine().lower()
         self.github_token = os.environ.get("GITHUB_TOKEN")
 
-        # Platform mappings
-        self.platform_mapping = {"windows": "windows", "darwin": "darwin", "linux": "linux"}
-
         # Architecture mappings per platform
         self.arch_mapping = {
             "windows": {"amd64": "x64", "x86_64": "x64", "arm64": "arm64", "aarch64": "arm64"},
@@ -81,10 +78,10 @@ class DNGLabDownloader:
 
     def get_platform_info(self):
         """Get platform and architecture information."""
-        if self.platform_name not in self.platform_mapping:
+        if self.platform_name not in self.arch_mapping:
             raise ValueError(f"Unsupported platform: {self.platform_name}")
 
-        platform_key = self.platform_mapping[self.platform_name]
+        platform_key = self.platform_name
 
         # Special handling for Windows architecture detection
         if self.platform_name == "windows":
