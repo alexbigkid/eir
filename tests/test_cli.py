@@ -12,7 +12,7 @@ class TestMain:
     """Test the main function."""
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_basic_execution(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test basic execution flow of main function."""
@@ -38,7 +38,7 @@ class TestMain:
         mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="/test/path")
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_with_different_directory(
         self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
@@ -62,7 +62,7 @@ class TestMain:
         )
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_with_current_directory(
         self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
@@ -84,7 +84,7 @@ class TestMain:
         mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir=".")
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_handles_clo_exception(
         self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
@@ -103,7 +103,7 @@ class TestMain:
         mock_asyncio_run.assert_not_called()
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_handles_asyncio_exception(
         self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
@@ -129,7 +129,7 @@ class TestMain:
         mock_clo_instance.handle_options.assert_called_once()
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_logger_parameter_passing(
         self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
@@ -152,7 +152,7 @@ class TestMain:
         mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="/test/path")
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_integration_flow(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test the integration flow of main function."""
@@ -179,7 +179,7 @@ class TestMain:
         assert mock_asyncio_run.call_count == 1
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_no_return_value(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test that main function doesn't return a value."""
@@ -213,7 +213,7 @@ class TestMain:
         assert hasattr(asyncio, "run")
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_parameter_types(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test that main passes parameters with correct types."""
@@ -272,7 +272,7 @@ class TestMainAsyncBehavior:
 
         with (
             patch("eir.cli.asyncio.run", side_effect=capture_and_run_coroutine),
-            patch("eir.cli.run_pipeline") as mock_run_pipeline,
+            patch("eir.processor.run_pipeline") as mock_run_pipeline,
         ):
             # Create a proper coroutine function
             async def mock_coro():
@@ -304,7 +304,7 @@ class TestMainAsyncBehavior:
 
         with (
             patch(
-                "eir.cli.run_pipeline",
+                "eir.processor.run_pipeline",
                 side_effect=lambda **kwargs: failing_pipeline(
                     kwargs.get("logger"), kwargs.get("image_dir")
                 ),
@@ -346,16 +346,14 @@ class TestMainDocumentation:
         assert hasattr(eir.cli, "main")
         assert hasattr(eir.cli, "asyncio")
         assert hasattr(eir.cli, "clo")
-
-        # Check imports
-        assert "run_pipeline" in dir(eir.cli)
+        assert hasattr(eir.cli, "_configure_dnglab_early")
 
 
 class TestMainEdgeCases:
     """Test edge cases and error conditions."""
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_with_none_logger(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function when logger is None."""
@@ -373,7 +371,7 @@ class TestMainEdgeCases:
         mock_run_pipeline.assert_called_once_with(logger=None, image_dir="/test/path")
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_with_empty_directory(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function with empty directory string."""
@@ -393,7 +391,7 @@ class TestMainEdgeCases:
         mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="")
 
     @patch("eir.cli.asyncio.run")
-    @patch("eir.cli.run_pipeline")
+    @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
     def test_main_keyboard_interrupt(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function handles KeyboardInterrupt."""

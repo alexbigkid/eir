@@ -134,14 +134,139 @@ class DNGLabBinaryStrategy(ABC):
         # <extraction_dir>/tools/system/arch/binary
         current_file_dir = Path(__file__).parent
         self.logger.info(f"Searching from extraction directory: {current_file_dir}")
+        self.logger.info(f"Absolute extraction directory: {current_file_dir.absolute()}")
+
+        # Enhanced Windows path debugging - address path length and short name issues
+        if system_name == "windows":
+            self.logger.info("=== Windows Path Analysis ===")
+
+            # Check path length (Windows has 260 char limit for full paths)
+            current_path_str = str(current_file_dir.absolute())
+            self.logger.info(f"Windows current path length: {len(current_path_str)} chars")
+            self.logger.info(f"Windows current path: {current_path_str}")
+
+            if len(current_path_str) > 240:  # Close to 260 limit
+                self.logger.warning(
+                    f"Windows path is long ({len(current_path_str)} chars) - may cause issues"
+                )
+
+            # Check for Windows short names (8.3 format) indicators
+            short_name_indicators = ["~1", "~2", "~3", "ONEFIL~", "PROGRA~", "DOCUME~"]
+            has_short_names = any(
+                indicator in current_path_str.upper() for indicator in short_name_indicators
+            )
+            if has_short_names:
+                self.logger.info("Windows path contains short name patterns (8.3 format)")
+
+            # Try to resolve any short names to long names
+            try:
+                import ctypes
+                from ctypes import wintypes
+
+                # Try to get the long path name
+                get_long_path_name = ctypes.windll.kernel32.GetLongPathNameW
+                get_long_path_name.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+                get_long_path_name.restype = wintypes.DWORD
+
+                buffer_size = 500
+                buffer = ctypes.create_unicode_buffer(buffer_size)
+                result = get_long_path_name(current_path_str, buffer, buffer_size)
+
+                if result > 0:
+                    long_path = buffer.value
+                    self.logger.info(f"Windows long path name: {long_path}")
+                    if long_path != current_path_str:
+                        self.logger.info("Windows path was expanded from short name")
+                        current_file_dir = Path(long_path)
+                else:
+                    self.logger.info("Windows GetLongPathName did not return a different path")
+
+            except Exception as e:
+                self.logger.warning(f"Could not resolve Windows long path name: {e}")
+
+            # Standard path resolution
+            try:
+                resolved_dir = current_file_dir.resolve()
+                self.logger.info(f"Windows resolved path: {resolved_dir}")
+                if str(resolved_dir) != str(current_file_dir):
+                    self.logger.info("Windows path changed after resolve()")
+                    current_file_dir = resolved_dir
+            except Exception as e:
+                self.logger.warning(f"Could not resolve Windows path: {e}")
 
         # Find the extraction root that contains the tools directory
         extraction_root = self._find_extraction_root(current_file_dir)
         dnglab_path = extraction_root / "tools" / system_name / arch / binary_name
         self.logger.info(f"Computed bundled path: {dnglab_path}")
+        self.logger.info(f"Absolute bundled path: {dnglab_path.absolute()}")
         self.logger.info(f"Extraction root used: {extraction_root}")
+        self.logger.info(f"Absolute extraction root: {extraction_root.absolute()}")
         tools_exists = (extraction_root / "tools").exists()
         self.logger.info(f"Does tools directory exist at extraction root: {tools_exists}")
+
+        # Enhanced Windows debugging - comprehensive directory analysis
+        if system_name == "windows":
+            self.logger.info("=== Windows Directory Analysis ===")
+            try:
+                items = list(extraction_root.iterdir())
+                self.logger.info(f"Windows extraction root item count: {len(items)}")
+                self.logger.info(
+                    f"Windows extraction root contents: {[item.name for item in items[:15]]}"
+                )
+
+                # Check the computed path length
+                computed_path_str = str(dnglab_path.absolute())
+                self.logger.info(
+                    f"Windows computed DNGLab path length: {len(computed_path_str)} chars"
+                )
+                if len(computed_path_str) > 260:
+                    self.logger.error(
+                        f"Windows computed path exceeds 260 char limit: {computed_path_str}"
+                    )
+
+                # Check if tools directory exists with different casing or names
+                tools_found = False
+                for item in items:
+                    if item.is_dir():
+                        item_name_lower = item.name.lower()
+                        if item_name_lower == "tools":
+                            tools_found = True
+                            self.logger.info(f"Found tools directory with casing: '{item.name}'")
+                            if item.name != "tools":
+                                # Use the actual casing found
+                                dnglab_path = (
+                                    extraction_root / item.name / system_name / arch / binary_name
+                                )
+                                self.logger.info(
+                                    f"Corrected path with actual casing: {dnglab_path}"
+                                )
+                        elif "tool" in item_name_lower:
+                            self.logger.info(f"Found tool-related directory: '{item.name}'")
+
+                if not tools_found:
+                    self.logger.warning("Windows: No 'tools' directory found in extraction root")
+
+                    # Check if bundled files are in a different structure
+                    self.logger.info("Windows: Searching for any dnglab-related files...")
+                    for item in items:
+                        if item.is_file() and "dnglab" in item.name.lower():
+                            self.logger.info(f"Found dnglab file in root: {item}")
+                        elif item.is_dir():
+                            # Check one level down for dnglab files
+                            try:
+                                sub_items = list(item.iterdir())
+                                for sub_item in sub_items[:5]:  # Limit search
+                                    if sub_item.is_file() and "dnglab" in sub_item.name.lower():
+                                        self.logger.info(
+                                            f"Found dnglab file in {item.name}: {sub_item}"
+                                        )
+                            except Exception as e:
+                                # Skip directories we can't read, but log briefly
+                                self.logger.debug(f"Could not read directory {item.name}: {e}")
+
+            except Exception as e:
+                self.logger.warning(f"Could not analyze Windows extraction directory: {e}")
+
         return dnglab_path
 
     def _find_extraction_root(self, start_dir: Path) -> Path:
