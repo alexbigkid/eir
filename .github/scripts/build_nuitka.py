@@ -254,10 +254,26 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
 
     # Handle data directory inclusion with platform-specific approach
     if platform.system().lower() == "windows":
-        # Windows: Use forward slashes and try alternative approach
-        data_dir_forward = str(data_dir.absolute()).replace("\\", "/")
-        cmd.append(f"--include-data-dir={data_dir_forward}=.")
-        print(f"Windows: Using forward slash path for Nuitka: {data_dir_forward}")
+        # Windows: Use individual file inclusion due to Nuitka subdirectory bundling issues
+
+        # Include top-level data files
+        for top_level_file in data_dir.glob("*"):
+            if top_level_file.is_file():
+                file_forward = str(top_level_file.absolute()).replace("\\", "/")
+                cmd.append(f"--include-data-files={file_forward}={top_level_file.name}")
+                print(f"Windows: Including data file: {top_level_file.name}")
+
+        # Include DNGLab binary explicitly with full path structure
+        for tool_file in data_dir.glob("tools/**/*"):
+            if tool_file.is_file():
+                # Calculate relative path from data_dir
+                rel_path = tool_file.relative_to(data_dir)
+                file_forward = str(tool_file.absolute()).replace("\\", "/")
+                rel_path_forward = str(rel_path).replace("\\", "/")
+                cmd.append(f"--include-data-files={file_forward}={rel_path_forward}")
+                print(f"Windows: Including tool file: {rel_path_forward}")
+
+        print("Windows: Using individual file inclusion instead of data dir")
     else:
         # Linux/macOS: Use standard approach
         cmd.append(f"--include-data-dir={data_dir.absolute()}=.")
