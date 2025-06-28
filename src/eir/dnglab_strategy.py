@@ -245,7 +245,7 @@ class LinuxDNGLabStrategy(DNGLabBinaryStrategy):
     def get_architecture_mapping(self) -> str:
         """Get Linux architecture mapping."""
         machine = platform.machine().lower()
-        return "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+        return "aarch64" if machine in ["aarch64", "arm64"] else "x64"
 
     def get_binary_filename(self) -> str:
         """Get Linux binary filename."""

@@ -59,7 +59,8 @@ def download_dnglab():
         success = downloader.download_and_setup()
 
         if not success:
-            print("WARNING: DNGLab download failed - DNG conversion may not work")
+            print("ERROR: DNGLab download failed - build cannot continue")
+            raise RuntimeError("DNGLab download failed")
 
     except ImportError as e:
         print(f"ERROR: Could not import DNGLab downloader: {e}")
@@ -97,7 +98,7 @@ def setup_dnglab_bundle():
 
     match system_name:
         case "linux":
-            dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x86_64"
+            dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x64"
             dnglab_path = Path(f"build/linux/tools/{dnglab_arch}/dnglab")
         case "windows":
             dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
