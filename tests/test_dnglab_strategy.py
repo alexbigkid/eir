@@ -72,7 +72,7 @@ class TestLinuxDNGLabStrategy:
         with patch("platform.machine", return_value="x86_64"):
             arch = strategy.get_architecture_mapping()
 
-        assert arch == "x86_64"
+        assert arch == "x64"
 
     def test_architecture_mapping_arm64(self):
         """Test ARM64 architecture mapping for Linux."""
