@@ -53,26 +53,40 @@ def clean_build_dirs():
 
 def download_dnglab():
     """Download DNGLab binary for DNG conversion using unified cross-platform script."""
-    print(f"Downloading DNGLab for {platform.system()}...")
-    print(f"Current working directory: {Path.cwd()}")
+    print("\n" + "="*60)
+    print("STARTING DNGLAB DOWNLOAD PROCESS")
+    print("="*60)
+    print(f"Platform: {platform.system()}")
+    print(f"Architecture: {platform.machine()}")
+    print(f"Working directory: {Path.cwd()}")
+    print("-" * 60)
 
     try:
         # Use the DNGLab downloader directly
+        print("Initializing DNGLab downloader...")
         downloader = DNGLabDownloader()
+        
+        print("Starting download and setup process...")
         success = downloader.download_and_setup()
-
+        
+        print("-" * 60)
         if success:
-            print("DNGLab downloaded successfully")
+            print("DNGLAB DOWNLOAD COMPLETED SUCCESSFULLY")
+            print("DNGLab binary is ready for bundling")
         else:
-            print("DNGLab download failed")
-            print("DNG conversion may not work")
+            print("DNGLAB DOWNLOAD FAILED")
+            print("WARNING: DNG conversion may not work in final executable")
 
     except ImportError as e:
-        print(f"Could not import DNGLab downloader: {e}")
-        print("DNG conversion may not work")
+        print(f"ERROR: Could not import DNGLab downloader: {e}")
+        print("WARNING: DNG conversion may not work in final executable")
     except Exception as e:
-        print(f"DNGLab download failed: {e}")
-        print("DNG conversion may not work")
+        print(f"ERROR: DNGLab download failed with error: {e}")
+        print("WARNING: DNG conversion may not work in final executable")
+    
+    print("="*60)
+    print("DNGLAB DOWNLOAD PROCESS COMPLETE")
+    print("="*60 + "\n")
 
 
 def setup_data_files():
