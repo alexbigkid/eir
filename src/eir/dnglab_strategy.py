@@ -147,7 +147,10 @@ class DNGLabBinaryStrategy(ABC):
                 break
             # Check if we're in a Nuitka extraction directory (including Windows short names)
             nuitka_patterns = ["onefile_", "onefil"]  # Include Windows short name pattern
-            if any(any(pattern in name.lower() for pattern in nuitka_patterns) for name in extraction_root.parts):
+            if any(
+                any(pattern in name.lower() for pattern in nuitka_patterns)
+                for name in extraction_root.parts
+            ):
                 # Look for tools in this directory or parent directories (limited search)
                 for check_dir in [
                     extraction_root,
@@ -179,7 +182,10 @@ class DNGLabBinaryStrategy(ABC):
 
         while extraction_dir.parent != extraction_dir and levels_checked < max_debug_levels:
             nuitka_patterns = ["onefile_", "onefil"]  # Include Windows short name pattern
-            if any(any(pattern in name.lower() for pattern in nuitka_patterns) for name in extraction_dir.parts):
+            if any(
+                any(pattern in name.lower() for pattern in nuitka_patterns)
+                for name in extraction_dir.parts
+            ):
                 break
             extraction_dir = extraction_dir.parent
             levels_checked += 1
