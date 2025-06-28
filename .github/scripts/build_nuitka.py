@@ -99,7 +99,7 @@ def setup_dnglab_bundle():
     system_name = platform.system().lower()
     machine = platform.machine().lower()
 
-    print(f"=== DNGLab Bundle Setup ===")
+    print("=== DNGLab Bundle Setup ===")
     print(f"System: {system_name}")
     print(f"Machine: {machine}")
 
@@ -135,7 +135,7 @@ def setup_dnglab_bundle():
         print(f"Absolute dest path: {dest_path.absolute()}")
 
         # Verify the bundled structure
-        print(f"=== Nuitka Data Directory Structure ===")
+        print("=== Nuitka Data Directory Structure ===")
         try:
             for item in data_dir.rglob("*"):
                 print(f"  {item}")
@@ -150,11 +150,11 @@ def setup_dnglab_bundle():
     else:
         print(f"DNGLab binary not found at: {dnglab_path}")
         print(f"Absolute path checked: {dnglab_path.absolute()}")
-        
+
         # Debug: Show what's in the build directory
         build_dir = Path("build")
         if build_dir.exists():
-            print(f"=== Build Directory Contents ===")
+            print("=== Build Directory Contents ===")
             try:
                 for item in build_dir.rglob("*"):
                     if "dnglab" in item.name.lower():
@@ -165,7 +165,7 @@ def setup_dnglab_bundle():
                 print(f"Could not list build directory: {e}")
         else:
             print("Build directory does not exist")
-        
+
         return False
 
 
@@ -218,13 +218,13 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         output_name += ".exe"
 
     # Enhanced debugging for data directory bundling
-    print(f"=== Nuitka Data Directory Info ===")
+    print("=== Nuitka Data Directory Info ===")
     print(f"Data dir path: {data_dir}")
     print(f"Data dir absolute: {data_dir.absolute()}")
     print(f"Data dir exists: {data_dir.exists()}")
-    
+
     if data_dir.exists():
-        print(f"Data dir contents:")
+        print("Data dir contents:")
         try:
             for item in data_dir.rglob("*"):
                 print(f"  {item}")
@@ -251,7 +251,7 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
         "--show-progress",
         "--show-memory",
     ]
-    
+
     # Handle data directory inclusion with platform-specific approach
     if platform.system().lower() == "windows":
         # Windows: Use forward slashes and try alternative approach
@@ -287,13 +287,13 @@ MAINTAINERS = {project.get("maintainers", [{"name": "ABK", "email": "unknown"}])
 
     print("Build completed successfully!")
     print(f"Executable location: dist/{output_name}")
-    
+
     # Verify the build output exists
     exe_path = Path(f"dist/{output_name}")
     if exe_path.exists():
         exe_size = exe_path.stat().st_size
         print(f"Executable size: {exe_size} bytes")
-        
+
         # Additional verification for Windows bundling
         if platform.system().lower() == "windows":
             print("=== Windows Build Verification ===")
