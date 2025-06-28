@@ -169,10 +169,7 @@ class DNGLabDownloader:
 
         try:
             result = subprocess.run(  # noqa: S603
-                [str(binary_path), "--help"],
-                capture_output=True,
-                timeout=10,
-                check=False,
+                [str(binary_path), "--help"], capture_output=True, timeout=10, check=False
             )
             if result.returncode == 0:
                 print("✅ DNGLab binary is working correctly")
@@ -231,11 +228,7 @@ class DNGLabDownloader:
         print(f"📊 Size: {file_size} bytes")
 
         # Test binary and return result
-        success = self.test_binary(final_binary_path)
-        if success:
-            print("🎉 DNGLab setup complete!")
-        
-        return success
+        return self.test_binary(final_binary_path)
 
 
 def main():
@@ -248,6 +241,7 @@ def main():
         success = downloader.download_and_setup()
 
         if success:
+            print("🎉 DNGLab setup complete!")
             print(f"✅ Exit: {__file__} (0)")
             sys.exit(0)
         else:
