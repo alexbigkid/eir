@@ -163,7 +163,7 @@ class ImageProcessor:
         self._logger.info("Importing pydngconverter after DNGLab configuration...")
         from pydngconverter import DNGConverter
         import pydngconverter.compat
-        
+
         # Set pydngconverter logging to match our app's root logger configuration
         root_logger = logging.getLogger()
         pydng_logger = logging.getLogger("pydngconverter")
@@ -370,7 +370,6 @@ class ImageProcessor:
     def _test_dnglab_binary(self, dnglab_path: str) -> None:
         """Test DNGLab binary to verify it's working."""
         try:
-
             self._logger.debug(f"Testing DNGLab binary functionality: {dnglab_path}")
 
             # Test with --help flag to verify binary works
