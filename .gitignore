@@ -13,6 +13,7 @@ wheels/
 
 # Build and package artifacts
 packages/
+nuitka_data/
 *.deb
 *.nupkg
 *.tar.gz

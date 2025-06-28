@@ -71,6 +71,12 @@ jobs:
             arch_bin_ext: linux-aarch64
             runner: ubuntu-24.04-arm
             os_name: linux
+          - name: "macOS Universal"
+            os: macos-latest
+            arch: universal
+            arch_bin_ext: macos-universal
+            runner: macos-latest
+            os_name: macos
           - name: "Windows amd64"
             os: windows-latest
             arch: amd64
@@ -84,12 +90,6 @@ jobs:
           #   arch_bin_ext: windows-arm64.exe
           #   runner: windows-11-arm
           #   os_name: windows
-          - name: "macOS Universal"
-            os: macos-latest
-            arch: universal
-            arch_bin_ext: macos-universal
-            runner: macos-latest
-            os_name: macos
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
