@@ -60,14 +60,17 @@ def download_dnglab():
 
         if not success:
             print("ERROR: DNGLab download failed - build cannot continue")
-            raise RuntimeError("DNGLab download failed")
+            print("CRITICAL: Exiting build process due to missing DNGLab binary")
+            sys.exit(1)
 
     except ImportError as e:
         print(f"ERROR: Could not import DNGLab downloader: {e}")
-        print("WARNING: DNG conversion may not work")
+        print("CRITICAL: Exiting build process due to import failure")
+        sys.exit(1)
     except Exception as e:
         print(f"ERROR: DNGLab download failed: {e}")
-        print("WARNING: DNG conversion may not work")
+        print("CRITICAL: Exiting build process due to download failure")
+        sys.exit(1)
 
 
 def setup_data_files():
