@@ -154,6 +154,12 @@ class TestRealImageIntegration:
         self, directory: Path, prefix: str = "", is_last: bool = True
     ) -> None:
         """Show directory tree using Python with clean formatting."""
+        # Use ASCII-compatible characters for Windows compatibility
+        is_windows = platform.system().lower() == "windows"
+        branch = "+-- " if is_windows else "├── "
+        last_branch = "`-- " if is_windows else "└── "
+        vertical = "|   " if is_windows else "│   "
+
         if prefix == "":
             # Root directory
             if directory.is_file():
@@ -175,14 +181,14 @@ class TestRealImageIntegration:
             if item.is_file():
                 size_bytes = item.stat().st_size
                 size_str = self._format_file_size(size_bytes)
-                connector = "└── " if is_last_item else "├── "
+                connector = last_branch if is_last_item else branch
                 print(f"{prefix}{connector}[{size_str:>12}]  {item.name}")
             else:
-                connector = "└── " if is_last_item else "├── "
+                connector = last_branch if is_last_item else branch
                 print(f"{prefix}{connector}[       4096]  {item.name}")
 
                 # Recursively show subdirectory contents
-                extension = "    " if is_last_item else "│   "
+                extension = "    " if is_last_item else vertical
                 self._show_directory_tree_python(item, prefix + extension, is_last_item)
 
     def _format_file_size(self, size_bytes: int) -> str:
