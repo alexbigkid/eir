@@ -232,7 +232,7 @@ class ImageProcessor:
 
                 # Log the full command being executed
                 full_command = f"{self.bin_exec} {' '.join(dng_args)}"
-                log.info(
+                log.debug(
                     "Executing %s command: %s",
                     "DNGLab" if is_dnglab else "Adobe DNG Converter",
                     full_command,
@@ -244,7 +244,7 @@ class ImageProcessor:
                 log.debug("Destination directory exists: %s", Path(destination).exists())
                 log.debug("Current working directory: %s", Path.cwd())
 
-                log.info("converting: %s => %s", job.source.name, job.destination_filename)
+                log.debug("converting: %s => %s", job.source.name, job.destination_filename)
 
                 try:
                     proc = await asyncio.create_subprocess_exec(
@@ -267,7 +267,7 @@ class ImageProcessor:
                         # Still report as finished to maintain compatibility, but with error info
                         log.warning("Conversion reported as finished despite errors")
                     else:
-                        log.info("DNGLab conversion succeeded (return code 0)")
+                        log.debug("DNGLab conversion succeeded (return code 0)")
                         if stdout:
                             stdout_text = stdout.decode("utf-8", errors="replace")
                             if stdout_text.strip():
@@ -277,7 +277,7 @@ class ImageProcessor:
                     log.error("Exception during DNGLab subprocess execution: %s", e)
                     raise
 
-                log.info("finished conversion: %s", job.destination_filename)
+                log.debug("finished conversion: %s", job.destination_filename)
                 return job.destination
 
             # Apply the patch

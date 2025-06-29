@@ -44,11 +44,11 @@ class TestRealImageIntegration:
             if not binary_path.name.endswith(".exe"):
                 binary_path.chmod(0o755)
 
-            # Use default logging (no -q flag) to capture DNG conversion logging
-            cmd = [str(binary_path), "-d", str(target_dir)]
+            # Use quiet mode to suppress INFO logging during integration tests
+            cmd = [str(binary_path), "-q", "-d", str(target_dir)]
         else:
-            # Use uv run for local development with default logging
-            cmd = ["uv", "run", "eir", "-d", str(target_dir)]
+            # Use uv run for local development with quiet mode
+            cmd = ["uv", "run", "eir", "-q", "-d", str(target_dir)]
 
         try:
             result = subprocess.run(  # noqa: S603
