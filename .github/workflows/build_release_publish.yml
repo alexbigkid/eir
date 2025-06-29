@@ -143,14 +143,12 @@ jobs:
         if: matrix.os_name == 'macos'
         run: |
           brew install exiftool tree
-          brew install --cask adobe-dng-converter
 
       - name: Install system dependencies for integration tests (Linux)
         if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y exiftool tree
-          # Adobe DNG Converter not available on Linux - tests may fail
 
       - name: Install system dependencies for integration tests (Windows)
         if: matrix.os_name == 'windows'

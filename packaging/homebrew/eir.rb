@@ -6,7 +6,6 @@ class Eir < Formula
   sha256 "REPLACE_WITH_ACTUAL_SHA256"
 
   depends_on "exiftool"
-  depends_on cask: "adobe-dng-converter"
 
   def install
     bin.install "eir-#{version}-macos-universal" => "eir"
