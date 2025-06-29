@@ -120,33 +120,18 @@ class TestRealImageIntegration:
         print("=" * len(title))
 
         try:
-            if platform.system().lower() == "windows":
-                # Windows tree command
-                result = subprocess.run(
-                    ["tree", str(directory), "/F"], capture_output=True, text=True, check=False
-                )
-            else:
+            # Try native tree cmd on Unix systems only (Windows tree output is poorly formatted)
+            if platform.system().lower() != "windows":
                 # Unix tree command with file sizes
                 result = subprocess.run(
                     ["tree", "-s", str(directory)], capture_output=True, text=True, check=False
                 )
+                if result.returncode == 0:
+                    print(result.stdout)
+                    return
 
-            if result.returncode == 0:
-                print(result.stdout)
-            else:
-                # Fallback if tree command fails
-                print(f"Directory: {directory}")
-                for item in sorted(directory.rglob("*")):
-                    if item.is_file():
-                        rel_path = item.relative_to(directory)
-                        size_bytes = item.stat().st_size
-                        if size_bytes > 1024 * 1024:
-                            size_mb = size_bytes / (1024 * 1024)
-                            size_unit = "MB"
-                        else:
-                            size_mb = size_bytes / 1024
-                            size_unit = "KB"
-                        print(f"  {rel_path} ({size_mb:.1f} {size_unit})")
+            # Use Python-based tree display for Windows or when tree command fails
+            self._show_directory_tree_python(directory)
         except Exception as e:
             print(f"Could not display tree structure: {e}")
             # Simple fallback listing
@@ -164,6 +149,52 @@ class TestRealImageIntegration:
                         size_mb = size_bytes / 1024
                         size_unit = "KB"
                     print(f"  {item.name} ({size_mb:.1f} {size_unit})")
+
+    def _show_directory_tree_python(
+        self, directory: Path, prefix: str = "", is_last: bool = True
+    ) -> None:
+        """Show directory tree using Python with clean formatting."""
+        if prefix == "":
+            # Root directory
+            if directory.is_file():
+                size_bytes = directory.stat().st_size
+                size_str = self._format_file_size(size_bytes)
+                print(f"[{size_str:>12}]  {directory.name}")
+            else:
+                print(f"[       4096]  {directory}")
+
+        # Get and sort directory contents
+        try:
+            items = sorted(directory.iterdir(), key=lambda x: (x.is_file(), x.name.lower()))
+        except PermissionError:
+            return
+
+        for i, item in enumerate(items):
+            is_last_item = i == len(items) - 1
+
+            if item.is_file():
+                size_bytes = item.stat().st_size
+                size_str = self._format_file_size(size_bytes)
+                connector = "└── " if is_last_item else "├── "
+                print(f"{prefix}{connector}[{size_str:>12}]  {item.name}")
+            else:
+                connector = "└── " if is_last_item else "├── "
+                print(f"{prefix}{connector}[       4096]  {item.name}")
+
+                # Recursively show subdirectory contents
+                extension = "    " if is_last_item else "│   "
+                self._show_directory_tree_python(item, prefix + extension, is_last_item)
+
+    def _format_file_size(self, size_bytes: int) -> str:
+        """Format file size in human-readable format."""
+        if size_bytes >= 1024 * 1024 * 1024:
+            return f"{size_bytes / (1024 * 1024 * 1024):.1f}G"
+        elif size_bytes >= 1024 * 1024:
+            return f"{size_bytes / (1024 * 1024):.1f}M"
+        elif size_bytes >= 1024:
+            return f"{size_bytes / 1024:.1f}K"
+        else:
+            return str(size_bytes)
 
     def get_mixed_date_directories(self, test_images_dir: Path) -> list[str]:
         """Discover all mixed date range directories (YYYYMMDD-YYYYMMDD pattern)."""
