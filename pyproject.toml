@@ -24,7 +24,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "coverage",
-    "parameterized",
     "ruff",
     "pytest",
     "pytest-asyncio",
