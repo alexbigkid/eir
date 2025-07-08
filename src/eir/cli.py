@@ -40,7 +40,10 @@ def main():
     command_line_options.handle_options()
     asyncio.run(
         run_pipeline(
-            logger=command_line_options.logger, image_dir=command_line_options.options.dir
+            logger=command_line_options.logger,
+            image_dir=command_line_options.options.dir,
+            dng_compression=command_line_options.options.dng_compression,
+            dng_preview=command_line_options.options.dng_preview,
         )
     )
 

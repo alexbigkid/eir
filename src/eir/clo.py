@@ -66,6 +66,18 @@ class CommandLineOptions:
         parser.add_argument(
             "-v", "--version", action="store_true", help="Show version info and exit"
         )
+        parser.add_argument(
+            "--dng-compression",
+            choices=["lossless", "uncompressed"],
+            default="lossless",
+            help="DNG compression method: lossless (default) or uncompressed",
+        )
+        parser.add_argument(
+            "--dng-preview",
+            action="store_true",
+            default=False,
+            help="Embed JPEG preview in DNG files (increases file size)",
+        )
         self.options = parser.parse_args()
 
         if self.options.version:

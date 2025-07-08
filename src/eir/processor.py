@@ -90,10 +90,18 @@ class ImageProcessor:
     EXIF_UNKNOWN = "unknown"
     EXIF_TAGS = [ExifTag.CREATE_DATE.value, ExifTag.MAKE.value, ExifTag.MODEL.value]
 
-    def __init__(self, logger: logging.Logger, op_dir: str):
+    def __init__(
+        self,
+        logger: logging.Logger,
+        op_dir: str,
+        dng_compression: str = "lossless",
+        dng_preview: bool = False,
+    ):
         """Initialize ImageProcessor."""
         self._logger = logger or logging.getLogger(__name__)
         self._op_dir = op_dir
+        self._dng_compression = dng_compression
+        self._dng_preview = dng_preview
         self._current_dir = None
         self._supported_raw_image_ext_list = list(
             set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts])
@@ -196,11 +204,15 @@ class ImageProcessor:
             # Also patch the convert_file method to add proper error handling
             from pydngconverter import main as pydng_main
 
+            # Capture our compression settings for the patch
+            dng_compression = self._dng_compression
+            dng_preview = self._dng_preview
+
             async def patched_convert_file(self, *, destination: str = None, job=None, log=None):
                 """Enhanced convert_file with better error handling and logging."""
                 from pydngconverter import compat
 
-                log = log or self._logger
+                log = log or logging.getLogger(__name__)
                 log.debug("starting conversion: %s", job.source.name)
                 source_path = await compat.get_compat_path(job.source)
                 log.debug("determined source path: %s", source_path)
@@ -219,10 +231,12 @@ class ImageProcessor:
                     output_file = Path(destination) / f"{Path(source_path).stem}.dng"
                     dng_args = [
                         "convert",
-                        "--compression",
-                        "lossless",
+                        "-c",
+                        dng_compression,  # Use captured compression setting
                         "--dng-preview",
-                        "true",
+                        "true" if dng_preview else "false",
+                        "--embed-raw",
+                        "false",  # CRITICAL: Don't embed original RAW to prevent double size
                         str(source_path),
                         str(output_file),
                     ]
@@ -232,7 +246,7 @@ class ImageProcessor:
 
                 # Log the full command being executed
                 full_command = f"{self.bin_exec} {' '.join(dng_args)}"
-                log.debug(
+                log.info(
                     "Executing %s command: %s",
                     "DNGLab" if is_dnglab else "Adobe DNG Converter",
                     full_command,
@@ -244,7 +258,9 @@ class ImageProcessor:
                 log.debug("Destination directory exists: %s", Path(destination).exists())
                 log.debug("Current working directory: %s", Path.cwd())
 
-                log.debug("converting: %s => %s", job.source.name, job.destination_filename)
+                log.info(
+                    "Starting conversion: %s => %s", job.source.name, job.destination_filename
+                )
 
                 try:
                     proc = await asyncio.create_subprocess_exec(
@@ -254,6 +270,7 @@ class ImageProcessor:
                         stderr=asyncio.subprocess.PIPE,
                     )
                     stdout, stderr = await proc.communicate()
+                    log.info("DNGLab process completed with return code: %d", proc.returncode)
 
                     # Check return code and log any errors
                     if proc.returncode != 0:
@@ -737,12 +754,21 @@ class ImageProcessor:
 
 
 @function_trace
-async def run_pipeline(logger: logging.Logger, image_dir: str) -> None:
+async def run_pipeline(
+    logger: logging.Logger,
+    image_dir: str,
+    dng_compression: str = "lossless",
+    dng_preview: bool = False,
+) -> None:
     """Main entry point for reactive image processing pipeline.
 
     Args:
         logger: Logger instance
         image_dir: Directory containing images to process
+        dng_compression: DNG compression method ('lossless' or 'uncompressed')
+        dng_preview: Whether to embed JPEG preview in DNG files
     """
-    processor = ImageProcessor(logger=logger, op_dir=image_dir)
+    processor = ImageProcessor(
+        logger=logger, op_dir=image_dir, dng_compression=dng_compression, dng_preview=dng_preview
+    )
     await processor.process_images_reactive()
