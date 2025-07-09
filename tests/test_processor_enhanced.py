@@ -594,7 +594,9 @@ class TestIntegrationScenarios:
 
             await run_pipeline(mock_logger, "/test/dir")
 
-            mock_processor_class.assert_called_once_with(logger=mock_logger, op_dir="/test/dir")
+            mock_processor_class.assert_called_once_with(
+                logger=mock_logger, op_dir="/test/dir", dng_compression="lossless", dng_preview=False
+            )
             mock_processor.process_images_reactive.assert_called_once()
 
     def test_multiple_file_types_classification(self, mock_logger):

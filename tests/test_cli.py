@@ -19,7 +19,7 @@ class TestMain:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -35,7 +35,9 @@ class TestMain:
 
         # Verify run_pipeline was called with correct arguments
         # The call_args is a coroutine, we need to check if run_pipeline was called correctly
-        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="/test/path")
+        mock_run_pipeline.assert_called_once_with(
+            logger=mock_logger, image_dir="/test/path", dng_compression="lossless", dng_preview=False
+        )
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
@@ -45,7 +47,7 @@ class TestMain:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/another/test/directory")
+        mock_options = Namespace(dir="/another/test/directory", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -55,7 +57,9 @@ class TestMain:
         main()
 
         # Verify run_pipeline was called with correct directory
-        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="/another/test/directory")
+        mock_run_pipeline.assert_called_once_with(
+            logger=mock_logger, image_dir="/another/test/directory", dng_compression="lossless", dng_preview=False
+        )
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
@@ -65,7 +69,7 @@ class TestMain:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir=".")
+        mock_options = Namespace(dir=".", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -75,7 +79,9 @@ class TestMain:
         main()
 
         # Verify run_pipeline was called with current directory
-        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir=".")
+        mock_run_pipeline.assert_called_once_with(
+            logger=mock_logger, image_dir=".", dng_compression="lossless", dng_preview=False
+        )
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
@@ -102,7 +108,7 @@ class TestMain:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -127,7 +133,7 @@ class TestMain:
         mock_clo_instance = Mock()
         mock_logger = Mock()
         mock_logger.name = "test_logger"
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -137,7 +143,9 @@ class TestMain:
         main()
 
         # Verify the logger object is passed correctly
-        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="/test/path")
+        mock_run_pipeline.assert_called_once_with(
+            logger=mock_logger, image_dir="/test/path", dng_compression="lossless", dng_preview=False
+        )
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
@@ -147,7 +155,7 @@ class TestMain:
         # Setup complete mock chain
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/integration/test")
+        mock_options = Namespace(dir="/integration/test", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -174,7 +182,7 @@ class TestMain:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -208,7 +216,7 @@ class TestMain:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -223,9 +231,13 @@ class TestMain:
         # Verify parameter types and names
         assert "logger" in call_kwargs
         assert "image_dir" in call_kwargs
+        assert "dng_compression" in call_kwargs
+        assert "dng_preview" in call_kwargs
         assert call_kwargs["logger"] is mock_logger
         assert isinstance(call_kwargs["image_dir"], str)
         assert call_kwargs["image_dir"] == "/test/path"
+        assert call_kwargs["dng_compression"] == "lossless"
+        assert call_kwargs["dng_preview"] is False
 
 
 class TestMainAsyncBehavior:
@@ -237,7 +249,7 @@ class TestMainAsyncBehavior:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -280,20 +292,22 @@ class TestMainAsyncBehavior:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
         mock_clo_class.return_value = mock_clo_instance
 
         # Create a coroutine function that raises an exception
-        async def failing_pipeline(logger, image_dir):
+        async def failing_pipeline(logger, image_dir, dng_compression, dng_preview):
             raise ValueError("Pipeline failed")
 
         with (
             patch(
                 "eir.processor.run_pipeline",
-                side_effect=lambda **kwargs: failing_pipeline(kwargs.get("logger"), kwargs.get("image_dir")),
+                side_effect=lambda **kwargs: failing_pipeline(
+                    kwargs.get("logger"), kwargs.get("image_dir"), kwargs.get("dng_compression"), kwargs.get("dng_preview")
+                ),
             ),
             pytest.raises(ValueError, match="Pipeline failed"),
         ):
@@ -346,7 +360,7 @@ class TestMainEdgeCases:
         # Setup mocks with None logger
         mock_clo_instance = Mock()
         mock_clo_instance.logger = None
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
         mock_clo_instance.options = mock_options
         mock_clo_class.return_value = mock_clo_instance
 
@@ -354,7 +368,9 @@ class TestMainEdgeCases:
         main()
 
         # Should still work and pass None as logger
-        mock_run_pipeline.assert_called_once_with(logger=None, image_dir="/test/path")
+        mock_run_pipeline.assert_called_once_with(
+            logger=None, image_dir="/test/path", dng_compression="lossless", dng_preview=False
+        )
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
@@ -364,7 +380,7 @@ class TestMainEdgeCases:
         # Setup mocks with empty directory
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="")
+        mock_options = Namespace(dir="", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
@@ -374,7 +390,7 @@ class TestMainEdgeCases:
         main()
 
         # Should pass empty string as directory
-        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="")
+        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="", dng_compression="lossless", dng_preview=False)
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
@@ -384,7 +400,7 @@ class TestMainEdgeCases:
         # Setup mocks
         mock_clo_instance = Mock()
         mock_logger = Mock()
-        mock_options = Namespace(dir="/test/path")
+        mock_options = Namespace(dir="/test/path", dng_compression="lossless", dng_preview=False)
 
         mock_clo_instance.logger = mock_logger
         mock_clo_instance.options = mock_options
