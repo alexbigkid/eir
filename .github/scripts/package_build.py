@@ -104,9 +104,7 @@ def create_debian_package(version):
         control_content = Path("packaging/debian/control").read_text(encoding="utf-8")
         # Replace any existing version with the new one
         control_content = re.sub(r"Version:\s+[^\s]+", f"Version: {version}", control_content)
-        control_content = control_content.replace(
-            "Architecture: amd64", f"Architecture: {deb_arch}"
-        )
+        control_content = control_content.replace("Architecture: amd64", f"Architecture: {deb_arch}")
 
         control_file = debian_dir / "control"
         control_file.write_text(control_content, encoding="utf-8")
@@ -134,10 +132,7 @@ def create_debian_package(version):
             Path(deb_filename).parent.mkdir(parents=True, exist_ok=True)
 
             result = subprocess.run(  # noqa: S603,S607
-                ["dpkg-deb", "--build", str(pkg_dir), deb_filename],
-                check=True,
-                capture_output=True,
-                text=True,
+                ["dpkg-deb", "--build", str(pkg_dir), deb_filename], check=True, capture_output=True, text=True
             )
             print(f"stdout: {result.stdout}")
 
@@ -195,10 +190,7 @@ def create_apt_repository(_version, deb_packages):
 
         # Create Packages file
         result = subprocess.run(  # noqa: S603,S607
-            ["dpkg-scanpackages", f"pool/{component}", "/dev/null"],
-            capture_output=True,
-            text=True,
-            check=True,
+            ["dpkg-scanpackages", f"pool/{component}", "/dev/null"], capture_output=True, text=True, check=True
         )
 
         # Write Packages file for each architecture
@@ -233,9 +225,7 @@ Date: {now}
         # Add checksums for all architectures
         all_packages_files = []
         for arch in architectures:
-            all_packages_files.extend(
-                [f"{component}/binary-{arch}/Packages", f"{component}/binary-{arch}/Packages.gz"]
-            )
+            all_packages_files.extend([f"{component}/binary-{arch}/Packages", f"{component}/binary-{arch}/Packages.gz"])
 
         # MD5Sum (keeping for compatibility even though it's insecure)
         release_content += "MD5Sum:\n"
@@ -300,9 +290,7 @@ def update_chocolatey_package(version, checksum):
     content = re.sub(r"\$version\s*=\s*'[^']*'", f"$version = '{version}'", content)
     content = content.replace("REPLACE_WITH_ACTUAL_CHECKSUM", checksum)
     # Fix the URL to match the actual binary filename format
-    content = re.sub(
-        r"eir-\$version-windows-amd64\.exe", "eir-$version-windows-x86_64.exe", content
-    )
+    content = re.sub(r"eir-\$version-windows-amd64\.exe", "eir-$version-windows-x86_64.exe", content)
     install_path.write_text(content, encoding="utf-8")
 
     print(f"Updated Chocolatey package files for version {version}")

@@ -35,12 +35,8 @@ class CommandLineOptions:
 
     def handle_options(self) -> None:
         """Handles user specified options and arguments."""
-        parser = ArgumentParser(
-            prog="eir", description="eir - rename and translate images from raw to dng format"
-        )
-        parser.add_argument(
-            "-a", "--about", action="store_true", help="Show detailed project metadata"
-        )
+        parser = ArgumentParser(prog="eir", description="eir - rename and translate images from raw to dng format")
+        parser.add_argument("-a", "--about", action="store_true", help="Show detailed project metadata")
         parser.add_argument(
             "-d",
             "--directory",
@@ -50,22 +46,11 @@ class CommandLineOptions:
             help="directory, where images will be converted and renamed",
         )
         parser.add_argument(
-            "-l",
-            "--log_into_file",
-            action="store_true",
-            dest="log_into_file",
-            default=False,
-            help="log into logs/eir.log",
+            "-l", "--log_into_file", action="store_true", dest="log_into_file", default=False, help="log into logs/eir.log"
         )
         parser.add_argument("-q", "--quiet", action="store_true", help="Suppresses all logs")
-        parser.add_argument(
-            "--verbose",
-            action="store_true",
-            help="Enable verbose debug logging (shows DEBUG level messages)",
-        )
-        parser.add_argument(
-            "-v", "--version", action="store_true", help="Show version info and exit"
-        )
+        parser.add_argument("--verbose", action="store_true", help="Enable verbose debug logging (shows DEBUG level messages)")
+        parser.add_argument("-v", "--version", action="store_true", help="Show version info and exit")
         parser.add_argument(
             "--dng-compression",
             choices=["lossless", "uncompressed"],
@@ -73,10 +58,7 @@ class CommandLineOptions:
             help="DNG compression method: lossless (default) or uncompressed",
         )
         parser.add_argument(
-            "--dng-preview",
-            action="store_true",
-            default=False,
-            help="Embed JPEG preview in DNG files (increases file size)",
+            "--dng-preview", action="store_true", default=False, help="Embed JPEG preview in DNG files (increases file size)"
         )
         self.options = parser.parse_args()
 
@@ -98,9 +80,7 @@ class CommandLineOptions:
             sys.exit(0)
 
         LoggerManager().configure(
-            log_into_file=self.options.log_into_file,
-            quiet=self.options.quiet,
-            verbose=self.options.verbose,
+            log_into_file=self.options.log_into_file, quiet=self.options.quiet, verbose=self.options.verbose
         )
         self.logger = LoggerManager().get_logger()
         self.logger.info(f"{self.options=}")

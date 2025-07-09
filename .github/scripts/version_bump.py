@@ -70,9 +70,7 @@ def main():
         sys.exit(1)
 
     # Update pyproject.toml
-    new_content = re.sub(
-        r'^version = "[^"]+"', f'version = "{new_version}"', content, flags=re.MULTILINE
-    )
+    new_content = re.sub(r'^version = "[^"]+"', f'version = "{new_version}"', content, flags=re.MULTILINE)
 
     pyproject_path.write_text(new_content, encoding="utf-8")
 

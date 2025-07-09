@@ -40,9 +40,7 @@ class TestMain:
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
-    def test_main_with_different_directory(
-        self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
-    ):
+    def test_main_with_different_directory(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function with different directory."""
         # Setup mocks
         mock_clo_instance = Mock()
@@ -57,16 +55,12 @@ class TestMain:
         main()
 
         # Verify run_pipeline was called with correct directory
-        mock_run_pipeline.assert_called_once_with(
-            logger=mock_logger, image_dir="/another/test/directory"
-        )
+        mock_run_pipeline.assert_called_once_with(logger=mock_logger, image_dir="/another/test/directory")
 
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
-    def test_main_with_current_directory(
-        self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
-    ):
+    def test_main_with_current_directory(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function with current directory (default)."""
         # Setup mocks
         mock_clo_instance = Mock()
@@ -86,9 +80,7 @@ class TestMain:
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
-    def test_main_handles_clo_exception(
-        self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
-    ):
+    def test_main_handles_clo_exception(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function handles CommandLineOptions exceptions."""
         # Setup mocks to raise exception
         mock_clo_instance = Mock()
@@ -105,9 +97,7 @@ class TestMain:
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
-    def test_main_handles_asyncio_exception(
-        self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
-    ):
+    def test_main_handles_asyncio_exception(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test main function handles asyncio.run exceptions."""
         # Setup mocks
         mock_clo_instance = Mock()
@@ -131,9 +121,7 @@ class TestMain:
     @patch("eir.cli.asyncio.run")
     @patch("eir.processor.run_pipeline")
     @patch("eir.cli.clo.CommandLineOptions")
-    def test_main_logger_parameter_passing(
-        self, mock_clo_class, mock_run_pipeline, mock_asyncio_run
-    ):
+    def test_main_logger_parameter_passing(self, mock_clo_class, mock_run_pipeline, mock_asyncio_run):
         """Test that logger is passed correctly to run_pipeline."""
         # Setup mocks with specific logger
         mock_clo_instance = Mock()
@@ -305,9 +293,7 @@ class TestMainAsyncBehavior:
         with (
             patch(
                 "eir.processor.run_pipeline",
-                side_effect=lambda **kwargs: failing_pipeline(
-                    kwargs.get("logger"), kwargs.get("image_dir")
-                ),
+                side_effect=lambda **kwargs: failing_pipeline(kwargs.get("logger"), kwargs.get("image_dir")),
             ),
             pytest.raises(ValueError, match="Pipeline failed"),
         ):

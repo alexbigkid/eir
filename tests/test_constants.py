@@ -39,9 +39,7 @@ class TestConst:
         from importlib.metadata import PackageNotFoundError
 
         with (
-            patch(
-                "eir.constants.get_version", side_effect=PackageNotFoundError("Package not found")
-            ),
+            patch("eir.constants.get_version", side_effect=PackageNotFoundError("Package not found")),
             patch.object(_Const, "_load_from_pyproject", return_value=None),
             patch.object(_Const, "_load_from_build_constants", return_value=None),
         ):
@@ -97,30 +95,21 @@ class TestConst:
             assert const.LICENSE == "MIT"
             assert const.KEYWORDS == ["image", "processing", "exif"]
             assert const.AUTHORS == [{"name": "Test Author", "email": "test@example.com"}]
-            assert const.MAINTAINERS == [
-                {"name": "Test Maintainer", "email": "maintainer@example.com"}
-            ]
+            assert const.MAINTAINERS == [{"name": "Test Maintainer", "email": "maintainer@example.com"}]
 
     def test_load_from_pyproject_file_not_found(self, temp_dir):
         """Test loading when pyproject.toml doesn't exist."""
-        with (
-            patch.object(_Const, "_find_normal_project_root", return_value=temp_dir),
-            patch("builtins.print") as mock_print,
-        ):
+        with patch.object(_Const, "_find_normal_project_root", return_value=temp_dir), patch("builtins.print") as mock_print:
             _Const()
             # Should fall back to defaults and print warning
             mock_print.assert_called_once()
-            assert "Warning: failed to load pyproject.toml metadata" in str(
-                mock_print.call_args[0][0]
-            )
+            assert "Warning: failed to load pyproject.toml metadata" in str(mock_print.call_args[0][0])
 
     def test_load_from_pyproject_malformed_toml(self, project_root_dir):
         """Test loading with malformed TOML file."""
         # Create malformed pyproject.toml
         malformed_toml = project_root_dir / "pyproject.toml"
-        malformed_toml.write_text(
-            '[project\nname = "invalid'
-        )  # Missing closing bracket and quote
+        malformed_toml.write_text('[project\nname = "invalid')  # Missing closing bracket and quote
 
         with (
             patch.object(_Const, "_find_normal_project_root", return_value=project_root_dir),
@@ -128,9 +117,7 @@ class TestConst:
         ):
             _Const()
             mock_print.assert_called_once()
-            assert "Warning: failed to load pyproject.toml metadata" in str(
-                mock_print.call_args[0][0]
-            )
+            assert "Warning: failed to load pyproject.toml metadata" in str(mock_print.call_args[0][0])
 
     def test_properties_return_correct_values(self):
         """Test that all properties return the expected values."""
@@ -144,12 +131,8 @@ class TestConst:
             object.__setattr__(const, "_name", "test_name")
             object.__setattr__(const, "_license", {"text": "GPL"})
             object.__setattr__(const, "_keywords", ["test", "keywords"])
-            object.__setattr__(
-                const, "_authors", [{"name": "Author", "email": "author@test.com"}]
-            )
-            object.__setattr__(
-                const, "_maintainers", [{"name": "Maintainer", "email": "maint@test.com"}]
-            )
+            object.__setattr__(const, "_authors", [{"name": "Author", "email": "author@test.com"}])
+            object.__setattr__(const, "_maintainers", [{"name": "Maintainer", "email": "maint@test.com"}])
 
             assert const.VERSION == "2.0.0"
             assert const.NAME == "test_name"

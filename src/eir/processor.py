@@ -14,6 +14,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+import colorama
 import exiftool
 import reactivex as rx
 from reactivex import operators as ops
@@ -21,6 +22,9 @@ from reactivex.scheduler.eventloop import AsyncIOScheduler
 
 from eir.abk_common import function_trace, PerformanceTimer
 from eir.dnglab_strategy import DNGLabStrategyFactory
+
+# Initialize colorama for cross-platform colored output
+colorama.init()
 
 # Import pydngconverter lazily to avoid early executable resolution
 # These imports must happen AFTER _configure_dng_converter() sets PYDNG_DNG_CONVERTER
@@ -62,50 +66,19 @@ class ImageProcessor:
         "Samsung": ["srw"],
         "Sony": ["arw", "sr2"],
     }
-    SUPPORTED_COMPRESSED_IMAGE_EXT_LIST = [
-        "gif",
-        "heic",
-        "jpg",
-        "jpeg",
-        "jng",
-        "mng",
-        "png",
-        "psd",
-        "tiff",
-        "tif",
-    ]
-    SUPPORTED_COMPRESSED_VIDEO_EXT_LIST = [
-        "3g2",
-        "3gp2",
-        "crm",
-        "m4a",
-        "m4b",
-        "m4p",
-        "m4v",
-        "mov",
-        "mp4",
-        "mqv",
-        "qt",
-    ]
+    SUPPORTED_COMPRESSED_IMAGE_EXT_LIST = ["gif", "heic", "jpg", "jpeg", "jng", "mng", "png", "psd", "tiff", "tif"]
+    SUPPORTED_COMPRESSED_VIDEO_EXT_LIST = ["3g2", "3gp2", "crm", "m4a", "m4b", "m4p", "m4v", "mov", "mp4", "mqv", "qt"]
     EXIF_UNKNOWN = "unknown"
     EXIF_TAGS = [ExifTag.CREATE_DATE.value, ExifTag.MAKE.value, ExifTag.MODEL.value]
 
-    def __init__(
-        self,
-        logger: logging.Logger,
-        op_dir: str,
-        dng_compression: str = "lossless",
-        dng_preview: bool = False,
-    ):
+    def __init__(self, logger: logging.Logger, op_dir: str, dng_compression: str = "lossless", dng_preview: bool = False):
         """Initialize ImageProcessor."""
         self._logger = logger or logging.getLogger(__name__)
         self._op_dir = op_dir
         self._dng_compression = dng_compression
         self._dng_preview = dng_preview
         self._current_dir = None
-        self._supported_raw_image_ext_list = list(
-            set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts])
-        )
+        self._supported_raw_image_ext_list = list(set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts]))
         self._project_name = None
 
     @property
@@ -152,9 +125,7 @@ class ImageProcessor:
                 self._logger.debug(f"DNGLab binary is executable: {os.access(env_var, os.X_OK)}")
                 self._logger.debug(f"DNGLab binary size: {env_path.stat().st_size} bytes")
         else:
-            self._logger.warning(
-                "No DNGLab binary configured - will use default Adobe DNG Converter"
-            )
+            self._logger.warning("No DNGLab binary configured - will use default Adobe DNG Converter")
 
         # List RAW files to be converted (if source directory exists)
         src_path = Path(src_dir)
@@ -168,30 +139,25 @@ class ImageProcessor:
             # Continue anyway to maintain compatibility with existing tests
 
         # Import pydngconverter AFTER configuring DNGLab
-        self._logger.info("Importing pydngconverter after DNGLab configuration...")
+        self._logger.debug("Importing pydngconverter after DNGLab configuration...")
         from pydngconverter import DNGConverter
         import pydngconverter.compat
 
-        # Set pydngconverter logging to match our app's root logger configuration
-        root_logger = logging.getLogger()
+        # Set pydngconverter logging to WARNING to reduce noise
+        # Even in verbose mode, we don't want pydngconverter internal logs
         pydng_logger = logging.getLogger("pydngconverter")
-        pydng_logger.setLevel(root_logger.getEffectiveLevel())
+        pydng_logger.setLevel(logging.WARNING)  # Always WARNING, never DEBUG/INFO
 
-        self._logger.info(f"Initializing DNGConverter with source={src_dir}, dest={dst_dir}")
+        self._logger.debug(f"Initializing DNGConverter with source={src_dir}, dest={dst_dir}")
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
         # Log DNGConverter configuration
-        self._logger.info("DNGConverter initialized successfully")
-        self._logger.info(f"DNGConverter binary path: {py_dng.bin_exec}")
-        self._logger.info(f"DNGConverter binary type: {type(py_dng.bin_exec)}")
+        self._logger.debug("DNGConverter initialized successfully")
+        self._logger.debug(f"DNGConverter binary path: {py_dng.bin_exec}")
+        self._logger.debug(f"DNGConverter binary type: {type(py_dng.bin_exec)}")
 
         # Patch pydngconverter when using DNGLab (Linux/Windows)
-        if (
-            os.environ.get("PYDNG_DNG_CONVERTER")
-            and "dnglab" in os.environ.get("PYDNG_DNG_CONVERTER", "").lower()
-        ):
-            self._logger.info(
-                "Applying DNGLab compatibility patch (using correct command syntax)"
-            )
+        if os.environ.get("PYDNG_DNG_CONVERTER") and "dnglab" in os.environ.get("PYDNG_DNG_CONVERTER", "").lower():
+            self._logger.debug("Applying DNGLab compatibility patch (using correct command syntax)")
 
             async def patched_get_compat_path(path):
                 # Use native path when DNGLab is configured (avoid Wine path conversion)
@@ -221,9 +187,7 @@ class ImageProcessor:
                 # Use environment variable as primary indicator since bin_exec
                 # might not reflect the actual binary
                 env_dnglab = os.environ.get("PYDNG_DNG_CONVERTER", "")
-                is_dnglab = (
-                    "dnglab" in env_dnglab.lower() or "dnglab" in str(self.bin_exec).lower()
-                )
+                is_dnglab = "dnglab" in env_dnglab.lower() or "dnglab" in str(self.bin_exec).lower()
                 log.debug(f"DNGLab detection: is_dnglab={is_dnglab}")
 
                 if is_dnglab:
@@ -244,13 +208,9 @@ class ImageProcessor:
                     # Adobe DNG Converter syntax (original)
                     dng_args = [*self.parameters.iter_args, "-d", destination, str(source_path)]
 
-                # Log the full command being executed
+                # Log the full command being executed (only in debug mode)
                 full_command = f"{self.bin_exec} {' '.join(dng_args)}"
-                log.info(
-                    "Executing %s command: %s",
-                    "DNGLab" if is_dnglab else "Adobe DNG Converter",
-                    full_command,
-                )
+                log.debug("Executing %s command: %s", "DNGLab" if is_dnglab else "Adobe DNG Converter", full_command)
 
                 # Validate arguments before execution
                 log.debug("Arguments: %s", dng_args)
@@ -258,19 +218,17 @@ class ImageProcessor:
                 log.debug("Destination directory exists: %s", Path(destination).exists())
                 log.debug("Current working directory: %s", Path.cwd())
 
-                log.info(
-                    "Starting conversion: %s => %s", job.source.name, job.destination_filename
-                )
+                # Simple, clean conversion message with bright green color
+                output_filename = Path(job.destination_filename).name
+                green_message = f"{colorama.Fore.LIGHTGREEN_EX}converted: {output_filename}{colorama.Style.RESET_ALL}"
+                print(green_message, flush=True)
 
                 try:
                     proc = await asyncio.create_subprocess_exec(
-                        self.bin_exec,
-                        *dng_args,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE,
+                        self.bin_exec, *dng_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                     )
                     stdout, stderr = await proc.communicate()
-                    log.info("DNGLab process completed with return code: %d", proc.returncode)
+                    log.debug("DNGLab process completed with return code: %d", proc.returncode)
 
                     # Check return code and log any errors
                     if proc.returncode != 0:
@@ -299,13 +257,13 @@ class ImageProcessor:
 
             # Apply the patch
             pydng_main.DNGConverter.convert_file = patched_convert_file
-            self._logger.info("Applied enhanced convert_file patch with error handling")
+            self._logger.debug("Applied enhanced convert_file patch with error handling")
 
         # Perform conversion with detailed logging
-        self._logger.info("Starting pydngconverter.convert() operation...")
+        self._logger.debug("Starting pydngconverter.convert() operation...")
         try:
             await py_dng.convert()
-            self._logger.info("pydngconverter.convert() completed without exceptions")
+            self._logger.debug("pydngconverter.convert() completed without exceptions")
             # Check conversion results with detailed path analysis
             dst_path = Path(dst_dir)
             src_path = Path(src_dir)
@@ -317,23 +275,15 @@ class ImageProcessor:
 
             if os.path.exists(dst_dir):
                 converted_files = list(dst_path.glob("*"))
-                self._logger.info(
-                    f"Conversion completed - found {len(converted_files)} files in destination:"
-                )
+                self._logger.info(f"Conversion completed - found {len(converted_files)} files in destination:")
                 for converted_file in converted_files:
-                    self._logger.info(
-                        f"  - {converted_file.name} ({converted_file.stat().st_size} bytes)"
-                    )
+                    self._logger.info(f"  - {converted_file.name} ({converted_file.stat().st_size} bytes)")
                 if len(converted_files) == 0:
-                    self._logger.warning(
-                        "No files found in destination directory after conversion!"
-                    )
+                    self._logger.warning("No files found in destination directory after conversion!")
                     self._logger.warning("This indicates DNGLab may not be working properly")
 
                     # Search for DNG files in nearby directories to debug the issue
-                    self._logger.info(
-                        "Searching for DNG files in current and parent directories..."
-                    )
+                    self._logger.info("Searching for DNG files in current and parent directories...")
                     cwd = Path.cwd()
                     for search_dir in [cwd, cwd.parent, src_path.parent]:
                         if search_dir.exists():
@@ -343,9 +293,7 @@ class ImageProcessor:
                                 for dng_file in dng_files[:5]:  # Limit output
                                     self._logger.info(f"  - {dng_file}")
             else:
-                self._logger.error(
-                    f"Destination directory disappeared after conversion: {dst_dir}"
-                )
+                self._logger.error(f"Destination directory disappeared after conversion: {dst_dir}")
 
         except Exception as e:
             self._logger.error(f"Exception during DNG conversion: {type(e).__name__}: {e}")
@@ -359,10 +307,7 @@ class ImageProcessor:
 
         # Use strategy pattern to find DNGLab binary
         strategy = DNGLabStrategyFactory.create_strategy(self._logger)
-        self._logger.info(
-            f"Using {strategy.__class__.__name__} for {system_name}, "
-            f"machine: {platform.machine()}"
-        )
+        self._logger.info(f"Using {strategy.__class__.__name__} for {system_name}, machine: {platform.machine()}")
 
         dnglab_path = strategy.get_binary_path()
         if dnglab_path:
@@ -379,10 +324,7 @@ class ImageProcessor:
             # Test DNGLab binary functionality
             self._test_dnglab_binary(dnglab_path)
         else:
-            self._logger.warning(
-                f"DNGLab binary not found - will fall back to default "
-                f"Adobe DNG Converter on {system_name}"
-            )
+            self._logger.warning(f"DNGLab binary not found - will fall back to default Adobe DNG Converter on {system_name}")
 
     def _test_dnglab_binary(self, dnglab_path: str) -> None:
         """Test DNGLab binary to verify it's working."""
@@ -402,9 +344,7 @@ class ImageProcessor:
                     if line.strip():
                         self._logger.info(f"DNGLab help: {line.strip()}")
             else:
-                self._logger.warning(
-                    f"DNGLab binary test failed with exit code {result.returncode}"
-                )
+                self._logger.warning(f"DNGLab binary test failed with exit code {result.returncode}")
                 if result.stderr:
                     self._logger.warning(f"DNGLab stderr: {result.stderr[:200]}")
 
@@ -441,9 +381,7 @@ class ImageProcessor:
                 datetime.strptime(date_part, "%Y%m%d")
 
         except (AttributeError, ValueError) as e:
-            raise ValueError(
-                "Invalid directory format. Use: YYYYMMDD_project or YYYYMMDD-YYYYMMDD_project"
-            ) from e
+            raise ValueError("Invalid directory format. Use: YYYYMMDD_project or YYYYMMDD-YYYYMMDD_project") from e
 
     def _extract_directory_info(self) -> tuple[str, bool]:
         """Extract directory date and determine if it's a date range format.
@@ -526,42 +464,24 @@ class ImageProcessor:
                 # Invalid EXIF date format, use fallback
                 fallback_date, _ = self._extract_directory_info()
                 metadata[ExifTag.CREATE_DATE.value] = fallback_date
-                self._logger.warning(
-                    f"Invalid EXIF date '{exif_date}', using directory date: {fallback_date}"
-                )
+                self._logger.warning(f"Invalid EXIF date '{exif_date}', using directory date: {fallback_date}")
         else:
             # EXIF failure: use directory date fallback
             fallback_date, _ = self._extract_directory_info()
             metadata[ExifTag.CREATE_DATE.value] = fallback_date
             self._logger.debug(f"No EXIF date found, using directory date: {fallback_date}")
-        metadata[ExifTag.MAKE.value] = metadata.get(
-            ExifTag.MAKE.value, self.EXIF_UNKNOWN
-        ).replace(" ", "")
+        metadata[ExifTag.MAKE.value] = metadata.get(ExifTag.MAKE.value, self.EXIF_UNKNOWN).replace(" ", "")
 
-        if (
-            metadata[ExifTag.MAKE.value] == self.EXIF_UNKNOWN
-            and list_type == ListType.RAW_IMAGE_DICT
-        ):
+        if metadata[ExifTag.MAKE.value] == self.EXIF_UNKNOWN and list_type == ListType.RAW_IMAGE_DICT:
             metadata[ExifTag.MAKE.value] = next(
-                (
-                    key
-                    for key, value in self.SUPPORTED_RAW_IMAGE_EXT.items()
-                    if any(ext in file_extension for ext in value)
-                ),
+                (key for key, value in self.SUPPORTED_RAW_IMAGE_EXT.items() if any(ext in file_extension for ext in value)),
                 self.EXIF_UNKNOWN,
             )
 
-        metadata[ExifTag.MODEL.value] = metadata.get(
-            ExifTag.MODEL.value, self.EXIF_UNKNOWN
-        ).replace(" ", "")
+        metadata[ExifTag.MODEL.value] = metadata.get(ExifTag.MODEL.value, self.EXIF_UNKNOWN).replace(" ", "")
 
-        if (
-            metadata[ExifTag.MAKE.value] in metadata[ExifTag.MODEL.value]
-            and metadata[ExifTag.MAKE.value] != self.EXIF_UNKNOWN
-        ):
-            metadata[ExifTag.MODEL.value] = (
-                metadata[ExifTag.MODEL.value].replace(metadata[ExifTag.MAKE.value], "").strip()
-            )
+        if metadata[ExifTag.MAKE.value] in metadata[ExifTag.MODEL.value] and metadata[ExifTag.MAKE.value] != self.EXIF_UNKNOWN:
+            metadata[ExifTag.MODEL.value] = metadata[ExifTag.MODEL.value].replace(metadata[ExifTag.MAKE.value], "").strip()
 
         dir_parts = [metadata[ExifTag.MAKE.value], metadata[ExifTag.MODEL.value], file_extension]
         dir_name = "_".join(dir_parts).lower()
@@ -603,18 +523,9 @@ class ImageProcessor:
             with PerformanceTimer(timer_name="ProcessingImages", logger=self._logger):
                 # Get files list
                 files_list = [f for f in os.listdir(".") if os.path.isfile(f)]
-                filtered_list = sorted(
-                    [
-                        i
-                        for i in files_list
-                        if not re.match(rf"{self.FILES_TO_EXCLUDE_EXPRESSION}", i)
-                    ]
-                )
+                filtered_list = sorted([i for i in files_list if not re.match(rf"{self.FILES_TO_EXCLUDE_EXPRESSION}", i)])
                 if not filtered_list:
-                    self._logger.info(
-                        "No unprocessed files found in the current directory. "
-                        "Directory may already be processed."
-                    )
+                    self._logger.info("No unprocessed files found in the current directory. Directory may already be processed.")
                     return
                 self._logger.debug(f"filtered_list = {filtered_list}")
 
@@ -637,23 +548,17 @@ class ImageProcessor:
                         current = processed_count
                     # item is a tuple (list_type, dir_name, metadata)
                     _, _, meta = item
-                    self._logger.info(
-                        f"Completed file {current}/{total}: {meta.get('SourceFile', 'Unknown')}"
-                    )
+                    self._logger.info(f"Completed file {current}/{total}: {meta.get('SourceFile', 'Unknown')}")
 
                 def process_metadata_item(metadata):
                     result = self._process_metadata(metadata, filtered_list)
                     if result:
                         list_type, dir_name, processed_metadata = result
-                        list_collection.setdefault(list_type.value, {}).setdefault(
-                            dir_name, []
-                        ).append(processed_metadata)
+                        list_collection.setdefault(list_type.value, {}).setdefault(dir_name, []).append(processed_metadata)
                     return result
 
                 def handle_processing_error(error, metadata):
-                    self._logger.warning(
-                        f"Failed to process {metadata.get('SourceFile', 'Unknown')}: {error}"
-                    )
+                    self._logger.warning(f"Failed to process {metadata.get('SourceFile', 'Unknown')}: {error}")
                     return rx.empty()  # Skip failed items
 
                 # Process all metadata and wait for completion
@@ -697,13 +602,27 @@ class ImageProcessor:
 
     async def _process_file_group(self, key: str, value: dict[str, list[dict[str, Any]]]) -> None:
         """Process a group of files of the same type."""
-        self._logger.info(f"Processing file group: {key = }, {value = }")
+        self._logger.debug(f"Processing file group: {key = }, {value = }")
 
         # First, rename all files with sequential numbering
         rename_tasks = []
         for directory, obj_list in value.items():
             file_ext = directory.split("_")[-1]
-            self._logger.info(f"{directory = }, {file_ext = }, {obj_list = }")
+            file_count = len(obj_list)
+
+            # Clean user-friendly message with bright green color
+            if key == "raw_image_dict":
+                message = (
+                    f"{colorama.Fore.LIGHTGREEN_EX}Processing {file_count} RAW files → {directory}/{colorama.Style.RESET_ALL}"
+                )
+            else:
+                message = (
+                    f"{colorama.Fore.LIGHTGREEN_EX}Processing {file_count} {file_ext.upper()} files → {directory}/"
+                    f"{colorama.Style.RESET_ALL}"
+                )
+            print(message, flush=True)
+
+            self._logger.debug(f"{directory = }, {file_ext = }, {obj_list = }")
 
             if not os.path.exists(directory):
                 os.makedirs(directory)
@@ -714,13 +633,9 @@ class ImageProcessor:
 
                 # Determine file name format based on whether EXIF date includes time
                 if "-" in date_part and len(date_part) == 15:  # Format: YYYYMMDD-HHMMSS
-                    new_file_name = (
-                        f"./{directory}/{date_part}_{self.project_name}_{seq_num:03d}.{file_ext}"
-                    ).lower()
+                    new_file_name = (f"./{directory}/{date_part}_{self.project_name}_{seq_num:03d}.{file_ext}").lower()
                 else:  # Format: YYYYMMDD (fallback)
-                    new_file_name = (
-                        f"./{directory}/{date_part}_{self.project_name}_{seq_num:03d}.{file_ext}"
-                    ).lower()
+                    new_file_name = (f"./{directory}/{date_part}_{self.project_name}_{seq_num:03d}.{file_ext}").lower()
 
                 old_file_name = obj[ExifTag.SOURCE_FILE.value]
                 self._logger.debug(f"Renaming: {old_file_name} -> {new_file_name}")
@@ -735,7 +650,7 @@ class ImageProcessor:
 
     async def _handle_raw_conversion(self, value: dict[str, list[dict[str, Any]]]) -> None:
         """Handle RAW to DNG conversion for RAW files."""
-        self._logger.info(f"Handling RAW conversion: {ListType.RAW_IMAGE_DICT.value = }")
+        self._logger.debug(f"Handling RAW conversion: {ListType.RAW_IMAGE_DICT.value = }")
 
         convert_list: list[tuple[str, str]] = []
         for old_dir in value:
@@ -746,19 +661,25 @@ class ImageProcessor:
             convert_list.append((old_dir, new_dir))
 
         if convert_list:
-            self._logger.info(f"{convert_list = }")
+            self._logger.debug(f"{convert_list = }")
+            total_conversions = len(convert_list)
+            message = f"{colorama.Fore.LIGHTGREEN_EX}Converting {total_conversions} RAW to DNG format: {colorama.Style.RESET_ALL}"
+            print(message, flush=True)
+
             # Process conversions sequentially to ensure proper configuration
             for old_dir, new_dir in convert_list:
                 await self.convert_raw_to_dng(old_dir, new_dir)
             self._delete_original_raw_files(convert_list)
 
+            message = (
+                f"{colorama.Fore.LIGHTGREEN_EX}✓ Completed {total_conversions} RAW to DNG conversions{colorama.Style.RESET_ALL}"
+            )
+            print(message, flush=True)
+
 
 @function_trace
 async def run_pipeline(
-    logger: logging.Logger,
-    image_dir: str,
-    dng_compression: str = "lossless",
-    dng_preview: bool = False,
+    logger: logging.Logger, image_dir: str, dng_compression: str = "lossless", dng_preview: bool = False
 ) -> None:
     """Main entry point for reactive image processing pipeline.
 
@@ -768,7 +689,5 @@ async def run_pipeline(
         dng_compression: DNG compression method ('lossless' or 'uncompressed')
         dng_preview: Whether to embed JPEG preview in DNG files
     """
-    processor = ImageProcessor(
-        logger=logger, op_dir=image_dir, dng_compression=dng_compression, dng_preview=dng_preview
-    )
+    processor = ImageProcessor(logger=logger, op_dir=image_dir, dng_compression=dng_compression, dng_preview=dng_preview)
     await processor.process_images_reactive()

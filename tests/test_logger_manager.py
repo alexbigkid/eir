@@ -21,12 +21,7 @@ class TestLoggerType:
 
     def test_logger_type_enum_members(self):
         """Test that all expected enum members exist."""
-        expected_members = {
-            "CONSOLE_LOGGER",
-            "FILE_LOGGER",
-            "THREADED_CONSOLE_LOGGER",
-            "THREADED_FILE_LOGGER",
-        }
+        expected_members = {"CONSOLE_LOGGER", "FILE_LOGGER", "THREADED_CONSOLE_LOGGER", "THREADED_FILE_LOGGER"}
         actual_members = {member.name for member in LoggerType}
         assert actual_members == expected_members
 
@@ -101,9 +96,7 @@ class TestLoggerManager:
 
         mock_setup.assert_called_once()
 
-    def test_configure_file_logging_creates_logs_dir(
-        self, project_root_dir, reset_logger_manager, clean_logging
-    ):
+    def test_configure_file_logging_creates_logs_dir(self, project_root_dir, reset_logger_manager, clean_logging):
         """Test that configure creates logs directory for file logging."""
         manager = LoggerManager()
 
@@ -122,9 +115,7 @@ class TestLoggerManager:
         manager = LoggerManager()
 
         with (
-            patch.object(
-                manager, "_find_project_root", side_effect=FileNotFoundError("test error")
-            ),
+            patch.object(manager, "_find_project_root", side_effect=FileNotFoundError("test error")),
             pytest.raises(FileNotFoundError, match="logging.yaml not found: test error"),
         ):
             manager.configure()
@@ -174,9 +165,7 @@ class TestLoggerManager:
             result = manager._find_project_root()
             assert result == temp_dir
 
-    def test_setup_yaml_threaded_logging_console_mode(
-        self, project_root_dir, reset_logger_manager, clean_logging
-    ):
+    def test_setup_yaml_threaded_logging_console_mode(self, project_root_dir, reset_logger_manager, clean_logging):
         """Test _setup_yaml_threaded_logging in console mode."""
         manager = LoggerManager()
 
@@ -215,18 +204,14 @@ class TestLoggerManager:
 
             mock_get_logger.side_effect = logger_side_effect
 
-            manager._setup_yaml_threaded_logging(
-                project_root_dir, log_into_file=False, verbose=False
-            )
+            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False, verbose=False)
 
         assert isinstance(manager._log_queue, queue.Queue)
         assert manager._logger is mock_threaded_logger
         mock_dict_config.assert_called_once()
         mock_queue_listener.assert_called_once()
 
-    def test_setup_yaml_threaded_logging_file_mode(
-        self, project_root_dir, reset_logger_manager, clean_logging
-    ):
+    def test_setup_yaml_threaded_logging_file_mode(self, project_root_dir, reset_logger_manager, clean_logging):
         """Test _setup_yaml_threaded_logging in file mode."""
         manager = LoggerManager()
 
@@ -236,10 +221,7 @@ class TestLoggerManager:
             "version": 1,
             "handlers": {
                 "queueHandler": {"class": "logging.handlers.QueueHandler", "level": "DEBUG"},
-                "fileHandler": {
-                    "class": "logging.handlers.RotatingFileHandler",
-                    "level": "DEBUG",
-                },
+                "fileHandler": {"class": "logging.handlers.RotatingFileHandler", "level": "DEBUG"},
             },
             "loggers": {
                 "fileLogger": {"level": "DEBUG", "handlers": ["fileHandler"]},
@@ -268,9 +250,7 @@ class TestLoggerManager:
 
             mock_get_logger.side_effect = logger_side_effect
 
-            manager._setup_yaml_threaded_logging(
-                project_root_dir, log_into_file=True, verbose=False
-            )
+            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=True, verbose=False)
 
         assert isinstance(manager._log_queue, queue.Queue)
         assert manager._logger is mock_threaded_logger
@@ -307,9 +287,7 @@ class TestLoggerManager:
         assert result is mock_logger
 
     @patch("atexit.register")
-    def test_atexit_registration(
-        self, mock_atexit, project_root_dir, reset_logger_manager, clean_logging
-    ):
+    def test_atexit_registration(self, mock_atexit, project_root_dir, reset_logger_manager, clean_logging):
         """Test that cleanup is registered with atexit."""
         manager = LoggerManager()
 
@@ -347,9 +325,7 @@ class TestLoggerManager:
                 return Mock()
 
             mock_get_logger.side_effect = logger_side_effect
-            manager._setup_yaml_threaded_logging(
-                project_root_dir, log_into_file=False, verbose=False
-            )
+            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False, verbose=False)
 
         mock_atexit.assert_called_once_with(manager._cleanup_logging)
 
@@ -362,13 +338,9 @@ class TestLoggerManager:
         logging_yaml.write_text("invalid: yaml: content: [")
 
         with pytest.raises(yaml.YAMLError):
-            manager._setup_yaml_threaded_logging(
-                project_root_dir, log_into_file=False, verbose=False
-            )
+            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False, verbose=False)
 
-    def test_queue_injection_into_config(
-        self, project_root_dir, reset_logger_manager, clean_logging
-    ):
+    def test_queue_injection_into_config(self, project_root_dir, reset_logger_manager, clean_logging):
         """Test that queue is properly injected into YAML configuration."""
         manager = LoggerManager()
 
@@ -377,16 +349,9 @@ class TestLoggerManager:
         yaml_content = {
             "version": 1,
             "handlers": {
-                "queueHandler": {
-                    "class": "logging.handlers.QueueHandler",
-                    "level": "DEBUG",
-                    "queue": "will_be_replaced",
-                }
+                "queueHandler": {"class": "logging.handlers.QueueHandler", "level": "DEBUG", "queue": "will_be_replaced"}
             },
-            "loggers": {
-                "consoleLogger": {"handlers": []},
-                "threadedConsoleLogger": {"handlers": ["queueHandler"]},
-            },
+            "loggers": {"consoleLogger": {"handlers": []}, "threadedConsoleLogger": {"handlers": ["queueHandler"]}},
         }
 
         with open(logging_yaml, "w") as f:
@@ -414,9 +379,7 @@ class TestLoggerManager:
                 return Mock()
 
             mock_get_logger.side_effect = logger_side_effect
-            manager._setup_yaml_threaded_logging(
-                project_root_dir, log_into_file=False, verbose=False
-            )
+            manager._setup_yaml_threaded_logging(project_root_dir, log_into_file=False, verbose=False)
 
         # Verify that the queue was injected
         assert captured_config["handlers"]["queueHandler"]["queue"] is manager._log_queue

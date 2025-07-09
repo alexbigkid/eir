@@ -62,9 +62,7 @@ class TestDirectoryValidationAndNavigation:
     @patch("os.getcwd")
     @patch("os.path.basename")
     @patch("os.path.normpath")
-    def test_validate_current_directory(
-        self, mock_normpath, mock_basename, mock_getcwd, mock_logger_manager, mock_logger
-    ):
+    def test_validate_current_directory(self, mock_normpath, mock_basename, mock_getcwd, mock_logger_manager, mock_logger):
         """Test validation when using current directory (.)."""
         mock_logger_manager.return_value.get_logger.return_value = mock_logger
         mock_getcwd.return_value = "/path/to/20241210_current_project"
@@ -77,9 +75,7 @@ class TestDirectoryValidationAndNavigation:
     @patch("eir.logger_manager.LoggerManager")
     @patch("os.chdir")
     @patch("os.getcwd")
-    def test_directory_navigation_flow(
-        self, mock_getcwd, mock_chdir, mock_logger_manager, mock_logger
-    ):
+    def test_directory_navigation_flow(self, mock_getcwd, mock_chdir, mock_logger_manager, mock_logger):
         """Test complete directory navigation flow."""
         mock_logger_manager.return_value.get_logger.return_value = mock_logger
         mock_getcwd.return_value = "/original/path"
@@ -139,11 +135,7 @@ class TestReactivePipelineComplete:
 
             # Verify the specific info message was logged (check if it was called)
             # The actual message should be in the call history
-            info_calls = [
-                call
-                for call in mock_logger.info.call_args_list
-                if "No unprocessed files found" in str(call)
-            ]
+            info_calls = [call for call in mock_logger.info.call_args_list if "No unprocessed files found" in str(call)]
             assert len(info_calls) > 0, (
                 f"Expected 'No unprocessed files found' message not found in calls: {mock_logger.info.call_args_list}"  # noqa: E501
             )
@@ -162,13 +154,7 @@ class TestReactivePipelineComplete:
         mock_timer.return_value.__enter__ = Mock()
         mock_timer.return_value.__exit__ = Mock()
 
-        mock_listdir.return_value = [
-            "photo1.cr2",
-            "photo2.jpg",
-            "video.mp4",
-            "Thumbs.db",
-            ".hidden",
-        ]
+        mock_listdir.return_value = ["photo1.cr2", "photo2.jpg", "video.mp4", "Thumbs.db", ".hidden"]
         mock_isfile.return_value = True
 
         processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
@@ -178,9 +164,7 @@ class TestReactivePipelineComplete:
             patch.object(processor, "_validate_image_dir"),
             patch.object(processor, "_change_to_image_dir"),
             patch.object(processor, "_change_from_image_dir"),
-            patch.object(
-                processor, "extract_exif_metadata", new_callable=AsyncMock
-            ) as mock_extract,
+            patch.object(processor, "extract_exif_metadata", new_callable=AsyncMock) as mock_extract,
             patch.object(processor, "_process_file_group", new_callable=AsyncMock),
         ):
             # Setup metadata extraction to return data that processes successfully
@@ -188,11 +172,7 @@ class TestReactivePipelineComplete:
 
             # Mock metadata processing to return valid results
             with patch.object(processor, "_process_metadata") as mock_process_meta:
-                mock_process_meta.return_value = (
-                    ListType.RAW_IMAGE_DICT,
-                    "canon_eosr5_cr2",
-                    {"SourceFile": "photo1.cr2"},
-                )
+                mock_process_meta.return_value = (ListType.RAW_IMAGE_DICT, "canon_eosr5_cr2", {"SourceFile": "photo1.cr2"})
 
                 await processor.process_images_reactive()
 
@@ -250,9 +230,7 @@ class TestReactivePipelineComplete:
             patch.object(processor, "_validate_image_dir"),
             patch.object(processor, "_change_to_image_dir"),
             patch.object(processor, "_change_from_image_dir"),
-            patch.object(
-                processor, "extract_exif_metadata", new_callable=AsyncMock
-            ) as mock_extract,
+            patch.object(processor, "extract_exif_metadata", new_callable=AsyncMock) as mock_extract,
             patch.object(processor, "_process_file_group", new_callable=AsyncMock),
         ):
             # Setup metadata - one will fail, one will succeed
@@ -269,18 +247,12 @@ class TestReactivePipelineComplete:
                 # Return valid result for good.cr2
                 return (ListType.RAW_IMAGE_DICT, "canon_eosr5_cr2", {"SourceFile": "good.cr2"})
 
-            with patch.object(
-                processor, "_process_metadata", side_effect=selective_process_metadata
-            ):
+            with patch.object(processor, "_process_metadata", side_effect=selective_process_metadata):
                 # This should trigger the error handler for test.jpg but continue with good.cr2
                 await processor.process_images_reactive()
 
                 # Verify the warning was logged for the failed file
-                warning_calls = [
-                    call
-                    for call in mock_logger.warning.call_args_list
-                    if "Failed to process test.jpg" in str(call)
-                ]
+                warning_calls = [call for call in mock_logger.warning.call_args_list if "Failed to process test.jpg" in str(call)]
                 assert len(warning_calls) > 0, (
                     f"Expected processing error warning not found in calls: {mock_logger.warning.call_args_list}"  # noqa: E501
                 )
@@ -293,9 +265,7 @@ class TestReactivePipelineComplete:
     @patch("eir.abk_common.PerformanceTimer")
     @patch("os.listdir")
     @patch("os.path.isfile")
-    async def test_reactive_pipeline_fatal_error(
-        self, mock_isfile, mock_listdir, mock_timer, mock_logger_manager, mock_logger
-    ):
+    async def test_reactive_pipeline_fatal_error(self, mock_isfile, mock_listdir, mock_timer, mock_logger_manager, mock_logger):
         """Test pipeline-level error handling to cover line 327."""
         # Setup mocks
         mock_logger_manager.return_value.get_logger.return_value = mock_logger
@@ -311,9 +281,7 @@ class TestReactivePipelineComplete:
             patch.object(processor, "_validate_image_dir"),
             patch.object(processor, "_change_to_image_dir"),
             patch.object(processor, "_change_from_image_dir"),
-            patch.object(
-                processor, "extract_exif_metadata", new_callable=AsyncMock
-            ) as mock_extract,
+            patch.object(processor, "extract_exif_metadata", new_callable=AsyncMock) as mock_extract,
         ):
             # Setup metadata
             mock_extract.return_value = [{"SourceFile": "test.jpg"}]
@@ -339,11 +307,7 @@ class TestReactivePipelineComplete:
                     await processor.process_images_reactive()
 
                 # Verify the error was logged at pipeline level
-                error_calls = [
-                    call
-                    for call in mock_logger.error.call_args_list
-                    if "Error in processing pipeline" in str(call)
-                ]
+                error_calls = [call for call in mock_logger.error.call_args_list if "Error in processing pipeline" in str(call)]
                 assert len(error_calls) > 0, (
                     f"Expected pipeline error log not found in calls: {mock_logger.error.call_args_list}"  # noqa: E501
                 )
@@ -351,9 +315,7 @@ class TestReactivePipelineComplete:
     @pytest.mark.asyncio
     @patch("eir.logger_manager.LoggerManager")
     @patch("eir.abk_common.PerformanceTimer")
-    async def test_reactive_pipeline_no_valid_files_exception(
-        self, mock_timer, mock_logger_manager, mock_logger
-    ):
+    async def test_reactive_pipeline_no_valid_files_exception(self, mock_timer, mock_logger_manager, mock_logger):
         """Test exception when no valid files to process after metadata extraction."""
         mock_logger_manager.return_value.get_logger.return_value = mock_logger
         mock_timer.return_value.__enter__ = Mock()
@@ -367,9 +329,7 @@ class TestReactivePipelineComplete:
             patch.object(processor, "_change_from_image_dir"),
             patch("os.listdir", return_value=["test.jpg"]),
             patch("os.path.isfile", return_value=True),
-            patch.object(
-                processor, "extract_exif_metadata", new_callable=AsyncMock
-            ) as mock_extract,
+            patch.object(processor, "extract_exif_metadata", new_callable=AsyncMock) as mock_extract,
             patch.object(processor, "_process_metadata", return_value=None),
         ):
             # Return metadata but processing returns None (unsupported file)
@@ -393,9 +353,7 @@ class TestReactivePipelineComplete:
                 processed_count += 1
                 current = processed_count
             _, _, meta = item
-            mock_logger.info(
-                f"Completed file {current}/{total}: {meta.get('SourceFile', 'Unknown')}"
-            )
+            mock_logger.info(f"Completed file {current}/{total}: {meta.get('SourceFile', 'Unknown')}")
 
         # Simulate processing items
         test_item = (ListType.RAW_IMAGE_DICT, "canon_eosr5_cr2", {"SourceFile": "test.cr2"})
@@ -416,11 +374,7 @@ class TestFileGroupProcessing:
         processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         with (
-            patch.object(
-                type(processor),
-                "project_name",
-                new_callable=lambda: Mock(return_value="test_project"),
-            ),
+            patch.object(type(processor), "project_name", new_callable=lambda: Mock(return_value="test_project")),
             patch("os.path.exists", return_value=False),
             patch("os.makedirs") as mock_makedirs,
         ):
@@ -429,9 +383,7 @@ class TestFileGroupProcessing:
                     {"SourceFile": "photo1.cr2", "EXIF:CreateDate": "20241210_143000"},
                     {"SourceFile": "photo2.cr2", "EXIF:CreateDate": "20241210_144500"},
                 ],
-                "canon_eosr5_jpg": [
-                    {"SourceFile": "photo1.jpg", "EXIF:CreateDate": "20241210_143000"}
-                ],
+                "canon_eosr5_jpg": [{"SourceFile": "photo1.jpg", "EXIF:CreateDate": "20241210_143000"}],
             }
 
             # Mock the file operations and RAW conversion to avoid actual file system calls
@@ -474,10 +426,7 @@ class TestFileGroupProcessing:
             await processor._handle_raw_conversion(test_value)
 
             # Should convert cr2 and nef but skip dng
-            expected_conversions = [
-                ("canon_eosr5_cr2", "canon_eosr5_dng"),
-                ("nikon_d850_nef", "nikon_d850_dng"),
-            ]
+            expected_conversions = [("canon_eosr5_cr2", "canon_eosr5_dng"), ("nikon_d850_nef", "nikon_d850_dng")]
 
             # Verify convert_raw_to_dng was called for each conversion (sequential)
             assert processor.convert_raw_to_dng.call_count == 2
@@ -488,10 +437,7 @@ class TestFileGroupProcessing:
     def test_delete_original_raw_files_scenarios(self, mock_listdir, mock_rmtree, mock_logger):
         """Test various scenarios for deleting original RAW files."""
         # Mock the async methods to prevent coroutine warnings
-        with (
-            patch.object(ImageProcessor, "_rename_file_async"),
-            patch.object(ImageProcessor, "convert_raw_to_dng"),
-        ):
+        with patch.object(ImageProcessor, "_rename_file_async"), patch.object(ImageProcessor, "convert_raw_to_dng"):
             processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
             # Test scenario 1: Complete match - delete entire directory
@@ -509,15 +455,10 @@ class TestFileGroupProcessing:
     @patch("os.remove")
     @patch("os.path.join")
     @patch("os.listdir")
-    def test_delete_original_raw_files_partial(
-        self, mock_listdir, mock_join, mock_remove, mock_logger
-    ):
+    def test_delete_original_raw_files_partial(self, mock_listdir, mock_join, mock_remove, mock_logger):
         """Test partial deletion of RAW files."""
         # Mock the async methods to prevent coroutine warnings
-        with (
-            patch.object(ImageProcessor, "_rename_file_async"),
-            patch.object(ImageProcessor, "convert_raw_to_dng"),
-        ):
+        with patch.object(ImageProcessor, "_rename_file_async"), patch.object(ImageProcessor, "convert_raw_to_dng"):
             processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
             # Test scenario 2: Partial match - delete only converted files
@@ -544,9 +485,7 @@ class TestErrorHandlingAndEdgeCases:
     @patch("eir.processor.ImageProcessor._rename_file_async")
     @patch("eir.processor.ImageProcessor.convert_raw_to_dng")
     @patch("exiftool.ExifToolHelper")
-    async def test_extract_exif_metadata_exiftool_exception(
-        self, mock_exiftool, mock_convert, mock_rename, mock_logger
-    ):
+    async def test_extract_exif_metadata_exiftool_exception(self, mock_exiftool, mock_convert, mock_rename, mock_logger):
         """Test EXIF extraction when ExifTool raises exception."""
         mock_helper = Mock()
         mock_helper.get_tags.side_effect = Exception("ExifTool failed")
@@ -571,10 +510,7 @@ class TestErrorHandlingAndEdgeCases:
 
         processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
-        with (
-            patch("os.path.exists", return_value=True),
-            pytest.raises(Exception, match="Conversion failed"),
-        ):
+        with patch("os.path.exists", return_value=True), pytest.raises(Exception, match="Conversion failed"):
             await processor.convert_raw_to_dng("/src", "/dst")
 
     def test_process_metadata_edge_cases(self, mock_logger):
@@ -618,9 +554,7 @@ class TestErrorHandlingAndEdgeCases:
         with (
             patch("os.getcwd", return_value="/path/to/20241210_project_with_many_underscores"),
             patch("os.path.basename", return_value="20241210_project_with_many_underscores"),
-            patch(
-                "os.path.normpath", return_value="/path/to/20241210_project_with_many_underscores"
-            ),
+            patch("os.path.normpath", return_value="/path/to/20241210_project_with_many_underscores"),
         ):
             # Reset cached project name
             processor._project_name = None
@@ -791,23 +725,10 @@ class TestAdvancedMetadataScenarios:
         processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Test various non-JPG compressed image formats (line 183 coverage)
-        test_cases = [
-            "photo.png",
-            "image.tiff",
-            "picture.gif",
-            "file.heic",
-            "document.psd",
-            "image.jng",
-            "file.mng",
-            "photo.tif",
-        ]
+        test_cases = ["photo.png", "image.tiff", "picture.gif", "file.heic", "document.psd", "image.jng", "file.mng", "photo.tif"]
 
         for filename in test_cases:
-            metadata = {
-                "SourceFile": filename,
-                "EXIF:Make": "Canon",
-                "EXIF:CreateDate": "2024:12:10 14:30:00",
-            }
+            metadata = {"SourceFile": filename, "EXIF:Make": "Canon", "EXIF:CreateDate": "2024:12:10 14:30:00"}
             filtered_list = [filename]  # No RAW file, so not a thumbnail
 
             result = processor._process_metadata(metadata, filtered_list)
@@ -915,27 +836,13 @@ class TestRegexAndPatternMatching:
         pattern = processor.FILES_TO_EXCLUDE_EXPRESSION
 
         # Files that should be excluded
-        excluded_files = [
-            "Adobe Bridge Cache",
-            "Adobe Bridge Cache.bc",
-            "Thumbs.db",
-            ".hidden_file",
-            ".DS_Store",
-            ".._temp_file",
-        ]
+        excluded_files = ["Adobe Bridge Cache", "Adobe Bridge Cache.bc", "Thumbs.db", ".hidden_file", ".DS_Store", ".._temp_file"]
 
         for filename in excluded_files:
             assert re.match(pattern, filename), f"Should exclude: {filename}"
 
         # Files that should NOT be excluded
-        included_files = [
-            "photo.jpg",
-            "image.cr2",
-            "video.mp4",
-            "document.pdf",
-            "normal_file.txt",
-            "Adobe_but_not_cache.jpg",
-        ]
+        included_files = ["photo.jpg", "image.cr2", "video.mp4", "document.pdf", "normal_file.txt", "Adobe_but_not_cache.jpg"]
 
         for filename in included_files:
             assert not re.match(pattern, filename), f"Should NOT exclude: {filename}"
@@ -945,12 +852,7 @@ class TestRegexAndPatternMatching:
         processor = ImageProcessor(logger=mock_logger, op_dir="20241210_test")
 
         # Valid patterns
-        valid_dirs = [
-            "20241210_project",
-            "20240101_new_year_project",
-            "19990101_old_project",
-            "20241231_end_of_year",
-        ]
+        valid_dirs = ["20241210_project", "20240101_new_year_project", "19990101_old_project", "20241231_end_of_year"]
 
         for valid_dir in valid_dirs:
             processor._op_dir = valid_dir

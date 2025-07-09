@@ -137,9 +137,7 @@ class LoggerManager:
             logger_name = LoggerType.THREADED_CONSOLE_LOGGER.value
 
         # Create and start the queue listener with the appropriate target handler
-        self._queue_listener = logging.handlers.QueueListener(
-            self._log_queue, target_handler, respect_handler_level=True
-        )
+        self._queue_listener = logging.handlers.QueueListener(self._log_queue, target_handler, respect_handler_level=True)
         self._queue_listener.start()
 
         # Get the configured threaded logger
@@ -154,9 +152,7 @@ class LoggerManager:
         log_level = logging.DEBUG if verbose else logging.INFO
 
         # Setup formatter
-        formatter = logging.Formatter(
-            "[%(asctime)s]:[%(name)s]:[%(levelname)s]: %(message)s", datefmt="%Y%m%d %H:%M:%S"
-        )
+        formatter = logging.Formatter("[%(asctime)s]:[%(name)s]:[%(levelname)s]: %(message)s", datefmt="%Y%m%d %H:%M:%S")
 
         if log_into_file:
             # Create logs directory in current working directory
@@ -190,10 +186,7 @@ class LoggerManager:
             "version": 1,
             "disable_existing_loggers": False,
             "formatters": {
-                "default": {
-                    "format": "[%(asctime)s]:[%(name)s]:[%(levelname)s]: %(message)s",
-                    "datefmt": "%Y%m%d %H:%M:%S",
-                }
+                "default": {"format": "[%(asctime)s]:[%(name)s]:[%(levelname)s]: %(message)s", "datefmt": "%Y%m%d %H:%M:%S"}
             },
             "handlers": {
                 "consoleHandler": {
@@ -202,23 +195,11 @@ class LoggerManager:
                     "formatter": "default",
                     "stream": "ext://sys.stdout",
                 },
-                "queueHandler": {
-                    "class": "logging.handlers.QueueHandler",
-                    "level": "INFO",
-                    "formatter": "default",
-                },
+                "queueHandler": {"class": "logging.handlers.QueueHandler", "level": "INFO", "formatter": "default"},
             },
             "loggers": {
-                "consoleLogger": {
-                    "level": "INFO",
-                    "handlers": ["consoleHandler"],
-                    "propagate": False,
-                },
-                "threadedConsoleLogger": {
-                    "level": "INFO",
-                    "handlers": ["queueHandler"],
-                    "propagate": False,
-                },
+                "consoleLogger": {"level": "INFO", "handlers": ["consoleHandler"], "propagate": False},
+                "threadedConsoleLogger": {"level": "INFO", "handlers": ["queueHandler"], "propagate": False},
             },
             "root": {"level": "INFO"},
         }
@@ -249,8 +230,7 @@ class LoggerManager:
         current_file_path = Path(__file__).absolute()
         current_path_str = str(current_file_path).lower()
         is_onefile = (
-            "onefile" in current_path_str
-            or "onefil" in current_path_str  # Windows short names like ONEFIL~1
+            "onefile" in current_path_str or "onefil" in current_path_str  # Windows short names like ONEFIL~1
         )
         if is_onefile:
             return Path.cwd()

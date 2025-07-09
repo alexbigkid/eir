@@ -12,9 +12,7 @@ import platform
 
 def setup_logging():
     """Set up detailed logging."""
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     return logging.getLogger(__name__)
 
 
@@ -52,10 +50,7 @@ async def test_dnglab_directly(dnglab_path: str, test_files_dir: str):
 
     try:
         proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=str(output_dir.parent),
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=str(output_dir.parent)
         )
 
         stdout, stderr = await proc.communicate()
@@ -182,10 +177,7 @@ async def main():
     logger.info(f"pydngconverter test: {'PASS' if pydng_success else 'FAIL'}")
 
     if direct_success and not pydng_success:
-        logger.error(
-            "DNGLab works directly but fails through pydngconverter - "
-            "likely a path or argument issue"
-        )
+        logger.error("DNGLab works directly but fails through pydngconverter - likely a path or argument issue")
     elif not direct_success:
         logger.error("DNGLab fails even when called directly - binary or permission issue")
     elif direct_success and pydng_success:

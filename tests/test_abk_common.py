@@ -191,10 +191,7 @@ class TestPerformanceTimer:
         """Test PerformanceTimer behavior when exception occurs in context."""
         mock_logger = Mock(spec=logging.Logger)
 
-        with (
-            pytest.raises(ValueError, match="Test exception"),
-            PerformanceTimer("ExceptionTest", mock_logger),
-        ):
+        with pytest.raises(ValueError, match="Test exception"), PerformanceTimer("ExceptionTest", mock_logger):
             raise ValueError("Test exception")
 
         # Should still log the performance timing even with exception
@@ -263,9 +260,7 @@ class TestModuleExecution:
         """Test that executing the module directly raises an exception."""
         # Test the conditional logic rather than executing the module
         with patch("eir.abk_common.__name__", "__main__"), pytest.raises(Exception) as exc_info:
-            if (
-                "__main__" == "__main__"
-            ):  # This mimics the module's if __name__ == "__main__" check
+            if "__main__" == "__main__":  # This mimics the module's if __name__ == "__main__" check
                 raise Exception("This module should not be executed directly. Only for imports.")
 
         assert "This module should not be executed directly" in str(exc_info.value)

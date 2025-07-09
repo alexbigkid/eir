@@ -3,12 +3,7 @@
 from unittest.mock import Mock, patch
 
 
-from eir.dnglab_strategy import (
-    DNGLabStrategyFactory,
-    LinuxDNGLabStrategy,
-    MacOSDNGStrategy,
-    WindowsDNGLabStrategy,
-)
+from eir.dnglab_strategy import DNGLabStrategyFactory, LinuxDNGLabStrategy, MacOSDNGStrategy, WindowsDNGLabStrategy
 
 
 class TestDNGLabStrategyFactory:
@@ -56,9 +51,7 @@ class TestDNGLabStrategyFactory:
         strategy = DNGLabStrategyFactory.create_strategy(mock_logger)
 
         assert isinstance(strategy, LinuxDNGLabStrategy)
-        mock_logger.warning.assert_called_once_with(
-            "Unknown platform: unknownos, using Linux strategy"
-        )
+        mock_logger.warning.assert_called_once_with("Unknown platform: unknownos, using Linux strategy")
 
 
 class TestLinuxDNGLabStrategy:

@@ -58,9 +58,7 @@ class DNGLabBinaryStrategy(ABC):
             return None
 
         # Get the bundled binary path based on the bundle type
-        dnglab_bundled = self._get_bundled_binary_path(
-            bundled_detection, system_name, arch, binary_name
-        )
+        dnglab_bundled = self._get_bundled_binary_path(bundled_detection, system_name, arch, binary_name)
 
         # Verify the bundled binary exists
         if dnglab_bundled.exists():
@@ -98,8 +96,7 @@ class DNGLabBinaryStrategy(ABC):
 
         # Log detection info at debug level
         self.logger.debug(
-            f"Bundled detection: frozen={is_frozen}, "
-            f"pyinstaller={is_pyinstaller}, nuitka_onefile={is_nuitka_onefile}"
+            f"Bundled detection: frozen={is_frozen}, pyinstaller={is_pyinstaller}, nuitka_onefile={is_nuitka_onefile}"
         )
 
         return {
@@ -109,9 +106,7 @@ class DNGLabBinaryStrategy(ABC):
             "current_path": str(current_file_path),
         }
 
-    def _get_bundled_binary_path(
-        self, detection: dict[str, bool | str], system_name: str, arch: str, binary_name: str
-    ) -> Path:
+    def _get_bundled_binary_path(self, detection: dict[str, bool | str], system_name: str, arch: str, binary_name: str) -> Path:
         """Get the path to the bundled binary based on bundle type."""
         # Try PyInstaller first for backward compatibility (_MEIPASS)
         bundle_dir = getattr(sys, "_MEIPASS", "")
@@ -166,40 +161,26 @@ class DNGLabBinaryStrategy(ABC):
                 temp_dir = Path(tempfile.gettempdir())
                 # Look for Nuitka onefile patterns in temp
                 for item in temp_dir.iterdir():
-                    if item.is_dir() and (
-                        "onefile" in item.name.lower() or "onefil" in item.name.lower()
-                    ):
+                    if item.is_dir() and ("onefile" in item.name.lower() or "onefil" in item.name.lower()):
                         tools_path_4 = item / "tools" / system_name / arch / binary_name
                         if tools_path_4.exists():
-                            self.logger.info(
-                                f"Found bundled DNGLab via temp search: {tools_path_4}"
-                            )
+                            self.logger.info(f"Found bundled DNGLab via temp search: {tools_path_4}")
                             return tools_path_4
 
                         # Also check one level down for eir subdirectory
                         eir_tools_path = item / "eir" / "tools" / system_name / arch / binary_name
                         if eir_tools_path.exists():
-                            self.logger.info(
-                                f"Found bundled DNGLab in eir subdir: {eir_tools_path}"
-                            )
+                            self.logger.info(f"Found bundled DNGLab in eir subdir: {eir_tools_path}")
                             return eir_tools_path
             except Exception as e:
                 self.logger.debug(f"Method 4 failed: {e}")
 
         # If all methods failed, return the best guess from Method 3
-        fallback_path = (
-            self._find_extraction_root(Path(__file__).parent)
-            / "tools"
-            / system_name
-            / arch
-            / binary_name
-        )
+        fallback_path = self._find_extraction_root(Path(__file__).parent) / "tools" / system_name / arch / binary_name
         self.logger.warning(f"All detection methods failed. Using fallback: {fallback_path}")
         return fallback_path
 
-    def _debug_windows_extraction(
-        self, extraction_root: Path, system_name: str, arch: str, binary_name: str
-    ) -> None:
+    def _debug_windows_extraction(self, extraction_root: Path, system_name: str, arch: str, binary_name: str) -> None:
         """Debug Windows extraction directory structure."""
         try:
             if extraction_root.exists():
@@ -207,9 +188,7 @@ class DNGLabBinaryStrategy(ABC):
                 self.logger.debug(f"Extraction root contains {len(items)} items")
 
                 # Check if tools directory exists
-                tools_found = any(
-                    item.is_dir() and item.name.lower() == "tools" for item in items
-                )
+                tools_found = any(item.is_dir() and item.name.lower() == "tools" for item in items)
                 if not tools_found:
                     self.logger.warning("No 'tools' directory found in extraction root")
             else:
@@ -234,9 +213,7 @@ class DNGLabBinaryStrategy(ABC):
                     self.logger.info(f"Found tools directory at parent: {candidate_root}")
                     return candidate_root
                 else:
-                    self.logger.info(
-                        f"Parent has no tools, using as extraction root: {candidate_root}"
-                    )
+                    self.logger.info(f"Parent has no tools, using as extraction root: {candidate_root}")
                     return candidate_root
 
         extraction_root = start_dir
@@ -262,8 +239,7 @@ class DNGLabBinaryStrategy(ABC):
 
             # Also check if any parent directories have nuitka patterns
             has_nuitka_pattern = any(
-                any(pattern in part.lower() for pattern in nuitka_patterns)
-                for part in extraction_root.parts
+                any(pattern in part.lower() for pattern in nuitka_patterns) for part in extraction_root.parts
             )
 
             if is_nuitka_extraction or has_nuitka_pattern:
@@ -286,9 +262,7 @@ class DNGLabBinaryStrategy(ABC):
 
                 # If we found a Nuitka pattern but no tools, use the parent directory
                 # as that's where the extraction root should be for onefile bundles
-                self.logger.warning(
-                    f"Found Nuitka pattern but no tools. Using parent: {extraction_root.parent}"
-                )
+                self.logger.warning(f"Found Nuitka pattern but no tools. Using parent: {extraction_root.parent}")
                 extraction_root = extraction_root.parent
                 break
 
@@ -314,10 +288,7 @@ class DNGLabBinaryStrategy(ABC):
 
             while extraction_dir.parent != extraction_dir and levels_checked < max_debug_levels:
                 nuitka_patterns = ["onefile_", "onefil"]
-                if any(
-                    any(pattern in name.lower() for pattern in nuitka_patterns)
-                    for name in extraction_dir.parts
-                ):
+                if any(any(pattern in name.lower() for pattern in nuitka_patterns) for name in extraction_dir.parts):
                     break
                 extraction_dir = extraction_dir.parent
                 levels_checked += 1
@@ -379,8 +350,7 @@ class LinuxDNGLabStrategy(DNGLabBinaryStrategy):
         machine = platform.machine().lower()
 
         self.logger.debug(
-            f"Searching for DNGLab binary - system: {system_name}, "
-            f"machine: {machine}, mapped_arch: {arch}, binary_name: {binary_name}"
+            f"Searching for DNGLab bin - system: {system_name}, machine: {machine}, mapped_arch: {arch}, bin_name: {binary_name}"
         )
 
         # Try bundled binary first
@@ -424,8 +394,7 @@ class WindowsDNGLabStrategy(DNGLabBinaryStrategy):
         machine = platform.machine().lower()
 
         self.logger.debug(
-            f"Windows DNGLab search: system={system_name}, "
-            f"machine={machine}, mapped_arch={arch}, binary_name={binary_name}"
+            f"Windows DNGLab search: system={system_name}, machine={machine}, mapped_arch={arch}, binary_name={binary_name}"
         )
 
         # Try bundled binary first
@@ -468,8 +437,7 @@ class MacOSDNGStrategy(DNGLabBinaryStrategy):
         machine = platform.machine().lower()
 
         self.logger.debug(
-            f"Searching for DNGLab binary - system: {system_name}, "
-            f"machine: {machine}, mapped_arch: {arch}, binary_name: {binary_name}"
+            f"Searching for DNGLab bin - system: {system_name}, machine: {machine}, mapped_arch: {arch}, bin_name: {binary_name}"
         )
 
         # Try bundled binary first

@@ -92,9 +92,7 @@ class DNGLabDownloader:
                 self.arch = "arm64"
 
         if self.arch not in self.arch_mapping[platform_key]:
-            raise ValueError(
-                f"Unsupported architecture {self.arch} for platform {self.platform_name}"
-            )
+            raise ValueError(f"Unsupported architecture {self.arch} for platform {self.platform_name}")
 
         mapped_arch = self.arch_mapping[platform_key][self.arch]
 

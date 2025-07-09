@@ -52,12 +52,7 @@ class TestRealImageIntegration:
 
         try:
             result = subprocess.run(  # noqa: S603
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=target_dir.parent,
-                check=False,
-                timeout=300,
+                cmd, capture_output=True, text=True, cwd=target_dir.parent, check=False, timeout=300
             )
         except subprocess.TimeoutExpired as e:
             error_msg = "Binary timed out after 300 seconds"
@@ -123,9 +118,7 @@ class TestRealImageIntegration:
             # Try native tree cmd on Unix systems only (Windows tree output is poorly formatted)
             if platform.system().lower() != "windows":
                 # Unix tree command with file sizes
-                result = subprocess.run(
-                    ["tree", "-s", str(directory)], capture_output=True, text=True, check=False
-                )
+                result = subprocess.run(["tree", "-s", str(directory)], capture_output=True, text=True, check=False)
                 if result.returncode == 0:
                     print(result.stdout)
                     return
@@ -150,9 +143,7 @@ class TestRealImageIntegration:
                         size_unit = "KB"
                     print(f"  {item.name} ({size_mb:.1f} {size_unit})")
 
-    def _show_directory_tree_python(
-        self, directory: Path, prefix: str = "", is_last: bool = True
-    ) -> None:
+    def _show_directory_tree_python(self, directory: Path, prefix: str = "", is_last: bool = True) -> None:
         """Show directory tree using Python with clean formatting."""
         # Use ASCII-compatible characters for Windows compatibility
         is_windows = platform.system().lower() == "windows"
@@ -243,10 +234,7 @@ class TestRealImageIntegration:
                         shutil.copy2(file_path, mixed_dir)
                         copied_count += 1
 
-        print(
-            f"Created mixed directory '{mixed_dir_name}' with {copied_count} files "
-            f"from {len(single_date_dirs)} source directories"
-        )
+        print(f"Created mixed directory '{mixed_dir_name}' with {copied_count} files from {len(single_date_dirs)} source folders")
         return mixed_dir
 
     def check_dng_conversion_results(self, processed_dir: Path, dir_name: str) -> None:
@@ -267,9 +255,7 @@ class TestRealImageIntegration:
 
         for raw_dir in raw_dirs:
             raw_files = [f for f in raw_dir.iterdir() if f.is_file()]
-            corresponding_dng = processed_dir / raw_dir.name.replace(
-                raw_dir.name.split("_")[-1], "dng"
-            )
+            corresponding_dng = processed_dir / raw_dir.name.replace(raw_dir.name.split("_")[-1], "dng")
 
             print(f"\nRAW Directory: {raw_dir.name}")
             print(f"  - RAW files: {len(raw_files)}")
@@ -302,12 +288,7 @@ class TestRealImageIntegration:
         for item in test_images_dir.iterdir():
             # Look for directories that match single date pattern (YYYYMMDD_*)
             # Must start with 8 digits followed by underscore
-            if (
-                item.is_dir()
-                and len(item.name) >= 9
-                and item.name[8] == "_"
-                and item.name[:8].isdigit()
-            ):
+            if item.is_dir() and len(item.name) >= 9 and item.name[8] == "_" and item.name[:8].isdigit():
                 single_date_dirs.append(item.name)
         return sorted(single_date_dirs)
 
@@ -342,9 +323,7 @@ class TestRealImageIntegration:
 
                 if exit_code == 0:
                     # Show directory structure before analysis
-                    self.show_directory_tree(
-                        test_dir, f"Directory structure after processing {dir_name}"
-                    )
+                    self.show_directory_tree(test_dir, f"Directory structure after processing {dir_name}")
 
                     # Check for empty DNG directories and report
                     self.check_dng_conversion_results(test_dir, dir_name)
@@ -354,21 +333,11 @@ class TestRealImageIntegration:
                     results[dir_name]["original_count"] = original_count
                     results[dir_name]["success"] = True
                 else:
-                    error_msg = getattr(
-                        self, "_last_error", f"Binary exited with code {exit_code}"
-                    )
-                    results[dir_name] = {
-                        "success": False,
-                        "error": error_msg,
-                        "original_count": original_count,
-                    }
+                    error_msg = getattr(self, "_last_error", f"Binary exited with code {exit_code}")
+                    results[dir_name] = {"success": False, "error": error_msg, "original_count": original_count}
 
             except Exception as e:
-                results[dir_name] = {
-                    "success": False,
-                    "error": str(e),
-                    "original_count": original_count,
-                }
+                results[dir_name] = {"success": False, "error": str(e), "original_count": original_count}
 
         # Verify results
         self.verify_single_date_results(results)
@@ -390,9 +359,7 @@ class TestRealImageIntegration:
 
             if exit_code == 0:
                 # Show directory structure before analysis
-                self.show_directory_tree(
-                    mixed_dir, "Directory structure after processing mixed date range"
-                )
+                self.show_directory_tree(mixed_dir, "Directory structure after processing mixed date range")
 
                 # Check for empty DNG directories and report
                 self.check_dng_conversion_results(mixed_dir, mixed_dir.name)
@@ -459,9 +426,7 @@ class TestRealImageIntegration:
         failed_dirs = [k for k, v in results.items() if not v.get("success", False)]
 
         # At least some directories should process successfully
-        assert len(successful_dirs) > 0, (
-            f"No directories processed successfully. Failures: {failed_dirs}"
-        )
+        assert len(successful_dirs) > 0, f"No directories processed successfully. Failures: {failed_dirs}"
 
         for dir_name, result in results.items():
             if not result.get("success", False):
@@ -483,9 +448,7 @@ class TestRealImageIntegration:
                 numbered_files = [f for f in files if "_001" in f or "_002" in f or "_003" in f]
                 # Allow empty directories (e.g., after DNG conversion)
                 if len(files) > 0:
-                    assert len(numbered_files) > 0, (
-                        f"No sequential numbering found in {subdir}. Files: {files}"
-                    )
+                    assert len(numbered_files) > 0, f"No sequential numbering found in {subdir}. Files: {files}"
 
     def verify_date_range_results(self, results: dict):
         """Verify results from date range directory processing."""
@@ -503,9 +466,7 @@ class TestRealImageIntegration:
         for subdir, files in results["files_by_subdirectory"].items():
             if len(files) > 0:  # Only check directories that have files
                 numbered_files = [f for f in files if "_001" in f or "_002" in f or "_003" in f]
-                assert len(numbered_files) > 0, (
-                    f"No sequential numbering found in {subdir}. Files: {files}"
-                )
+                assert len(numbered_files) > 0, f"No sequential numbering found in {subdir}. Files: {files}"
 
     def get_camera_brand_from_dirname(self, dir_name: str) -> str:
         """Extract expected camera brand from directory name."""
@@ -557,17 +518,14 @@ class TestRealImageIntegration:
                 # Check for empty DNG directories and report
                 self.check_dng_conversion_results(test_dir, dir_name)
             else:
-                error_msg = getattr(
-                    self, "_last_error", f"Binary failed with exit code {exit_code}"
-                )
+                error_msg = getattr(self, "_last_error", f"Binary failed with exit code {exit_code}")
                 raise AssertionError(error_msg)
 
             # Check that subdirectories contain expected camera brand
             created_dirs = [d.name for d in test_dir.iterdir() if d.is_dir()]
             brand_dirs = [d for d in created_dirs if expected_brand in d.lower()]
             assert len(brand_dirs) > 0, (
-                f"No {expected_brand} directories found in {dir_name}. "
-                f"Expected brand: {expected_brand}, Created: {created_dirs}"
+                f"No {expected_brand} directories found in {dir_name}. Expected brand: {expected_brand}, Created: {created_dirs}"
             )
 
     def find_directory_with_multiple_file_types(self, test_images_dir: Path) -> Path | None:
@@ -618,16 +576,12 @@ class TestRealImageIntegration:
 
             if exit_code == 0:
                 # Show directory structure before analysis
-                self.show_directory_tree(
-                    test_dir, "File type processing results (RAW + compressed)"
-                )
+                self.show_directory_tree(test_dir, "File type processing results (RAW + compressed)")
 
                 # Check for empty DNG directories and report
                 self.check_dng_conversion_results(test_dir, source_dir.name)
             else:
-                error_msg = getattr(
-                    self, "_last_error", f"Binary failed with exit code {exit_code}"
-                )
+                error_msg = getattr(self, "_last_error", f"Binary failed with exit code {exit_code}")
                 raise AssertionError(error_msg)
 
             # Verify that appropriate directories were created based on file types
@@ -637,6 +591,4 @@ class TestRealImageIntegration:
             # Should have at least one directory (files were processed)
             assert len(created_dirs) > 0, f"No directories created for {source_dir.name}"
         else:
-            pytest.skip(
-                "No directory with multiple file types found for file type processing test"
-            )
+            pytest.skip("No directory with multiple file types found for file type processing test")

@@ -81,9 +81,7 @@ class TestProjectNameProperty:
     @patch("os.getcwd")
     @patch("os.path.basename")
     @patch("os.path.normpath")
-    def test_project_name_extraction(
-        self, mock_normpath, mock_basename, mock_getcwd, mock_logger
-    ):
+    def test_project_name_extraction(self, mock_normpath, mock_basename, mock_getcwd, mock_logger):
         """Test project name extraction from directory."""
         mock_getcwd.return_value = "/path/to/20241210_test_project"
         mock_normpath.return_value = "/path/to/20241210_test_project"
@@ -100,9 +98,7 @@ class TestProjectNameProperty:
     @patch("os.getcwd")
     @patch("os.path.basename")
     @patch("os.path.normpath")
-    def test_project_name_caching(
-        self, mock_normpath, mock_basename, mock_getcwd, mock_path_cwd, mock_logger
-    ):
+    def test_project_name_caching(self, mock_normpath, mock_basename, mock_getcwd, mock_path_cwd, mock_logger):
         """Test that project name is cached after first access."""
         mock_getcwd.return_value = "/path/to/20241210_test_project"
         mock_normpath.return_value = "/path/to/20241210_test_project"
@@ -128,12 +124,7 @@ class TestExifExtraction:
     @patch("eir.logger_manager.LoggerManager")
     @patch("exiftool.ExifToolHelper")
     async def test_extract_exif_metadata_success(
-        self,
-        mock_exiftool_helper,
-        mock_logger_manager,
-        mock_logger,
-        reset_logger_manager,
-        clean_logging,
+        self, mock_exiftool_helper, mock_logger_manager, mock_logger, reset_logger_manager, clean_logging
     ):
         """Test successful EXIF metadata extraction."""
         # Setup LoggerManager mock
@@ -161,12 +152,7 @@ class TestExifExtraction:
     @patch("eir.logger_manager.LoggerManager")
     @patch("exiftool.ExifToolHelper")
     async def test_extract_exif_metadata_empty_list(
-        self,
-        mock_exiftool_helper,
-        mock_logger_manager,
-        mock_logger,
-        reset_logger_manager,
-        clean_logging,
+        self, mock_exiftool_helper, mock_logger_manager, mock_logger, reset_logger_manager, clean_logging
     ):
         """Test EXIF extraction with empty file list."""
         # Setup LoggerManager mock
@@ -271,17 +257,13 @@ class TestFileOperations:
 
         await processor._rename_file_async("old_name.jpg", "new_name.jpg")
 
-        mock_logger.error.assert_called_once_with(
-            "Error renaming: old_name.jpg: Permission denied"
-        )
+        mock_logger.error.assert_called_once_with("Error renaming: old_name.jpg: Permission denied")
 
     @pytest.mark.asyncio
     @patch("pydngconverter.DNGConverter")
     @patch("os.makedirs")
     @patch("os.path.exists")
-    async def test_convert_raw_to_dng(
-        self, mock_exists, mock_makedirs, mock_dng_converter, mock_logger
-    ):
+    async def test_convert_raw_to_dng(self, mock_exists, mock_makedirs, mock_dng_converter, mock_logger):
         """Test RAW to DNG conversion."""
         mock_exists.return_value = False
         mock_converter = AsyncMock()
@@ -417,9 +399,7 @@ class TestComplexScenarios:
         result = processor._process_metadata(metadata, filtered_list)
         _, _, processed_metadata = result
 
-        assert (
-            processed_metadata["EXIF:CreateDate"] == "20241210-143005"
-        )  # Formatted for filename
+        assert processed_metadata["EXIF:CreateDate"] == "20241210-143005"  # Formatted for filename
 
     def test_file_extension_case_handling(self, mock_logger):
         """Test handling of different file extension cases."""

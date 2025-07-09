@@ -75,14 +75,7 @@ def sample_metadata():
 @pytest.fixture
 def sample_files_list():
     """Sample files list for testing."""
-    return [
-        "DSC06803.ARW",
-        "DSC06828.ARW",
-        "test_image.jpg",
-        "video.mp4",
-        ".hidden_file",
-        "Thumbs.db",
-    ]
+    return ["DSC06803.ARW", "DSC06828.ARW", "test_image.jpg", "video.mp4", ".hidden_file", "Thumbs.db"]
 
 
 @pytest.fixture
@@ -92,12 +85,7 @@ def mock_exiftool():
         instance = Mock()
         mock.return_value.__enter__.return_value = instance
         instance.get_tags.return_value = [
-            {
-                "SourceFile": "test.cr2",
-                "EXIF:CreateDate": "2021:12:18 17:04:05",
-                "EXIF:Make": "SONY",
-                "EXIF:Model": "ILCE-7M3",
-            }
+            {"SourceFile": "test.cr2", "EXIF:CreateDate": "2021:12:18 17:04:05", "EXIF:Make": "SONY", "EXIF:Model": "ILCE-7M3"}
         ]
         yield instance
 
@@ -113,11 +101,7 @@ def clean_logging():
     # Restore original handlers and clean up
     logging.root.handlers = original_handlers
     for logger_name in list(logging.Logger.manager.loggerDict.keys()):
-        if logger_name.startswith("eir") or logger_name in [
-            "threadedLogger",
-            "threadedConsoleLogger",
-            "threadedFileLogger",
-        ]:
+        if logger_name.startswith("eir") or logger_name in ["threadedLogger", "threadedConsoleLogger", "threadedFileLogger"]:
             logger = logging.getLogger(logger_name)
             logger.handlers.clear()
             logger.disabled = False
@@ -156,7 +140,5 @@ def change_test_dir(request, temp_dir):
 # Custom markers
 def pytest_configure(config):
     """Register custom markers."""
-    config.addinivalue_line(
-        "markers", "needs_temp_dir: mark test as needing temporary directory as cwd"
-    )
+    config.addinivalue_line("markers", "needs_temp_dir: mark test as needing temporary directory as cwd")
     config.addinivalue_line("markers", "integration: mark test as integration test")

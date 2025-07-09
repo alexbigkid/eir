@@ -52,8 +52,7 @@ class _Const:
         current_file_path = Path(__file__).absolute()
         current_path_str = str(current_file_path).lower()
         is_onefile = (
-            "onefile" in current_path_str
-            or "onefil" in current_path_str  # Windows short names like ONEFIL~1
+            "onefile" in current_path_str or "onefil" in current_path_str  # Windows short names like ONEFIL~1
         )
         if is_onefile:
             return Path.cwd()
@@ -96,9 +95,7 @@ class _Const:
                 object.__setattr__(self, "_license", project.get("license", self._license))
                 object.__setattr__(self, "_keywords", project.get("keywords", self._keywords))
                 object.__setattr__(self, "_authors", project.get("authors", self._authors))
-                object.__setattr__(
-                    self, "_maintainers", project.get("maintainers", self._maintainers)
-                )
+                object.__setattr__(self, "_maintainers", project.get("maintainers", self._maintainers))
         except Exception as e:
             print(f"Warning: failed to load pyproject.toml metadata: {e}")
 
@@ -121,29 +118,10 @@ class _Const:
                 object.__setattr__(self, "_name", "eir")
                 object.__setattr__(self, "_license", {"text": "MIT"})
                 object.__setattr__(
-                    self,
-                    "_keywords",
-                    [
-                        "exif",
-                        "images",
-                        "photos",
-                        "rename",
-                        "convert",
-                        "raw",
-                        "dng",
-                        "photography",
-                    ],
+                    self, "_keywords", ["exif", "images", "photos", "rename", "convert", "raw", "dng", "photography"]
                 )
-                object.__setattr__(
-                    self,
-                    "_authors",
-                    [{"name": "ABK", "email": "alexbigkid@users.noreply.github.com"}],
-                )
-                object.__setattr__(
-                    self,
-                    "_maintainers",
-                    [{"name": "ABK", "email": "alexbigkid@users.noreply.github.com"}],
-                )
+                object.__setattr__(self, "_authors", [{"name": "ABK", "email": "alexbigkid@users.noreply.github.com"}])
+                object.__setattr__(self, "_maintainers", [{"name": "ABK", "email": "alexbigkid@users.noreply.github.com"}])
         except Exception as e:
             print(f"Warning: failed to load build constants: {e}")
 

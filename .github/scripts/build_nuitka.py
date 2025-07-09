@@ -19,12 +19,7 @@ def get_platform_name():
     machine = platform.machine().lower()
 
     # Normalize machine architecture names for consistency
-    machine_map = {
-        "amd64": "x86_64",
-        "x86_64": "x86_64",
-        "arm64": "aarch64",
-        "aarch64": "aarch64",
-    }
+    machine_map = {"amd64": "x86_64", "x86_64": "x86_64", "arm64": "aarch64", "aarch64": "aarch64"}
     machine = machine_map.get(machine, machine)
 
     # Platform-specific naming
@@ -343,18 +338,7 @@ def create_archive(executable_name):
         archive_name = f"eir-{version}-{platform_name}.tar.gz"
 
         subprocess.run(  # noqa: S603
-            [
-                "tar",
-                "-czf",
-                f"dist/{archive_name}",
-                "-C",
-                "dist",
-                executable_name,
-                "-C",
-                "..",
-                "README.md",
-                "LICENSE",
-            ]
+            ["tar", "-czf", f"dist/{archive_name}", "-C", "dist", executable_name, "-C", "..", "README.md", "LICENSE"]
             + (["-C", "..", "CHANGELOG.md"] if Path("CHANGELOG.md").exists() else []),
             check=True,
         )
@@ -376,11 +360,7 @@ def test_executable(executable_name):
     # Test --version
     try:
         result = subprocess.run(  # noqa: S603
-            [str(exe_path.resolve()), "--version"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
+            [str(exe_path.resolve()), "--version"], capture_output=True, text=True, timeout=30, check=False
         )
 
         if result.returncode == 0:
@@ -398,11 +378,7 @@ def test_executable(executable_name):
     # Test --help
     try:
         result = subprocess.run(  # noqa: S603
-            [str(exe_path.resolve()), "--help"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
+            [str(exe_path.resolve()), "--help"], capture_output=True, text=True, timeout=30, check=False
         )
 
         if result.returncode == 0:

@@ -50,10 +50,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir"]  # Default case - no additional arguments
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -74,10 +71,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "-d", "/test/directory"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -92,10 +86,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "--directory", "/another/test/path"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -110,10 +101,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "-l"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -121,9 +109,7 @@ class TestCommandLineOptions:
             clo.handle_options()
 
         assert clo.options.log_into_file is True
-        mock_manager.configure.assert_called_once_with(
-            log_into_file=True, quiet=False, verbose=False
-        )
+        mock_manager.configure.assert_called_once_with(log_into_file=True, quiet=False, verbose=False)
 
     def test_handle_options_quiet_flag(self, reset_logger_manager, clean_logging):
         """Test handle_options with quiet flag."""
@@ -131,10 +117,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "-q"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -142,9 +125,7 @@ class TestCommandLineOptions:
             clo.handle_options()
 
         assert clo.options.quiet is True
-        mock_manager.configure.assert_called_once_with(
-            log_into_file=False, quiet=True, verbose=False
-        )
+        mock_manager.configure.assert_called_once_with(log_into_file=False, quiet=True, verbose=False)
 
     def test_handle_options_version_flag_exits(self):
         """Test handle_options with version flag exits program."""
@@ -273,10 +254,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "-d", "/test/path", "-l", "-q"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -287,9 +265,7 @@ class TestCommandLineOptions:
         assert clo.options.dir == "/test/path"
         assert clo.options.log_into_file is True
         assert clo.options.quiet is True
-        mock_manager.configure.assert_called_once_with(
-            log_into_file=True, quiet=True, verbose=False
-        )
+        mock_manager.configure.assert_called_once_with(log_into_file=True, quiet=True, verbose=False)
 
     def test_handle_options_logger_configuration(self, reset_logger_manager, clean_logging):
         """Test that LoggerManager is configured correctly."""
@@ -297,10 +273,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "-l"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -310,9 +283,7 @@ class TestCommandLineOptions:
 
         # Verify LoggerManager was instantiated and configured
         mock_manager_class.assert_called()
-        mock_manager.configure.assert_called_once_with(
-            log_into_file=True, quiet=False, verbose=False
-        )
+        mock_manager.configure.assert_called_once_with(log_into_file=True, quiet=False, verbose=False)
         mock_manager.get_logger.assert_called_once()
 
     def test_handle_options_logger_logging_calls(self, reset_logger_manager, clean_logging):
@@ -321,10 +292,7 @@ class TestCommandLineOptions:
 
         test_args = ["eir", "-d", "/test", "-l"]
 
-        with (
-            patch.object(sys, "argv", test_args),
-            patch("eir.clo.LoggerManager") as mock_manager_class,
-        ):
+        with patch.object(sys, "argv", test_args), patch("eir.clo.LoggerManager") as mock_manager_class:
             mock_manager = Mock()
             mock_logger = Mock()
             mock_manager.get_logger.return_value = mock_logger
@@ -415,11 +383,7 @@ class TestCommandLineOptions:
         assert hasattr(CommandLineOptions, "__annotations__")
         annotations = CommandLineOptions.__annotations__
 
-        expected_annotations = {
-            "_args": "list",
-            "options": "Namespace",
-            "logger": "logging.Logger",
-        }
+        expected_annotations = {"_args": "list", "options": "Namespace", "logger": "logging.Logger"}
 
         for attr, expected_type in expected_annotations.items():
             assert attr in annotations
