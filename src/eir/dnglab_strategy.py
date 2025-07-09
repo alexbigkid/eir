@@ -4,6 +4,7 @@ import logging
 import os
 import platform
 import shutil
+import subprocess  # noqa: S404
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -417,8 +418,85 @@ class WindowsDNGLabStrategy(DNGLabBinaryStrategy):
         return None
 
 
-class MacOSDNGStrategy(DNGLabBinaryStrategy):
-    """DNGLab binary strategy for macOS platforms."""
+class MacOSAdobeDNGStrategy(DNGLabBinaryStrategy):
+    """Adobe DNG Converter strategy for macOS platforms."""
+
+    def get_architecture_mapping(self) -> str:
+        """Get macOS architecture mapping (not used for Adobe DNG Converter)."""
+        return "universal"
+
+    def get_binary_filename(self) -> str:
+        """Get Adobe DNG Converter binary filename."""
+        return "Adobe DNG Converter"
+
+    def get_binary_path(self) -> str | None:
+        """Get Adobe DNG Converter binary path for macOS."""
+        self.logger.info("Searching for Adobe DNG Converter on macOS")
+
+        # Try common Adobe DNG Converter installation paths
+        adobe_paths = [
+            "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter",
+            "/usr/local/bin/Adobe DNG Converter",
+            "/opt/homebrew/Caskroom/adobe-dng-converter/*/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter",
+        ]
+
+        for path_pattern in adobe_paths:
+            if "*" in path_pattern:
+                # Handle glob patterns for homebrew cask installations
+                import glob
+
+                matching_paths = glob.glob(path_pattern)
+                for path in matching_paths:
+                    if Path(path).exists():
+                        self.logger.info(f"Found Adobe DNG Converter at: {path}")
+                        return path
+            else:
+                if Path(path_pattern).exists():
+                    self.logger.info(f"Found Adobe DNG Converter at: {path_pattern}")
+                    return path_pattern
+
+        # Try system PATH
+        binary_path = self._check_system_path("Adobe DNG Converter")
+        if binary_path:
+            return binary_path
+
+        # Check if Adobe DNG Converter is installed via Homebrew Cask
+        try:
+            result = subprocess.run(
+                ["brew", "list", "adobe-dng-converter"],  # noqa: S607
+                capture_output=True,
+                text=True,
+                check=False,  # noqa: S603,S607
+            )
+            if result.returncode == 0:
+                self.logger.info("Adobe DNG Converter is installed via Homebrew Cask")
+                # Try to find the installation path
+                cask_info = subprocess.run(
+                    ["brew", "--prefix"],  # noqa: S607
+                    capture_output=True,
+                    text=True,
+                    check=False,  # noqa: S603,S607
+                )
+                if cask_info.returncode == 0:
+                    brew_prefix = cask_info.stdout.strip()
+                    cask_path = f"{brew_prefix}/Caskroom/adobe-dng-converter"
+                    if Path(cask_path).exists():
+                        # Find the version directory
+                        for version_dir in Path(cask_path).iterdir():
+                            if version_dir.is_dir():
+                                app_path = version_dir / "Adobe DNG Converter.app" / "Contents" / "MacOS" / "Adobe DNG Converter"
+                                if app_path.exists():
+                                    self.logger.info(f"Found Adobe DNG Converter via Homebrew at: {app_path}")
+                                    return str(app_path)
+        except FileNotFoundError:
+            self.logger.debug("Homebrew not found in PATH")
+
+        self.logger.warning("Adobe DNG Converter not found. Install via: brew install --cask adobe-dng-converter")
+        return None
+
+
+class MacOSDNGLabStrategy(DNGLabBinaryStrategy):
+    """DNGLab binary strategy for macOS platforms (fallback)."""
 
     def get_architecture_mapping(self) -> str:
         """Get macOS architecture mapping."""
@@ -462,7 +540,7 @@ class MacOSDNGStrategy(DNGLabBinaryStrategy):
 
 
 class DNGLabStrategyFactory:
-    """Factory for creating appropriate DNGLab binary strategies."""
+    """Factory for creating appropriate DNG conversion strategies."""
 
     @staticmethod
     def create_strategy(logger: logging.Logger) -> DNGLabBinaryStrategy:
@@ -474,7 +552,15 @@ class DNGLabStrategyFactory:
         if system_name == "windows":
             return WindowsDNGLabStrategy(logger)
         if system_name == "darwin":
-            return MacOSDNGStrategy(logger)
+            # Try Adobe DNG Converter first on macOS for better quality
+            adobe_strategy = MacOSAdobeDNGStrategy(logger)
+            adobe_path = adobe_strategy.get_binary_path()
+            if adobe_path:
+                logger.info("Using Adobe DNG Converter for macOS (preferred)")
+                return adobe_strategy
+            else:
+                logger.info("Adobe DNG Converter not found, falling back to DNGLab")
+                return MacOSDNGLabStrategy(logger)
 
         # Default to Linux strategy for unknown platforms
         logger.warning(f"Unknown platform: {system_name}, using Linux strategy")

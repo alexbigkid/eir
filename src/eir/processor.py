@@ -186,9 +186,13 @@ class ImageProcessor:
                 # Check if we're using DNGLab vs Adobe DNG Converter
                 # Use environment variable as primary indicator since bin_exec
                 # might not reflect the actual binary
-                env_dnglab = os.environ.get("PYDNG_DNG_CONVERTER", "")
-                is_dnglab = "dnglab" in env_dnglab.lower() or "dnglab" in str(self.bin_exec).lower()
-                log.debug(f"DNGLab detection: is_dnglab={is_dnglab}")
+                env_converter = os.environ.get("PYDNG_DNG_CONVERTER", "")
+                bin_exec_str = str(self.bin_exec).lower()
+
+                is_adobe = "adobe dng converter" in env_converter.lower() or "adobe dng converter" in bin_exec_str
+                is_dnglab = "dnglab" in env_converter.lower() or "dnglab" in bin_exec_str
+
+                log.debug(f"Converter detection: is_adobe={is_adobe}, is_dnglab={is_dnglab}, env_path={env_converter}")
 
                 if is_dnglab:
                     # DNGLab syntax: dnglab convert [options] input output
@@ -204,13 +208,32 @@ class ImageProcessor:
                         str(source_path),
                         str(output_file),
                     ]
+                elif is_adobe:
+                    # Adobe DNG Converter syntax: Adobe DNG Converter [options] -d destination source
+                    dng_args = []
+
+                    # Add compression options for Adobe DNG Converter
+                    if dng_compression == "lossless":
+                        dng_args.extend(["-c"])  # Lossless compression
+                    elif dng_compression == "uncompressed":
+                        dng_args.extend(["-u"])  # Uncompressed
+
+                    # Add preview options
+                    if dng_preview:
+                        dng_args.extend(["-p", "2"])  # Full size JPEG preview
+                    else:
+                        dng_args.extend(["-p", "0"])  # No preview
+
+                    # Add destination and source
+                    dng_args.extend(["-d", destination, str(source_path)])
                 else:
-                    # Adobe DNG Converter syntax (original)
+                    # Default Adobe DNG Converter syntax (fallback)
                     dng_args = [*self.parameters.iter_args, "-d", destination, str(source_path)]
 
                 # Log the full command being executed (only in debug mode)
                 full_command = f"{self.bin_exec} {' '.join(dng_args)}"
-                log.debug("Executing %s command: %s", "DNGLab" if is_dnglab else "Adobe DNG Converter", full_command)
+                converter_name = "DNGLab" if is_dnglab else ("Adobe DNG Converter" if is_adobe else "Default Converter")
+                log.debug("Executing %s command: %s", converter_name, full_command)
 
                 # Validate arguments before execution
                 log.debug("Arguments: %s", dng_args)
@@ -228,28 +251,28 @@ class ImageProcessor:
                         self.bin_exec, *dng_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                     )
                     stdout, stderr = await proc.communicate()
-                    log.debug("DNGLab process completed with return code: %d", proc.returncode)
+                    log.debug("%s process completed with return code: %d", converter_name, proc.returncode)
 
                     # Check return code and log any errors
                     if proc.returncode != 0:
-                        log.error("DNGLab conversion failed with return code %d", proc.returncode)
+                        log.error("%s conversion failed with return code %d", converter_name, proc.returncode)
                         if stderr:
                             stderr_text = stderr.decode("utf-8", errors="replace")
-                            log.error("DNGLab stderr: %s", stderr_text)
+                            log.error("%s stderr: %s", converter_name, stderr_text)
                         if stdout:
                             stdout_text = stdout.decode("utf-8", errors="replace")
-                            log.error("DNGLab stdout: %s", stdout_text)
+                            log.error("%s stdout: %s", converter_name, stdout_text)
                         # Still report as finished to maintain compatibility, but with error info
                         log.warning("Conversion reported as finished despite errors")
                     else:
-                        log.debug("DNGLab conversion succeeded (return code 0)")
+                        log.debug("%s conversion succeeded (return code 0)", converter_name)
                         if stdout:
                             stdout_text = stdout.decode("utf-8", errors="replace")
                             if stdout_text.strip():
-                                log.debug("DNGLab stdout: %s", stdout_text.strip())
+                                log.debug("%s stdout: %s", converter_name, stdout_text.strip())
 
                 except Exception as e:
-                    log.error("Exception during DNGLab subprocess execution: %s", e)
+                    log.error("Exception during %s subprocess execution: %s", converter_name, e)
                     raise
 
                 log.debug("finished conversion: %s", job.destination_filename)

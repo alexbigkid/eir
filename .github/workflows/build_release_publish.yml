@@ -142,7 +142,9 @@ jobs:
       - name: Install system dependencies for integration tests (macOS)
         if: matrix.os_name == 'macos'
         run: |
+          brew update
           brew install exiftool tree
+          brew install --cask adobe-dng-converter
 
       - name: Install system dependencies for integration tests (Linux)
         if: matrix.os_name == 'linux'

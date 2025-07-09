@@ -48,6 +48,14 @@ def clean_build_dirs():
 
 def download_dnglab():
     """Download DNGLab binary for DNG conversion using unified cross-platform script."""
+    system_name = platform.system().lower()
+
+    # Skip DNGLab download on macOS - we use Adobe DNG Converter instead
+    if system_name == "darwin":
+        print("Skipping DNGLab download on macOS - Adobe DNG Converter will be used instead")
+        print("Note: Adobe DNG Converter should be installed via: brew install --cask adobe-dng-converter")
+        return
+
     try:
         # Use the DNGLab downloader directly
         downloader = DNGLabDownloader()
@@ -98,6 +106,12 @@ def setup_dnglab_bundle():
     print(f"System: {system_name}")
     print(f"Machine: {machine}")
 
+    # Skip DNGLab bundling on macOS - we use Adobe DNG Converter instead
+    if system_name == "darwin":
+        print("Skipping DNGLab bundling on macOS - Adobe DNG Converter will be used instead")
+        print("Note: Install Adobe DNG Converter via: brew install --cask adobe-dng-converter")
+        return True
+
     match system_name:
         case "linux":
             dnglab_arch = "aarch64" if machine in ["aarch64", "arm64"] else "x64"
@@ -105,9 +119,6 @@ def setup_dnglab_bundle():
         case "windows":
             dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x64"
             dnglab_path = Path(f"build/windows/tools/{dnglab_arch}/dnglab.exe")
-        case "darwin":
-            dnglab_arch = "arm64" if machine in ["aarch64", "arm64"] else "x86_64"
-            dnglab_path = Path(f"build/darwin/tools/{dnglab_arch}/dnglab")
         case _:
             print(f"Unsupported platform: {system_name}")
             return False
