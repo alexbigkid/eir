@@ -347,8 +347,12 @@ class ImageProcessor:
             file_size = dnglab_file.stat().st_size
             self._logger.debug(f"DNGLab binary verification - size: {file_size} bytes")
 
-            # Test DNGLab binary functionality
-            self._test_dnglab_binary(dnglab_path)
+            # Test DNGLab binary functionality - but only for actual DNGLab binaries
+            # Adobe DNG Converter is a GUI app and doesn't support --help flag
+            if strategy.__class__.__name__ != "MacOSAdobeDNGStrategy":
+                self._test_dnglab_binary(dnglab_path)
+            else:
+                self._logger.info("Skipping binary test for Adobe DNG Converter (GUI application)")
         else:
             self._logger.warning(f"DNGLab binary not found - will fall back to default Adobe DNG Converter on {system_name}")
 
