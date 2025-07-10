@@ -149,7 +149,7 @@ class TestCommandLineOptions:
             mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
-        mock_print.assert_called_once_with("eir version: 1.0.0", flush=True)
+        mock_print.assert_called_once_with("1.0.0", flush=True)
         mock_exit.assert_called_once_with(0)
 
     def test_handle_options_version_long_flag_exits(self):
@@ -173,7 +173,7 @@ class TestCommandLineOptions:
             mock_manager_class.return_value = mock_manager
             clo.handle_options()
 
-        mock_print.assert_called_once_with("eir version: 2.0.0", flush=True)
+        mock_print.assert_called_once_with("2.0.0", flush=True)
         mock_exit.assert_called_once_with(0)
 
     def test_handle_options_about_flag_exits(self):
