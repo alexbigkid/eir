@@ -260,10 +260,11 @@ class TestFileOperations:
         mock_logger.error.assert_called_once_with("Error renaming: old_name.jpg: Permission denied")
 
     @pytest.mark.asyncio
+    @patch("eir.processor.ImageProcessor._configure_dng_converter")
     @patch("pydngconverter.DNGConverter")
     @patch("os.makedirs")
     @patch("os.path.exists")
-    async def test_convert_raw_to_dng(self, mock_exists, mock_makedirs, mock_dng_converter, mock_logger):
+    async def test_convert_raw_to_dng(self, mock_exists, mock_makedirs, mock_dng_converter, mock_configure_dng, mock_logger):
         """Test RAW to DNG conversion."""
         mock_exists.return_value = False
         mock_converter = AsyncMock()
@@ -274,6 +275,7 @@ class TestFileOperations:
         await processor.convert_raw_to_dng("/src/dir", "/dst/dir")
 
         mock_makedirs.assert_called_once_with("/dst/dir")
+        mock_configure_dng.assert_called_once()
         mock_dng_converter.assert_called_once_with(source=Path("/src/dir"), dest=Path("/dst/dir"))
         mock_converter.convert.assert_called_once()
 

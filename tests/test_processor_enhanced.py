@@ -501,8 +501,9 @@ class TestErrorHandlingAndEdgeCases:
                 await processor.extract_exif_metadata(["test.jpg"])
 
     @pytest.mark.asyncio
+    @patch("eir.processor.ImageProcessor._configure_dng_converter")
     @patch("pydngconverter.DNGConverter")
-    async def test_convert_raw_to_dng_exception(self, mock_dng_converter, mock_logger):
+    async def test_convert_raw_to_dng_exception(self, mock_dng_converter, mock_configure_dng, mock_logger):
         """Test RAW to DNG conversion when converter fails."""
         mock_converter = AsyncMock()
         mock_converter.convert.side_effect = Exception("Conversion failed")

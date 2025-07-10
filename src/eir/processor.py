@@ -639,11 +639,11 @@ class ImageProcessor:
             # Clean user-friendly message with bright green color
             if key == "raw_image_dict":
                 message = (
-                    f"{colorama.Fore.LIGHTGREEN_EX}Processing {file_count} RAW files → {directory}/{colorama.Style.RESET_ALL}"
+                    f"{colorama.Fore.LIGHTGREEN_EX}Processing {file_count} RAW files -> {directory}/{colorama.Style.RESET_ALL}"
                 )
             else:
                 message = (
-                    f"{colorama.Fore.LIGHTGREEN_EX}Processing {file_count} {file_ext.upper()} files → {directory}/"
+                    f"{colorama.Fore.LIGHTGREEN_EX}Processing {file_count} {file_ext.upper()} files -> {directory}/"
                     f"{colorama.Style.RESET_ALL}"
                 )
             print(message, flush=True)
@@ -698,7 +698,7 @@ class ImageProcessor:
             self._delete_original_raw_files(convert_list)
 
             message = (
-                f"{colorama.Fore.LIGHTGREEN_EX}✓ Completed {total_conversions} RAW to DNG conversions{colorama.Style.RESET_ALL}"
+                f"{colorama.Fore.LIGHTGREEN_EX}* Completed {total_conversions} RAW to DNG conversions{colorama.Style.RESET_ALL}"
             )
             print(message, flush=True)
 

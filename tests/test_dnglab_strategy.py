@@ -38,17 +38,35 @@ class TestDNGLabStrategyFactory:
         assert strategy.logger is mock_logger
 
     @patch("platform.system")
-    def test_create_macos_strategy_adobe_preferred(self, mock_system):
+    @patch("eir.dnglab_strategy.MacOSAdobeDNGStrategy.get_binary_path")
+    def test_create_macos_strategy_adobe_preferred(self, mock_get_binary_path, mock_system):
         """Test factory creates Adobe DNG strategy for Darwin platform when available."""
         mock_system.return_value = "Darwin"
         mock_logger = Mock()
 
-        # This will actually test with the real system - if Adobe DNG Converter is available
-        # it will return MacOSAdobeDNGStrategy, otherwise MacOSDNGLabStrategy
+        # Mock Adobe DNG Converter as available
+        mock_get_binary_path.return_value = "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter"
+
         strategy = DNGLabStrategyFactory.create_strategy(mock_logger)
 
-        # Should be either Adobe (preferred) or DNGLab (fallback) strategy
-        assert isinstance(strategy, (MacOSAdobeDNGStrategy, MacOSDNGLabStrategy))
+        # Should return Adobe DNG strategy when available
+        assert isinstance(strategy, MacOSAdobeDNGStrategy)
+        assert strategy.logger is mock_logger
+
+    @patch("platform.system")
+    @patch("eir.dnglab_strategy.MacOSAdobeDNGStrategy.get_binary_path")
+    def test_create_macos_strategy_dnglab_fallback(self, mock_get_binary_path, mock_system):
+        """Test factory creates DNGLab strategy for Darwin platform when Adobe DNG Converter is not available."""
+        mock_system.return_value = "Darwin"
+        mock_logger = Mock()
+
+        # Mock Adobe DNG Converter as not available
+        mock_get_binary_path.return_value = None
+
+        strategy = DNGLabStrategyFactory.create_strategy(mock_logger)
+
+        # Should return DNGLab strategy when Adobe DNG Converter is not available
+        assert isinstance(strategy, MacOSDNGLabStrategy)
         assert strategy.logger is mock_logger
 
     @patch("platform.system")
