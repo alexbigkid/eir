@@ -212,6 +212,9 @@ class ImageProcessor:
                     # Adobe DNG Converter syntax: Adobe DNG Converter [options] -d destination source
                     dng_args = []
 
+                    # Add headless flags to prevent GUI from launching
+                    dng_args.extend(["-w"])  # Wait for completion without GUI
+
                     # Add compression options for Adobe DNG Converter
                     if dng_compression == "lossless":
                         dng_args.extend(["-c"])  # Lossless compression
