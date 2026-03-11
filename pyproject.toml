@@ -21,6 +21,14 @@ dependencies = [
 ]
 
 
+[project.optional-dependencies]
+convert = [
+    "pillow",
+    "pillow-heif",
+    "rawpy",
+]
+
+
 [dependency-groups]
 dev = [
     "coverage",
